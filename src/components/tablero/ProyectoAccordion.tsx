@@ -30,7 +30,7 @@ interface Props {
 
 export function ProyectoAccordion({ areaSlug, proyecto, open, openSubproyectoSlug }: Props) {
   return (
-    <section className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+    <section>
       <Link
         to="/tablero"
         search={(prev: Record<string, unknown>) => ({
@@ -55,7 +55,7 @@ export function ProyectoAccordion({ areaSlug, proyecto, open, openSubproyectoSlu
       </Link>
 
       {open && (
-        <div className="px-3 pb-2 pt-1">
+        <div className="pl-6 pr-3 pb-2 border-l border-slate-100 ml-5 mb-2">
           {proyecto.subproyectos.map((sub) => (
             <SubproyectoAccordion
               key={sub.slug}

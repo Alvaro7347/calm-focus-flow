@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## Tablero — corrección estructural (iteración actual)
+
+- Se formaliza la regla arquitectónica permanente: **toda tarea pertenece siempre a Área + Proyecto + Subproyecto**. No hay tareas huérfanas.
+- Se eliminan por completo los pseudo-nodos "Sin proyecto" y "General". `tableroService` no crea nodos automáticos: si una tarea llega incompleta, es dato inválido y se ignora del árbol (con warning en consola).
+- Se completan los datos mock existentes con `proyecto` y `subproyecto` reales — no se agregaron tareas nuevas.
+- La visualización de Tablero se aproxima a un árbol jerárquico: un solo contenedor con divisores sutiles y guía vertical de subproyectos, en lugar de tarjetas independientes por proyecto.
+
+## Tablero (iteración inicial)
+
+
 ## Tablero (iteración actual)
 
 - Se incorpora **Tablero** como tercer módulo principal del MVP1 (junto a FOCO y Calendar).

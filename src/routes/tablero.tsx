@@ -72,7 +72,7 @@ function TableroPage() {
       {area.proyectos.length === 0 ? (
         <p className="text-sm text-slate-500">Esta área todavía no tiene proyectos.</p>
       ) : (
-        <div className="space-y-3">
+        <div className="rounded-xl border border-slate-200 bg-white divide-y divide-slate-100 overflow-hidden">
           {area.proyectos.map((p) => (
             <ProyectoAccordion
               key={p.slug}

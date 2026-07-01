@@ -10,15 +10,20 @@
  * Dependencias:
  * - taskService: única fuente de tareas. No accedemos a mocks.
  *
- * Notas:
- * - Cuando una tarea no declara proyecto o subproyecto, se agrupa
- *   bajo pseudo-nodos ("Sin proyecto" / "General") para respetar
- *   la regla "no hay tareas huérfanas" sin modificar los datos
- *   existentes. Cuando Crear tarea entre en el MVP1, cada tarea
- *   nueva incluirá proyecto y subproyecto reales y estos
- *   pseudo-nodos desaparecerán naturalmente.
- * - La interfaz pública (getAreaTree, listAreasWithProjects) se
- *   mantendrá estable cuando el origen pase a Supabase.
+ * Regla arquitectónica oficial de CalmApp (permanente):
+ * - Toda tarea DEBE pertenecer a un Área, un Proyecto y un
+ *   Subproyecto reales.
+ * - Este servicio NUNCA crea proyectos automáticamente.
+ * - Este servicio NUNCA crea subproyectos automáticamente.
+ * - Este servicio NUNCA inventa nodos (no existen "Sin proyecto"
+ *   ni "General" ni ninguna categoría de relleno).
+ * - Si una tarea llega sin proyecto o sin subproyecto, se
+ *   considera un DATO INVÁLIDO: se descarta del árbol y se
+ *   registra un warning en consola. La reparación es en origen
+ *   (mock hoy, Supabase mañana), nunca aquí.
+ *
+ * La interfaz pública (getAreaTree, getAreaBySlug, listAreas)
+ * se mantendrá estable cuando el origen pase a Supabase.
  * ========================================================
  */
 import { getAllTasks } from "@/services/taskService";
@@ -45,17 +50,26 @@ export interface AreaNode {
   totalTareas: number;
 }
 
-const SIN_PROYECTO = "Sin proyecto";
-const SIN_SUBPROYECTO = "General";
-
 function buildTree(): AreaNode[] {
   const tasks = getAllTasks();
   const areas = new Map<string, AreaNode>();
 
   for (const t of tasks) {
-    const areaName = t.area;
-    const proyectoName = t.proyecto?.trim() || SIN_PROYECTO;
-    const subName = t.subproyecto?.trim() || SIN_SUBPROYECTO;
+    const areaName = t.area?.trim();
+    const proyectoName = t.proyecto?.trim();
+    const subName = t.subproyecto?.trim();
+
+    // Contrato arquitectónico: una tarea SIEMPRE pertenece a
+    // Área + Proyecto + Subproyecto. Cualquier ausencia es dato
+    // inválido y no se representa en el árbol.
+    if (!areaName || !proyectoName || !subName) {
+      if (typeof console !== "undefined") {
+        console.warn(
+          `[tableroService] Tarea inválida ignorada (falta área/proyecto/subproyecto): ${t.id} - ${t.titulo}`,
+        );
+      }
+      continue;
+    }
 
     let area = areas.get(areaName);
     if (!area) {
@@ -83,8 +97,7 @@ function buildTree(): AreaNode[] {
   return Array.from(areas.values());
 }
 
-/** Devuelve el árbol completo (utilizado por linkeos externos que necesiten
- *  resolver un slug de área a su nombre). */
+/** Devuelve el árbol completo. */
 export function getAreaTree(): AreaNode[] {
   return buildTree();
 }
@@ -99,3 +112,4 @@ export function getAreaBySlug(areaSlug: string): AreaNode | undefined {
 export function listAreas(): Array<{ nombre: string; slug: string; totalTareas: number }> {
   return buildTree().map((a) => ({ nombre: a.nombre, slug: a.slug, totalTareas: a.totalTareas }));
 }
+
