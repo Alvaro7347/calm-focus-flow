@@ -10,8 +10,9 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TableroRouteImport } from './routes/tablero'
+import { Route as NuevaTareaRouteImport } from './routes/nueva-tarea'
 import { Route as FocoRouteImport } from './routes/foco'
-import { Route as CrearRouteImport } from './routes/crear'
+import { Route as CrearTareaRouteImport } from './routes/crear-tarea'
 import { Route as CalendarioRouteImport } from './routes/calendario'
 import { Route as IndexRouteImport } from './routes/index'
 
@@ -20,14 +21,19 @@ const TableroRoute = TableroRouteImport.update({
   path: '/tablero',
   getParentRoute: () => rootRouteImport,
 } as any)
+const NuevaTareaRoute = NuevaTareaRouteImport.update({
+  id: '/nueva-tarea',
+  path: '/nueva-tarea',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const FocoRoute = FocoRouteImport.update({
   id: '/foco',
   path: '/foco',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CrearRoute = CrearRouteImport.update({
-  id: '/crear',
-  path: '/crear',
+const CrearTareaRoute = CrearTareaRouteImport.update({
+  id: '/crear-tarea',
+  path: '/crear-tarea',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CalendarioRoute = CalendarioRouteImport.update({
@@ -44,38 +50,61 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/calendario': typeof CalendarioRoute
-  '/crear': typeof CrearRoute
+  '/crear-tarea': typeof CrearTareaRoute
   '/foco': typeof FocoRoute
+  '/nueva-tarea': typeof NuevaTareaRoute
   '/tablero': typeof TableroRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/calendario': typeof CalendarioRoute
-  '/crear': typeof CrearRoute
+  '/crear-tarea': typeof CrearTareaRoute
   '/foco': typeof FocoRoute
+  '/nueva-tarea': typeof NuevaTareaRoute
   '/tablero': typeof TableroRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/calendario': typeof CalendarioRoute
-  '/crear': typeof CrearRoute
+  '/crear-tarea': typeof CrearTareaRoute
   '/foco': typeof FocoRoute
+  '/nueva-tarea': typeof NuevaTareaRoute
   '/tablero': typeof TableroRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/calendario' | '/crear' | '/foco' | '/tablero'
+  fullPaths:
+    | '/'
+    | '/calendario'
+    | '/crear-tarea'
+    | '/foco'
+    | '/nueva-tarea'
+    | '/tablero'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/calendario' | '/crear' | '/foco' | '/tablero'
-  id: '__root__' | '/' | '/calendario' | '/crear' | '/foco' | '/tablero'
+  to:
+    | '/'
+    | '/calendario'
+    | '/crear-tarea'
+    | '/foco'
+    | '/nueva-tarea'
+    | '/tablero'
+  id:
+    | '__root__'
+    | '/'
+    | '/calendario'
+    | '/crear-tarea'
+    | '/foco'
+    | '/nueva-tarea'
+    | '/tablero'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CalendarioRoute: typeof CalendarioRoute
-  CrearRoute: typeof CrearRoute
+  CrearTareaRoute: typeof CrearTareaRoute
   FocoRoute: typeof FocoRoute
+  NuevaTareaRoute: typeof NuevaTareaRoute
   TableroRoute: typeof TableroRoute
 }
 
@@ -88,6 +117,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TableroRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/nueva-tarea': {
+      id: '/nueva-tarea'
+      path: '/nueva-tarea'
+      fullPath: '/nueva-tarea'
+      preLoaderRoute: typeof NuevaTareaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/foco': {
       id: '/foco'
       path: '/foco'
@@ -95,11 +131,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FocoRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/crear': {
-      id: '/crear'
-      path: '/crear'
-      fullPath: '/crear'
-      preLoaderRoute: typeof CrearRouteImport
+    '/crear-tarea': {
+      id: '/crear-tarea'
+      path: '/crear-tarea'
+      fullPath: '/crear-tarea'
+      preLoaderRoute: typeof CrearTareaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/calendario': {
@@ -122,8 +158,9 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CalendarioRoute: CalendarioRoute,
-  CrearRoute: CrearRoute,
+  CrearTareaRoute: CrearTareaRoute,
   FocoRoute: FocoRoute,
+  NuevaTareaRoute: NuevaTareaRoute,
   TableroRoute: TableroRoute,
 }
 export const routeTree = rootRouteImport

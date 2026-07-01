@@ -19,7 +19,7 @@ export function FocoColumna({ numero, titulo, subtitulo, icono, descripcion, tar
         <div className="flex items-center gap-2.5">
           <span className="text-slate-400" aria-hidden>{icono}</span>
           <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-indigo-50 px-2 text-xs font-semibold text-indigo-600">
-            {numero}
+            {tareas.length}
           </span>
           <h2 className="text-lg font-semibold text-slate-900">{`${numero}. ${titulo}`}</h2>
           <button

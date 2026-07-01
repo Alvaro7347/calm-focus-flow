@@ -13,6 +13,11 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Sidebar } from "../components/layout/Sidebar";
 import { TopBar } from "../components/layout/TopBar";
+import { MobileHeader } from "../components/layout/MobileHeader";
+import { MobileTabBar } from "../components/layout/MobileTabBar";
+import { MobileFab } from "../components/layout/MobileFab";
+import { AreasDrawer } from "../components/layout/AreasDrawer";
+import { useState } from "react";
 
 function NotFoundComponent() {
   return (
@@ -120,17 +125,22 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   return (
     <QueryClientProvider client={queryClient}>
       <div className="flex min-h-screen bg-slate-50 font-sans text-slate-900" style={{ fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif' }}>
         <Sidebar />
+        <AreasDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
         <div className="flex-1 flex flex-col min-w-0">
+          <MobileHeader onOpenDrawer={() => setDrawerOpen(true)} />
           <TopBar />
-          <main className="flex-1">
+          <main className="flex-1 pb-20 md:pb-0">
             <Outlet />
           </main>
         </div>
+        <MobileFab />
+        <MobileTabBar />
       </div>
     </QueryClientProvider>
   );
