@@ -1,3 +1,23 @@
+/**
+ * ========================================================
+ * Archivo: routes/foco (FocoPage)
+ *
+ * Responsabilidad:
+ * Pantalla FOCO. Renderiza las 4 columnas (Hoy, Esta semana,
+ * Esperando, Sin movimiento) a partir de los datos entregados
+ * por focusService.
+ *
+ * Utilizado por:
+ * - TanStack Router (ruta /foco).
+ *
+ * No debe importar datos mock directamente ni contener lógica
+ * de filtrado o transformación de tareas. Toda esa lógica
+ * vive en src/services/focusService.ts.
+ *
+ * En el MVP1, focusService pasará a leer desde Supabase; esta
+ * pantalla no requerirá cambios.
+ * ========================================================
+ */
 import { createFileRoute } from "@tanstack/react-router";
 import { Clock, Calendar, Hourglass, TrendingUp, Target, Filter } from "lucide-react";
 import { FocoColumna } from "@/components/foco/FocoColumna";
