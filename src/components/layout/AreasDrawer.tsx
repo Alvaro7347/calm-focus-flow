@@ -18,7 +18,9 @@
  * ========================================================
  */
 import { Settings, User, FileText, X } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { getAreas } from "@/services/areaService";
+import { slugify } from "@/lib/slug";
 
 interface Props {
   open: boolean;
@@ -67,13 +69,18 @@ export function AreasDrawer({ open, onClose }: Props) {
           <ul className="space-y-1">
             {areas.map((a) => (
               <li key={a.nombre}>
-                <button className="w-full flex items-center gap-3 rounded-lg px-2 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                <Link
+                  to="/tablero"
+                  search={{ area: slugify(a.nombre) }}
+                  onClick={onClose}
+                  className="w-full flex items-center gap-3 rounded-lg px-2 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                >
                   <span className={`h-2.5 w-2.5 rounded-full ${a.color}`} aria-hidden />
                   <span className="flex-1 text-left">{a.nombre}</span>
                   <span className="text-xs text-slate-500 bg-slate-100 rounded-md px-2 py-0.5 min-w-6 text-center">
                     {a.count}
                   </span>
-                </button>
+                </Link>
               </li>
             ))}
           </ul>

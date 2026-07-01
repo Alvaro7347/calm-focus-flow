@@ -21,6 +21,7 @@
 import { Link } from "@tanstack/react-router";
 import { Settings, User, FileText } from "lucide-react";
 import { getAreas } from "@/services/areaService";
+import { slugify } from "@/lib/slug";
 
 export function Sidebar() {
   const areas = getAreas();
@@ -44,13 +45,18 @@ export function Sidebar() {
         <ul className="space-y-1">
           {areas.map((a) => (
             <li key={a.nombre}>
-              <button className="w-full flex items-center gap-3 rounded-lg px-2 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
+              <Link
+                to="/tablero"
+                search={{ area: slugify(a.nombre) }}
+                className="w-full flex items-center gap-3 rounded-lg px-2 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                activeProps={{ className: "bg-indigo-50 text-indigo-700" }}
+              >
                 <span className={`h-2.5 w-2.5 rounded-full ${a.color}`} aria-hidden />
                 <span className="flex-1 text-left">{a.nombre}</span>
                 <span className="text-xs text-slate-500 bg-slate-100 rounded-md px-2 py-0.5 min-w-6 text-center">
                   {a.count}
                 </span>
-              </button>
+              </Link>
             </li>
           ))}
         </ul>
