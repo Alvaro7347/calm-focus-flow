@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## Consolidación arquitectónica (iteración actual)
+
+- `src/data/mockFocus.ts` se renombra a `src/data/mockTasks.ts`: ya no alimenta sólo FOCO, sino a FOCO, Calendar y Tablero vía `taskService`.
+- Fuente única de Áreas: `areaService` deriva las Áreas de las tareas expuestas por `taskService`. Se elimina `src/data/areas.ts`. Sidebar, AreasDrawer y Tablero muestran ahora exactamente la misma lista — no hay más Áreas fantasma.
+- Metadatos globales del proyecto migrados a CalmApp (title, description, author, Open Graph, Twitter). `<html lang="es">`. No quedan referencias visibles a "Lovable App" / "Lovable Generated Project".
+- No se modificaron FOCO, Calendar, Tablero, navegación, componentes visuales ni estilos.
+
+
 ## Tablero — corrección estructural (iteración actual)
 
 - Se formaliza la regla arquitectónica permanente: **toda tarea pertenece siempre a Área + Proyecto + Subproyecto**. No hay tareas huérfanas.

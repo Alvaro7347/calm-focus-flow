@@ -84,14 +84,28 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "CalmApp — Tu espacio de claridad" },
+      {
+        name: "description",
+        content:
+          "CalmApp es tu espacio de claridad: una app personal para gestionar tareas y reducir la carga mental, no para exigir más productividad.",
+      },
+      { name: "author", content: "CalmApp" },
+      { property: "og:title", content: "CalmApp — Tu espacio de claridad" },
+      {
+        property: "og:description",
+        content:
+          "Organiza tus tareas con calma. CalmApp te ayuda a reducir la carga mental, no a acumular urgencias.",
+      },
+      { property: "og:site_name", content: "CalmApp" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "CalmApp — Tu espacio de claridad" },
+      {
+        name: "twitter:description",
+        content:
+          "Organiza tus tareas con calma. CalmApp te ayuda a reducir la carga mental, no a acumular urgencias.",
+      },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
@@ -111,7 +125,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="es">
       <head>
         <HeadContent />
       </head>

@@ -12,9 +12,11 @@
  * - El layout raíz (src/routes/__root.tsx) junto al
  *   MobileHeader que lo abre/cierra.
  *
- * Obtiene las áreas desde areaService (getAreas). No debe
- * importar mocks directamente. En el MVP1 areaService pasará
- * a leer desde Supabase; este componente no requerirá cambios.
+ * Obtiene las áreas desde areaService (getAreas), que las
+ * deriva de las tareas de taskService. Sidebar, AreasDrawer
+ * y Tablero comparten así la misma lista de Áreas: no existen
+ * Áreas fantasma. En el MVP1 taskService pasará a Supabase y
+ * este componente no requerirá cambios.
  * ========================================================
  */
 import { Settings, User, FileText, X } from "lucide-react";
