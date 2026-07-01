@@ -85,7 +85,10 @@ function CalendarioPage() {
   };
 
   return (
-    <div className="px-4 md:px-10 py-6 md:py-8 pb-32 md:pb-8">
+    // pb-40 en mobile: reserva espacio para tab bar + FAB de modo que
+    // el botón nunca se superponga a los bloques inferiores del calendario.
+    <div className="px-4 md:px-10 py-6 md:py-8 pb-40 md:pb-8">
+
       <CalendarHeader
         titulo={titulo}
         view={view}
