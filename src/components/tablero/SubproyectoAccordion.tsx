@@ -33,7 +33,7 @@ export function SubproyectoAccordion({ areaSlug, proyectoSlug, sub, open }: Prop
     <div className="border-t border-slate-100 first:border-t-0">
       <Link
         to="/tablero"
-        search={(prev) => ({
+        search={(prev: Record<string, unknown>) => ({
           ...prev,
           area: areaSlug,
           proyecto: proyectoSlug,
