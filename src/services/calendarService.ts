@@ -19,7 +19,7 @@
  * ========================================================
  */
 import { tareasFoco } from "@/data/mockFocus";
-import type { Tarea } from "@/types/tarea";
+import type { Tarea, Priority } from "@/types/tarea";
 import {
   addDays,
   startOfWeek,
