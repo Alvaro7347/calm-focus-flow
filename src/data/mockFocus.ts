@@ -1,31 +1,54 @@
+/**
+ * ========================================================
+ * Archivo: mockFocus
+ *
+ * Responsabilidad:
+ * Datos de ejemplo para desarrollo. Es la única fuente de
+ * tareas en el frontend actual y sólo debe leerse a través
+ * de src/services/taskService.ts.
+ *
+ * Las `fechaProgramada` están fijas (semana del 29 jun al
+ * 5 jul de 2026) para que Calendar tenga contenido real
+ * sin generar fechas desde etiquetas visuales. Las
+ * etiquetas `diaEtiqueta` son sólo presentación de FOCO
+ * y no se interpretan como fecha.
+ * ========================================================
+ */
 import type { Tarea } from "@/types/tarea";
+
+// Semana ancla del mock: lunes 29 jun - domingo 5 jul 2026.
+const HOY = "2026-07-01"; // miércoles
+const MIE = "2026-07-01";
+const JUE = "2026-07-02";
+const VIE = "2026-07-03";
+const SAB = "2026-07-04";
 
 export const tareasFoco: Tarea[] = [
   // Hoy
-  { id: "h1", categoriaFoco: "hoy", horaInicio: "09:00", titulo: "Activación Paris", area: "Soundkeleles", proyecto: "Comercial" },
-  { id: "h2", categoriaFoco: "hoy", horaInicio: "10:00", titulo: "Reunión Federico por aprobación", area: "Soundkeleles", proyecto: "Act. Mall", vencida: true },
-  { id: "h3", categoriaFoco: "hoy", horaInicio: "11:00", titulo: "Definir flujo base de reparto a domicilio", area: "Panadería", proyecto: "Operaciones" },
-  { id: "h4", categoriaFoco: "hoy", horaInicio: "15:00", titulo: "Preparar clase Marketing", area: "UNAB", proyecto: "Academia" },
-  { id: "h5", categoriaFoco: "hoy", horaInicio: "16:00", titulo: "Planificar semana familiar", area: "Familia" },
-  { id: "h6", categoriaFoco: "hoy", horaInicio: "17:00", titulo: "Revisar proveedores", area: "Panadería", proyecto: "Operaciones", vencida: true },
+  { id: "h1", categoriaFoco: "hoy", fechaProgramada: HOY, horaInicio: "09:00", titulo: "Activación Paris", area: "Soundkeleles", proyecto: "Comercial" },
+  { id: "h2", categoriaFoco: "hoy", fechaProgramada: HOY, horaInicio: "10:00", titulo: "Reunión Federico por aprobación", area: "Soundkeleles", proyecto: "Act. Mall", vencida: true },
+  { id: "h3", categoriaFoco: "hoy", fechaProgramada: HOY, horaInicio: "11:00", titulo: "Definir flujo base de reparto a domicilio", area: "Panadería", proyecto: "Operaciones" },
+  { id: "h4", categoriaFoco: "hoy", fechaProgramada: HOY, horaInicio: "15:00", titulo: "Preparar clase Marketing", area: "UNAB", proyecto: "Academia" },
+  { id: "h5", categoriaFoco: "hoy", fechaProgramada: HOY, horaInicio: "16:00", titulo: "Planificar semana familiar", area: "Familia" },
+  { id: "h6", categoriaFoco: "hoy", fechaProgramada: HOY, horaInicio: "17:00", titulo: "Revisar proveedores", area: "Panadería", proyecto: "Operaciones", vencida: true },
 
   // Esta semana
-  { id: "s1", categoriaFoco: "esta_semana", diaEtiqueta: "Mié 2", titulo: "Informe inventario", area: "Panadería", proyecto: "Operaciones" },
-  { id: "s2", categoriaFoco: "esta_semana", diaEtiqueta: "Mié 2", titulo: "Clase Marketing Estratégico", area: "UNAB", proyecto: "Academia" },
-  { id: "s3", categoriaFoco: "esta_semana", diaEtiqueta: "Jue 3", titulo: "Definir plan de activación comercial", area: "Soundkeleles", proyecto: "Comercial" },
-  { id: "s4", categoriaFoco: "esta_semana", diaEtiqueta: "Jue 3", titulo: "Validar prototipo UI", area: "Soundkeleles", proyecto: "Operaciones" },
-  { id: "s5", categoriaFoco: "esta_semana", diaEtiqueta: "Vie 4", titulo: "Preparar alumnos trabajo grupal", area: "UNAB", proyecto: "Academia" },
-  { id: "s6", categoriaFoco: "esta_semana", diaEtiqueta: "Vie 4", titulo: "Actividad física", area: "Salud" },
-  { id: "s7", categoriaFoco: "esta_semana", diaEtiqueta: "Sáb 5", titulo: "Reunión familiar", area: "Familia" },
+  { id: "s1", categoriaFoco: "esta_semana", fechaProgramada: MIE, diaEtiqueta: "Mié 2", titulo: "Informe inventario", area: "Panadería", proyecto: "Operaciones" },
+  { id: "s2", categoriaFoco: "esta_semana", fechaProgramada: MIE, diaEtiqueta: "Mié 2", titulo: "Clase Marketing Estratégico", area: "UNAB", proyecto: "Academia" },
+  { id: "s3", categoriaFoco: "esta_semana", fechaProgramada: JUE, diaEtiqueta: "Jue 3", titulo: "Definir plan de activación comercial", area: "Soundkeleles", proyecto: "Comercial" },
+  { id: "s4", categoriaFoco: "esta_semana", fechaProgramada: JUE, diaEtiqueta: "Jue 3", titulo: "Validar prototipo UI", area: "Soundkeleles", proyecto: "Operaciones" },
+  { id: "s5", categoriaFoco: "esta_semana", fechaProgramada: VIE, diaEtiqueta: "Vie 4", titulo: "Preparar alumnos trabajo grupal", area: "UNAB", proyecto: "Academia" },
+  { id: "s6", categoriaFoco: "esta_semana", fechaProgramada: VIE, diaEtiqueta: "Vie 4", titulo: "Actividad física", area: "Salud" },
+  { id: "s7", categoriaFoco: "esta_semana", fechaProgramada: SAB, diaEtiqueta: "Sáb 5", titulo: "Reunión familiar", area: "Familia" },
 
-  // Esperando
+  // Esperando (sin fecha: no aparecen en Calendar)
   { id: "e1", categoriaFoco: "esperando", titulo: "Aprobación de Federico", area: "Soundkeleles", proyecto: "Comercial", subproyecto: "Activación Paris" },
   { id: "e2", categoriaFoco: "esperando", titulo: "Respuesta proveedor diseño material POP", area: "Panadería", proyecto: "Marketing" },
   { id: "e3", categoriaFoco: "esperando", titulo: "Información equipo UNAB para prototipo UI", area: "UNAB", proyecto: "Academia" },
   { id: "e4", categoriaFoco: "esperando", titulo: "Confirmación lugar evento Paris", area: "Soundkeleles", proyecto: "Activ. Paris" },
   { id: "e5", categoriaFoco: "esperando", titulo: "Datos clientes potenciales para campaña", area: "Soundkeleles", proyecto: "Marketing" },
 
-  // Sin movimiento
+  // Sin movimiento (sin fecha: no aparecen en Calendar)
   { id: "m1", categoriaFoco: "sin_movimiento", titulo: "Actualizar manual de procesos", area: "Operaciones", diasSinActividad: 12 },
   { id: "m2", categoriaFoco: "sin_movimiento", titulo: "Proyecto app interna", area: "Equipo", diasSinActividad: 9 },
   { id: "m3", categoriaFoco: "sin_movimiento", titulo: "Capacitación equipo ventas", area: "Comercial", diasSinActividad: 7 },

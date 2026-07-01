@@ -4,29 +4,28 @@
  *
  * Responsabilidad:
  * Provee los eventos que se muestran en el módulo Calendar.
- * Actúa como capa única y desacoplada entre la UI y los
- * orígenes de datos: hoy sólo tareas de CalmApp (desde
- * mockFocus), en el futuro también eventos externos
- * (Google Calendar) sin que la UI cambie.
+ * Actúa como capa única y desacoplada entre la UI y el
+ * modelo de tareas: consume taskService y transforma las
+ * tareas con `fechaProgramada` en `CalendarEvent`s. En el
+ * futuro combinará también eventos externos (Google
+ * Calendar) sin que la UI cambie.
+ *
+ * Reglas:
+ * - No conoce mocks ni Supabase; sólo taskService.
+ * - Sólo aparecen en Calendar las tareas con `fechaProgramada`
+ *   válida. Las etiquetas visuales de FOCO ("Mié 2", etc.)
+ *   son presentación y no se interpretan aquí.
+ * - El estado (completada, prioridad) proviene siempre de
+ *   la propia tarea. No hay reglas de demo por ID.
  *
  * Utilizado por:
  * - CalendarioPage (src/routes/calendario.tsx)
  * - Vistas Semana y Mes
- *
- * En el MVP1 esta capa leerá tareas desde Supabase y
- * combinará eventos externos, exponiendo la misma interfaz
- * `CalendarEvent`.
  * ========================================================
  */
-import { tareasFoco } from "@/data/mockFocus";
+import { getAllTasks } from "@/services/taskService";
 import type { Tarea, Priority } from "@/types/tarea";
-import {
-  addDays,
-  startOfWeek,
-  isSameDay,
-  parseISO,
-  addMinutes,
-} from "date-fns";
+import { isSameDay, parseISO, addMinutes } from "date-fns";
 
 export type EventSource = "calmapp" | "google";
 
@@ -52,33 +51,11 @@ export interface CalendarEvent {
   tarea?: Tarea;
 }
 
-/**
- * Mapea etiquetas cortas de día ("Mié 2", "Jue 3"...) usadas en
- * los mocks de FOCO al índice de día ISO (0=Domingo).
- * En el MVP1 esto desaparece: la tarea tendrá `fechaProgramada` real.
- */
-const DIA_INDEX: Record<string, number> = {
-  Dom: 0, Lun: 1, Mar: 2, Mié: 3, Jue: 4, Vie: 5, Sáb: 6,
-};
-
-function resolveFechaTarea(t: Tarea, hoy: Date): Date | null {
-  if (t.fechaProgramada) return parseISO(t.fechaProgramada);
-  if (t.categoriaFoco === "hoy") return hoy;
-  if (t.categoriaFoco === "esta_semana" && t.diaEtiqueta) {
-    const abrev = t.diaEtiqueta.split(" ")[0];
-    const idx = DIA_INDEX[abrev];
-    if (idx === undefined) return null;
-    const inicioSemana = startOfWeek(hoy, { weekStartsOn: 1 });
-    // startOfWeek con weekStartsOn:1 -> lunes en offset 0
-    const offset = (idx + 6) % 7; // lunes=0..domingo=6
-    return addDays(inicioSemana, offset);
-  }
-  return null;
-}
-
-function tareaToEvent(t: Tarea, hoy: Date): CalendarEvent | null {
-  const fecha = resolveFechaTarea(t, hoy);
-  if (!fecha) return null;
+function tareaToEvent(t: Tarea): CalendarEvent | null {
+  // Sólo entran al calendario las tareas con fecha real.
+  if (!t.fechaProgramada) return null;
+  const fecha = parseISO(t.fechaProgramada);
+  if (isNaN(fecha.getTime())) return null;
 
   const allDay = !t.horaInicio;
   let start = fecha;
@@ -90,10 +67,6 @@ function tareaToEvent(t: Tarea, hoy: Date): CalendarEvent | null {
     end = addMinutes(start, t.duracionMin ?? 60);
   }
 
-  // Demo: marcar una tarea vencida como completada para poder
-  // ver el estilo tachado en Calendar.
-  const completada = t.completada ?? (t.id === "h6");
-
   return {
     id: t.id,
     titulo: t.titulo,
@@ -103,9 +76,7 @@ function tareaToEvent(t: Tarea, hoy: Date): CalendarEvent | null {
     start,
     end,
     allDay,
-    completada,
-    // Prioridad propagada desde la Tarea. "normal" es el default
-    // explícito para que la UI/consumidores no tengan que manejar undefined.
+    completada: t.completada ?? false,
     priority: t.priority ?? "normal",
     source: "calmapp",
     tarea: t,
@@ -119,9 +90,8 @@ function tareaToEvent(t: Tarea, hoy: Date): CalendarEvent | null {
  * para cuando la fuente sea Supabase o Google Calendar.
  */
 export function getCalendarEvents(from?: Date, to?: Date): CalendarEvent[] {
-  const hoy = new Date();
-  const desdeCalmApp = tareasFoco
-    .map((t) => tareaToEvent(t, hoy))
+  const desdeCalmApp = getAllTasks()
+    .map(tareaToEvent)
     .filter((e): e is CalendarEvent => e !== null);
 
   // Futuro: combinar aquí eventos de Google Calendar dentro del mismo rango.
