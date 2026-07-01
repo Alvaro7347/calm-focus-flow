@@ -37,6 +37,8 @@ export interface Tarea {
   diasSinActividad?: number;
   completada?: boolean;
   recurrencia?: RecurrenceRule;
+  /** Prioridad de la tarea. Si no se define, se asume "normal". */
+  priority?: Priority;
 }
 
 export interface Area {
