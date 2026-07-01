@@ -1,6 +1,30 @@
+/**
+ * ========================================================
+ * Archivo: Sidebar
+ *
+ * Responsabilidad:
+ * Barra lateral izquierda del App Shell en desktop (>= 768px).
+ * Muestra el logo, la lista de áreas del usuario con sus
+ * contadores y los accesos de pie (Ajustes, Usuario, Términos).
+ *
+ * Utilizado por:
+ * - El layout raíz (src/routes/__root.tsx) como parte del
+ *   App Shell desktop.
+ *
+ * Obtiene las áreas desde areaService (getAreas). No debe
+ * importar mocks directamente. En el MVP1 areaService pasará
+ * a leer desde Supabase; este componente no requerirá cambios.
+ *
+ * Contraparte mobile: AreasDrawer.
+ * ========================================================
+ */
 import { Link } from "@tanstack/react-router";
 import { Settings, User, FileText } from "lucide-react";
-import { areas } from "@/data/areas";
+import { getAreas } from "@/services/areaService";
+
+export function Sidebar() {
+  const areas = getAreas();
+  return (
 
 export function Sidebar() {
   return (
