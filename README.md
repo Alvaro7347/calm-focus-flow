@@ -11,12 +11,14 @@ El principio de diseño es simple: la interfaz debe transmitir calma, no urgenci
 En esta etapa la aplicación funciona con datos de ejemplo (mock) y ya cuenta con:
 
 - Pantalla **FOCO** con sus 4 columnas: Hoy, Esta semana, Esperando y Sin movimiento.
+- Pantalla **Calendario** con vistas Semana y Mes.
+- Pantalla **Tablero**: centro de organización estructural (Área → Proyecto → Subproyecto → Tareas). Muestra una sola área a la vez; el estado (área/proyecto/subproyecto abierto) vive en la URL para permitir enlaces compartibles.
 - **Navegación mobile-first**, pensada para usarse principalmente desde el celular.
-- **Sidebar desktop** con la lista de áreas y accesos de pie.
-- **Drawer de áreas** para mobile (se abre desde el header).
+- **Sidebar desktop** con la lista de áreas (cada área linkea a `/tablero?area=<slug>`).
+- **Drawer de áreas** para mobile con el mismo comportamiento.
 - **Tab bar inferior** en mobile con FOCO, Calendario, Tablero y Crear tarea.
 - **Botón flotante (FAB)** para ir rápidamente a "Nueva tarea".
-- **Rutas placeholder** para Calendario, Tablero, Crear tarea y Nueva tarea (aún no construidas).
+- **Rutas placeholder** para Crear tarea y Nueva tarea (aún no construidas).
 
 ## Tecnologías principales
 
