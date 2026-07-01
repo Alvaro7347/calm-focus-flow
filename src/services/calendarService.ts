@@ -41,6 +41,13 @@ export interface CalendarEvent {
   allDay: boolean;
   completada: boolean;
   source: EventSource;
+  /**
+   * Prioridad propagada desde la Tarea original. Se declara aquí
+   * (no sólo dentro de `tarea`) para que consumidores externos —
+   * futuros eventos de Google Calendar, filtros, agrupadores —
+   * puedan leerla sin depender de la Tarea original.
+   */
+  priority: Priority;
   /** Tarea original si viene de CalmApp. Útil para el detalle. */
   tarea?: Tarea;
 }
