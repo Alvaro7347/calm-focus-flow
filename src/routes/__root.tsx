@@ -13,6 +13,11 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Sidebar } from "../components/layout/Sidebar";
 import { TopBar } from "../components/layout/TopBar";
+import { MobileHeader } from "../components/layout/MobileHeader";
+import { MobileTabBar } from "../components/layout/MobileTabBar";
+import { MobileFab } from "../components/layout/MobileFab";
+import { AreasDrawer } from "../components/layout/AreasDrawer";
+import { useState } from "react";
 
 function NotFoundComponent() {
   return (

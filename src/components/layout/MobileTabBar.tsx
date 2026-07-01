@@ -15,7 +15,7 @@ export function MobileTabBar() {
   return (
     <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 h-16 border-t border-slate-200 bg-white flex items-stretch">
       {items.map((it) => {
-        const active = pathname === it.to || (it.matchRoot && pathname === "/");
+        const active = pathname === it.to || (!!it.matchRoot && pathname === "/");
         const Icon = it.icon;
         return (
           <Tab key={it.to} to={it.to} active={active} icon={<Icon className="h-5 w-5" />} label={it.label} />
