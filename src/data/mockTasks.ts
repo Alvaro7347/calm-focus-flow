@@ -1,11 +1,17 @@
 /**
  * ========================================================
- * Archivo: mockFocus
+ * Archivo: mockTasks
  *
  * Responsabilidad:
- * Datos de ejemplo para desarrollo. Es la única fuente de
- * tareas en el frontend actual y sólo debe leerse a través
- * de src/services/taskService.ts.
+ * Datos de ejemplo temporales de tareas para el MVP1. Es la
+ * única fuente de tareas en el frontend actual y sólo debe
+ * leerse a través de src/services/taskService.ts.
+ *
+ * Consumidores (indirectos, vía taskService):
+ * - focusService (FOCO)
+ * - calendarService (Calendar)
+ * - tableroService (Tablero)
+ * - areaService (Áreas visibles se derivan de estas tareas)
  *
  * Las `fechaProgramada` están fijas (semana del 29 jun al
  * 5 jul de 2026) para que Calendar tenga contenido real
@@ -15,6 +21,7 @@
  * ========================================================
  */
 import type { Tarea } from "@/types/tarea";
+
 
 // Semana ancla del mock: lunes 29 jun - domingo 5 jul 2026.
 const HOY = "2026-07-01"; // miércoles
