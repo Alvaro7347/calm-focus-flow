@@ -11,7 +11,6 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TableroRouteImport } from './routes/tablero'
 import { Route as FocoRouteImport } from './routes/foco'
-import { Route as CrearRouteImport } from './routes/crear'
 import { Route as CalendarioRouteImport } from './routes/calendario'
 import { Route as IndexRouteImport } from './routes/index'
 
@@ -23,11 +22,6 @@ const TableroRoute = TableroRouteImport.update({
 const FocoRoute = FocoRouteImport.update({
   id: '/foco',
   path: '/foco',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CrearRoute = CrearRouteImport.update({
-  id: '/crear',
-  path: '/crear',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CalendarioRoute = CalendarioRouteImport.update({
@@ -44,14 +38,12 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/calendario': typeof CalendarioRoute
-  '/crear': typeof CrearRoute
   '/foco': typeof FocoRoute
   '/tablero': typeof TableroRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/calendario': typeof CalendarioRoute
-  '/crear': typeof CrearRoute
   '/foco': typeof FocoRoute
   '/tablero': typeof TableroRoute
 }
@@ -59,22 +51,20 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/calendario': typeof CalendarioRoute
-  '/crear': typeof CrearRoute
   '/foco': typeof FocoRoute
   '/tablero': typeof TableroRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/calendario' | '/crear' | '/foco' | '/tablero'
+  fullPaths: '/' | '/calendario' | '/foco' | '/tablero'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/calendario' | '/crear' | '/foco' | '/tablero'
-  id: '__root__' | '/' | '/calendario' | '/crear' | '/foco' | '/tablero'
+  to: '/' | '/calendario' | '/foco' | '/tablero'
+  id: '__root__' | '/' | '/calendario' | '/foco' | '/tablero'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CalendarioRoute: typeof CalendarioRoute
-  CrearRoute: typeof CrearRoute
   FocoRoute: typeof FocoRoute
   TableroRoute: typeof TableroRoute
 }
@@ -93,13 +83,6 @@ declare module '@tanstack/react-router' {
       path: '/foco'
       fullPath: '/foco'
       preLoaderRoute: typeof FocoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/crear': {
-      id: '/crear'
-      path: '/crear'
-      fullPath: '/crear'
-      preLoaderRoute: typeof CrearRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/calendario': {
@@ -122,7 +105,6 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CalendarioRoute: CalendarioRoute,
-  CrearRoute: CrearRoute,
   FocoRoute: FocoRoute,
   TableroRoute: TableroRoute,
 }
