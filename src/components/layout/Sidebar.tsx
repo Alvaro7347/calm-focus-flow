@@ -25,9 +25,6 @@ import { getAreas } from "@/services/areaService";
 export function Sidebar() {
   const areas = getAreas();
   return (
-
-export function Sidebar() {
-  return (
     <aside className="hidden md:flex w-[260px] shrink-0 flex-col border-r border-slate-200 bg-white">
       {/* Logo */}
       <Link to="/foco" className="flex items-center gap-3 px-6 pt-6 pb-8">
