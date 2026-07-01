@@ -53,13 +53,8 @@ export function WeekView({ anchor, events, onSelectEvent }: Props) {
       <div className="flex min-w-max">
         {/* Columna fija de horas: sticky para acompañar el scroll horizontal. */}
         <div className="sticky left-0 z-10 shrink-0 w-12 bg-white border-r border-slate-100">
-          {/* Hueco alineado con el header de días */}
-          <div className="h-[68px] border-b border-slate-100" />
-          {hayAllDay && (
-            <div className="min-h-8 border-b border-slate-100 bg-slate-50/50 flex items-start justify-end pr-2 pt-2 text-[10px] uppercase tracking-widest text-slate-400">
-              Día
-            </div>
-          )}
+          {/* Hueco alineado con el header compacto de días (una sola línea). */}
+          <div className="h-10 border-b border-slate-100" />
           {Array.from({ length: TOTAL_HOURS }, (_, i) => (
             <div
               key={i}
@@ -82,27 +77,32 @@ export function WeekView({ anchor, events, onSelectEvent }: Props) {
               style={{ minWidth: DAY_COL_MIN }}
               className="flex-1 border-l border-slate-100"
             >
-              {/* Header del día */}
-              <div className="h-[68px] py-3 text-center border-b border-slate-100">
-                <div className="text-[10px] uppercase tracking-widest text-slate-400">
+              {/* Header compacto en una sola línea: "Mié 1". El día actual
+                  se marca con un pequeño círculo índigo (indicador, no botón). */}
+              <div className="h-10 flex items-center justify-center gap-1.5 border-b border-slate-100 text-sm text-slate-700">
+                <span className="capitalize text-slate-500">
                   {format(d, "EEE", { locale: es })}
-                </div>
-                <div
-                  className={`mt-1 inline-flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold ${
-                    activo ? "bg-indigo-600 text-white" : "text-slate-700"
-                  }`}
+                </span>
+                <span
+                  className={
+                    activo
+                      ? "inline-flex h-6 w-6 items-center justify-center rounded-full bg-indigo-600 text-white text-xs font-semibold"
+                      : "font-semibold"
+                  }
                 >
                   {format(d, "d")}
-                </div>
+                </span>
               </div>
 
-              {/* Franja "Todo el día" (sólo cuando alguno del rango la usa) */}
+              {/* Franja "Todo el día": aparece directamente bajo el header,
+                  sin fila-etiqueta previa, sólo cuando algún día la usa. */}
               {hayAllDay && (
                 <div className="min-h-8 p-1 space-y-1 border-b border-slate-100 bg-slate-50/50">
                   {allDay.map((e) => (
                     <EventChip key={e.id} event={e} onClick={() => onSelectEvent(e)} />
                   ))}
                 </div>
+
               )}
 
               {/* Cuerpo horario */}
