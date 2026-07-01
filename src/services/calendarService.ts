@@ -104,20 +104,34 @@ function tareaToEvent(t: Tarea, hoy: Date): CalendarEvent | null {
     end,
     allDay,
     completada,
+    // Prioridad propagada desde la Tarea. "normal" es el default
+    // explícito para que la UI/consumidores no tengan que manejar undefined.
+    priority: t.priority ?? "normal",
     source: "calmapp",
     tarea: t,
   };
 }
 
-export function getCalendarEvents(_from?: Date, _to?: Date): CalendarEvent[] {
+/**
+ * Devuelve los eventos del calendario. Si se pasan `from`/`to`,
+ * filtra a los que solapan con ese rango (inclusive). Esta capa
+ * es el único punto donde se define el filtrado por rango, listo
+ * para cuando la fuente sea Supabase o Google Calendar.
+ */
+export function getCalendarEvents(from?: Date, to?: Date): CalendarEvent[] {
   const hoy = new Date();
   const desdeCalmApp = tareasFoco
     .map((t) => tareaToEvent(t, hoy))
     .filter((e): e is CalendarEvent => e !== null);
 
-  // Futuro: aquí se combinarían eventos de Google Calendar.
-  // const desdeGoogle: CalendarEvent[] = await getGoogleEvents(_from, _to);
-  return desdeCalmApp;
+  // Futuro: combinar aquí eventos de Google Calendar dentro del mismo rango.
+  const todos = desdeCalmApp;
+
+  if (!from && !to) return todos;
+  const desde = from?.getTime() ?? -Infinity;
+  const hasta = to?.getTime() ?? Infinity;
+  // Un evento entra si su intervalo [start, end] solapa con [from, to].
+  return todos.filter((e) => e.end.getTime() >= desde && e.start.getTime() <= hasta);
 }
 
 /** Devuelve todos los eventos que caen en un día dado (incluye all-day). */
