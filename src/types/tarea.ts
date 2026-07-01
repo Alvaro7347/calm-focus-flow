@@ -1,6 +1,13 @@
 export type CategoriaFoco = "hoy" | "esta_semana" | "esperando" | "sin_movimiento";
 
 /**
+ * Prioridad de una tarea. Atributo transversal del modelo:
+ * lo consumirán FOCO, Calendar, Tablero y flujos futuros.
+ * En esta iteración sólo vive en el modelo, sin impacto en UI.
+ */
+export type Priority = "alta" | "media" | "baja" | "normal";
+
+/**
  * Regla de recurrencia (placeholder para futuras iteraciones).
  * La UI del calendario todavía no la interpreta, pero la estructura
  * queda lista para soportar recurrencias sin cambiar el tipo `Tarea`.
