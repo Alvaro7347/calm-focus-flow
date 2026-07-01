@@ -33,7 +33,7 @@ export function ProyectoAccordion({ areaSlug, proyecto, open, openSubproyectoSlu
     <section className="rounded-xl border border-slate-200 bg-white overflow-hidden">
       <Link
         to="/tablero"
-        search={(prev) => ({
+        search={(prev: Record<string, unknown>) => ({
           ...prev,
           area: areaSlug,
           proyecto: open ? undefined : proyecto.slug,
