@@ -1,5 +1,24 @@
+/**
+ * ========================================================
+ * Archivo: AreasDrawer
+ *
+ * Responsabilidad:
+ * Panel lateral deslizable con la lista de áreas del usuario
+ * y accesos de pie (Ajustes, Usuario, Términos). Es la
+ * contraparte mobile (< 768px) del Sidebar desktop dentro
+ * del App Shell.
+ *
+ * Utilizado por:
+ * - El layout raíz (src/routes/__root.tsx) junto al
+ *   MobileHeader que lo abre/cierra.
+ *
+ * Obtiene las áreas desde areaService (getAreas). No debe
+ * importar mocks directamente. En el MVP1 areaService pasará
+ * a leer desde Supabase; este componente no requerirá cambios.
+ * ========================================================
+ */
 import { Settings, User, FileText, X } from "lucide-react";
-import { areas } from "@/data/areas";
+import { getAreas } from "@/services/areaService";
 
 interface Props {
   open: boolean;
@@ -7,6 +26,7 @@ interface Props {
 }
 
 export function AreasDrawer({ open, onClose }: Props) {
+  const areas = getAreas();
   return (
     <>
       {/* Overlay */}
