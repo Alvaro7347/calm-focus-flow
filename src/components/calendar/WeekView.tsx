@@ -1,3 +1,24 @@
+/**
+ * ========================================================
+ * Archivo: components/calendar/WeekView
+ *
+ * Responsabilidad:
+ * Vista semanal del calendario. Muestra los 7 días con una
+ * columna fija de horas a la izquierda y una zona derecha
+ * con scroll horizontal independiente para poder recorrer
+ * los días sin comprimir el ancho de cada columna.
+ *
+ * Reglas de layout (iteración de legibilidad):
+ * - La columna de horas queda "sticky left" para que
+ *   siempre acompañe al día visible.
+ * - Cada columna de día tiene un ancho mínimo de 128 px
+ *   (rango objetivo 120–140 px) para evitar que los
+ *   títulos se corten.
+ * - Sólo la fila de días se desplaza horizontalmente; el
+ *   resto del layout (header de la página, tab bar, FAB)
+ *   no se ve afectado.
+ * ========================================================
+ */
 import { useMemo } from "react";
 import { addDays, format, isSameDay, startOfWeek } from "date-fns";
 import { es } from "date-fns/locale";
@@ -13,8 +34,9 @@ interface Props {
 // Franja horaria visible: 07:00 → 21:00
 const START_HOUR = 7;
 const END_HOUR = 21;
-const HOUR_PX = 56; // altura de cada hora
+const HOUR_PX = 56;
 const TOTAL_HOURS = END_HOUR - START_HOUR;
+const DAY_COL_MIN = 128; // px — dentro del rango 120–140 solicitado
 
 export function WeekView({ anchor, events, onSelectEvent }: Props) {
   const inicio = useMemo(() => startOfWeek(anchor, { weekStartsOn: 1 }), [anchor]);
@@ -23,51 +45,21 @@ export function WeekView({ anchor, events, onSelectEvent }: Props) {
 
   const allDayPorDia = (d: Date) => events.filter((e) => e.allDay && isSameDay(e.start, d));
   const timedPorDia = (d: Date) => events.filter((e) => !e.allDay && isSameDay(e.start, d));
+  const hayAllDay = dias.some((d) => allDayPorDia(d).length > 0);
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
-      {/* Cabecera de días */}
-      <div className="grid grid-cols-[3rem_repeat(7,minmax(0,1fr))] border-b border-slate-100">
-        <div />
-        {dias.map((d) => {
-          const activo = isSameDay(d, hoy);
-          return (
-            <div key={d.toISOString()} className="py-3 text-center">
-              <div className="text-[10px] uppercase tracking-widest text-slate-400">
-                {format(d, "EEE", { locale: es })}
-              </div>
-              <div
-                className={`mt-1 inline-flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold ${
-                  activo ? "bg-indigo-600 text-white" : "text-slate-700"
-                }`}
-              >
-                {format(d, "d")}
-              </div>
+    // overflow-x-auto habilita el scroll horizontal SÓLO dentro del calendario.
+    <div className="rounded-xl border border-slate-200 bg-white overflow-x-auto">
+      <div className="flex min-w-max">
+        {/* Columna fija de horas: sticky para acompañar el scroll horizontal. */}
+        <div className="sticky left-0 z-10 shrink-0 w-12 bg-white border-r border-slate-100">
+          {/* Hueco alineado con el header de días */}
+          <div className="h-[68px] border-b border-slate-100" />
+          {hayAllDay && (
+            <div className="min-h-8 border-b border-slate-100 bg-slate-50/50 flex items-start justify-end pr-2 pt-2 text-[10px] uppercase tracking-widest text-slate-400">
+              Día
             </div>
-          );
-        })}
-      </div>
-
-      {/* Franja "Todo el día" (sólo si hay algo) */}
-      {dias.some((d) => allDayPorDia(d).length > 0) && (
-        <div className="grid grid-cols-[3rem_repeat(7,minmax(0,1fr))] border-b border-slate-100 bg-slate-50/50">
-          <div className="px-1 py-2 text-[10px] uppercase tracking-widest text-slate-400 text-right pr-2">
-            Día
-          </div>
-          {dias.map((d) => (
-            <div key={d.toISOString()} className="p-1 space-y-1 min-h-8">
-              {allDayPorDia(d).map((e) => (
-                <EventChip key={e.id} event={e} onClick={() => onSelectEvent(e)} />
-              ))}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Cuerpo con horas */}
-      <div className="relative grid grid-cols-[3rem_repeat(7,minmax(0,1fr))]">
-        {/* Columna horas */}
-        <div>
+          )}
           {Array.from({ length: TOTAL_HOURS }, (_, i) => (
             <div
               key={i}
@@ -79,17 +71,52 @@ export function WeekView({ anchor, events, onSelectEvent }: Props) {
           ))}
         </div>
 
-        {/* 7 columnas de día */}
-        {dias.map((d) => (
-          <div key={d.toISOString()} className="relative border-l border-slate-100">
-            {Array.from({ length: TOTAL_HOURS }, (_, i) => (
-              <div key={i} style={{ height: HOUR_PX }} className="border-b border-slate-100" />
-            ))}
-            {timedPorDia(d).map((e) => (
-              <EventBlock key={e.id} event={e} onClick={() => onSelectEvent(e)} />
-            ))}
-          </div>
-        ))}
+        {/* Zona derecha: 7 columnas de día, cada una con ancho mínimo legible. */}
+        {dias.map((d) => {
+          const activo = isSameDay(d, hoy);
+          const allDay = allDayPorDia(d);
+          const timed = timedPorDia(d);
+          return (
+            <div
+              key={d.toISOString()}
+              style={{ minWidth: DAY_COL_MIN }}
+              className="flex-1 border-l border-slate-100"
+            >
+              {/* Header del día */}
+              <div className="h-[68px] py-3 text-center border-b border-slate-100">
+                <div className="text-[10px] uppercase tracking-widest text-slate-400">
+                  {format(d, "EEE", { locale: es })}
+                </div>
+                <div
+                  className={`mt-1 inline-flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold ${
+                    activo ? "bg-indigo-600 text-white" : "text-slate-700"
+                  }`}
+                >
+                  {format(d, "d")}
+                </div>
+              </div>
+
+              {/* Franja "Todo el día" (sólo cuando alguno del rango la usa) */}
+              {hayAllDay && (
+                <div className="min-h-8 p-1 space-y-1 border-b border-slate-100 bg-slate-50/50">
+                  {allDay.map((e) => (
+                    <EventChip key={e.id} event={e} onClick={() => onSelectEvent(e)} />
+                  ))}
+                </div>
+              )}
+
+              {/* Cuerpo horario */}
+              <div className="relative">
+                {Array.from({ length: TOTAL_HOURS }, (_, i) => (
+                  <div key={i} style={{ height: HOUR_PX }} className="border-b border-slate-100" />
+                ))}
+                {timed.map((e) => (
+                  <EventBlock key={e.id} event={e} onClick={() => onSelectEvent(e)} />
+                ))}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
