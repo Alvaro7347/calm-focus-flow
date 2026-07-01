@@ -19,7 +19,7 @@
  * consumidor requiera cambios.
  * ========================================================
  */
-import { tareasFoco } from "@/data/mockFocus";
+import { tareasFoco } from "@/data/mockTasks";
 import type { CategoriaFoco, Tarea } from "@/types/tarea";
 
 export function getAllTasks(): Tarea[] {
