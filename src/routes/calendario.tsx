@@ -23,8 +23,10 @@ import { useMemo, useState } from "react";
 import {
   addDays,
   addMonths,
+  endOfMonth,
   endOfWeek,
   format,
+  startOfMonth,
   startOfWeek,
 } from "date-fns";
 import { es } from "date-fns/locale";
@@ -51,7 +53,23 @@ function CalendarioPage() {
   const [anchor, setAnchor] = useState<Date>(new Date());
   const [selected, setSelected] = useState<CalendarEvent | null>(null);
 
-  const events = useMemo(() => getCalendarEvents(), []);
+  // Rango visible según la vista actual. calendarService devuelve
+  // sólo los eventos que solapan con este rango.
+  const { from, to } = useMemo(() => {
+    if (view === "semana") {
+      return {
+        from: startOfWeek(anchor, { weekStartsOn: 1 }),
+        to: endOfWeek(anchor, { weekStartsOn: 1 }),
+      };
+    }
+    // La vista Mes muestra semanas completas alrededor del mes ancla.
+    return {
+      from: startOfWeek(startOfMonth(anchor), { weekStartsOn: 1 }),
+      to: endOfWeek(endOfMonth(anchor), { weekStartsOn: 1 }),
+    };
+  }, [view, anchor]);
+
+  const events = useMemo(() => getCalendarEvents(from, to), [from, to]);
 
   const titulo = useMemo(() => {
     if (view === "semana") {
