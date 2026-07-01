@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Clock, Calendar, Hourglass, TrendingUp, Target, Filter } from "lucide-react";
 import { FocoColumna } from "@/components/foco/FocoColumna";
-import { tareasFoco } from "@/data/mockFocus";
+import { getFocusTasks } from "@/services/focusService";
 
 export const Route = createFileRoute("/foco")({
   head: () => ({
@@ -14,13 +14,10 @@ export const Route = createFileRoute("/foco")({
 });
 
 function FocoPage() {
-  const hoy = tareasFoco.filter((t) => t.categoriaFoco === "hoy");
-  const semana = tareasFoco.filter((t) => t.categoriaFoco === "esta_semana");
-  const esperando = tareasFoco.filter((t) => t.categoriaFoco === "esperando");
-  const sinMov = tareasFoco.filter((t) => t.categoriaFoco === "sin_movimiento");
+  const { hoy, estaSemana: semana, esperando, sinMovimiento: sinMov } = getFocusTasks();
 
   return (
-    <div className="px-6 md:px-10 py-8">
+    <div className="px-6 md:px-10 py-8 pb-32 md:pb-8">
       {/* Encabezado */}
       <div className="flex items-start justify-between gap-4 mb-8">
         <div>
