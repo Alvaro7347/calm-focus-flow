@@ -11,6 +11,8 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { Sidebar } from "../components/layout/Sidebar";
+import { TopBar } from "../components/layout/TopBar";
 
 function NotFoundComponent() {
   return (
@@ -87,9 +89,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:site", content: "@Lovable" },
     ],
     links: [
+      { rel: "stylesheet", href: appCss },
+      { rel: "preconnect", href: "https://fonts.googleapis.com" },
+      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: appCss,
+        href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap",
       },
     ],
   }),
@@ -118,8 +123,15 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      <div className="flex min-h-screen bg-slate-50 font-sans text-slate-900" style={{ fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif' }}>
+        <Sidebar />
+        <div className="flex-1 flex flex-col min-w-0">
+          <TopBar />
+          <main className="flex-1">
+            <Outlet />
+          </main>
+        </div>
+      </div>
     </QueryClientProvider>
   );
 }
