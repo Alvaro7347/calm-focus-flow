@@ -94,7 +94,7 @@ export async function seedIfEmpty(): Promise<void> {
       subproject_id: subprojectId,
       title: t.titulo,
       priority: mapPriority(t.priority),
-      status: t.completada ? "completed" : "pending",
+      status: "pending",
       source: "import",
       starts_at: buildStartsAt(t.fechaProgramada, t.horaInicio),
       estimated_duration_min: t.duracionMin ?? null,
