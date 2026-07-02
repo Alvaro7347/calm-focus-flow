@@ -186,10 +186,11 @@ function RootComponent() {
           <TopBar />
           <main className="flex-1 pb-20 md:pb-0">
             {!bootstrapped ? (
-              <div className="flex min-h-[60vh] items-center justify-center text-sm text-muted-foreground">
-                Preparando tu espacio…
-              </div>
+              <SplashScreen />
             ) : bootstrapError ? (
+              <div className="flex min-h-[60vh] items-center justify-center px-6 text-center text-sm text-destructive">
+                {bootstrapError}
+              </div>
               <div className="flex min-h-[60vh] items-center justify-center px-6 text-center text-sm text-destructive">
                 {bootstrapError}
               </div>
