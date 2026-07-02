@@ -8,11 +8,14 @@
  * mocks directamente ni conocer el origen de los datos.
  *
  * Estado de migración:
- * - FOCO consume exclusivamente `fetchFocusTasks()` (Supabase).
- * - Calendar y Tablero aún consumen la API síncrona
- *   (`getAllTasks`, `getTaskById`) que sigue leyendo desde el
- *   mock. Esos módulos se migrarán en iteraciones siguientes
- *   y esta API síncrona quedará deprecada.
+ * - Crear tarea → Supabase.
+ * - FOCO → Supabase (`fetchFocusTasks()`).
+ * - Calendar → Supabase (`fetchScheduledTasks()`).
+ * - Tablero → aún consume la API síncrona (`getAllTasks`,
+ *   `getTaskById`) que lee desde el mock. Es el último módulo
+ *   pendiente de migración; cuando se complete, esta API
+ *   síncrona se retirará.
+
  *
  * Reglas de dominio (ver ARCHITECTURE.md):
  * - Toda tarea pertenece obligatoriamente a un usuario y a un
