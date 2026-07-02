@@ -12,16 +12,15 @@
  * - El layout raíz (src/routes/__root.tsx) junto al
  *   MobileHeader que lo abre/cierra.
  *
- * Obtiene las áreas desde areaService (getAreas), que las
- * deriva de las tareas de taskService. Sidebar, AreasDrawer
- * y Tablero comparten así la misma lista de Áreas: no existen
- * Áreas fantasma. En el MVP1 taskService pasará a Supabase y
- * este componente no requerirá cambios.
+ * Obtiene las Áreas desde Supabase vía el hook `useAreasNav`
+ * (envoltorio de `areaService.fetchAreasWithCounts()` sobre
+ * TanStack Query, compartido con Sidebar). Sidebar, AreasDrawer
+ * y Tablero comparten la misma fuente de verdad.
  * ========================================================
  */
 import { Settings, User, FileText, X } from "lucide-react";
 import { Link } from "@tanstack/react-router";
-import { getAreas } from "@/services/areaService";
+import { useAreasNav } from "@/hooks/useAreasNav";
 import { slugify } from "@/lib/slug";
 
 interface Props {
@@ -30,7 +29,7 @@ interface Props {
 }
 
 export function AreasDrawer({ open, onClose }: Props) {
-  const areas = getAreas();
+  const { data: areas = [] } = useAreasNav();
   return (
     <>
       {/* Overlay */}
