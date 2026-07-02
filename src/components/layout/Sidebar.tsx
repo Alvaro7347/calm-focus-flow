@@ -24,16 +24,17 @@ import { Link } from "@tanstack/react-router";
 import { Settings, User, FileText } from "lucide-react";
 import { useAreasNav } from "@/hooks/useAreasNav";
 import { slugify } from "@/lib/slug";
-import { Wordmark } from "@/components/brand/Wordmark";
+import { Logo } from "@/components/brand/Logo";
+import { BRAND } from "@/brand/brand";
 
 export function Sidebar() {
   const { data: areas = [] } = useAreasNav();
   return (
     <aside className="hidden md:flex w-[260px] shrink-0 flex-col border-r border-border bg-background">
-      {/* Logo */}
-      <Link to="/foco" className="flex flex-col gap-1 px-6 pt-6 pb-8">
-        <Wordmark height={28} />
-        <div className="text-xs text-muted-foreground pl-0.5">Tu espacio de claridad</div>
+      {/* Logo oficial completo */}
+      <Link to="/foco" className="flex flex-col items-start gap-2 px-6 pt-6 pb-8" aria-label={BRAND.name}>
+        <Logo height={56} />
+        <div className="text-xs text-muted-foreground pl-0.5">{BRAND.tagline}</div>
       </Link>
 
       {/* Áreas */}

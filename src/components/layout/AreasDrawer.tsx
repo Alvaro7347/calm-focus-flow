@@ -22,7 +22,7 @@ import { Settings, User, FileText, X } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { useAreasNav } from "@/hooks/useAreasNav";
 import { slugify } from "@/lib/slug";
-import { Wordmark } from "@/components/brand/Wordmark";
+import { Logo } from "@/components/brand/Logo";
 
 interface Props {
   open: boolean;
@@ -50,7 +50,7 @@ export function AreasDrawer({ open, onClose }: Props) {
         aria-label="Áreas"
       >
         <div className="flex items-center justify-between px-6 pt-6 pb-4">
-          <Wordmark height={24} />
+          <Logo height={40} />
           <button
             onClick={onClose}
             aria-label="Cerrar"
