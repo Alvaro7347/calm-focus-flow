@@ -74,7 +74,6 @@ Campos: `id` (= `auth.users.id`), `nombre`, `email`, `avatar_url`, `created_at`,
 Todas las tablas del dominio tienen RLS activo. Un usuario solo puede ver/crear/editar/archivar sus propios registros:
 
 - `areas`: `auth.uid() = user_id`.
-- `areas`: `auth.uid() = user_id`.
 - `projects`: se resuelve por join a `areas` (el proyecto pertenece al dueño del área).
 - `subprojects`: se resuelve por join a `projects → areas`.
 - `tasks`, `capture_sessions`: `auth.uid() = user_id`.
