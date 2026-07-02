@@ -60,5 +60,6 @@ Registro de decisiones de producto ya cerradas. No reabrir sin justificación ex
 
 ## Arquitectura de código (ya implementada, mantener)
 
-- Ninguna pantalla o componente importa datos mock directamente. Todo pasa por la capa de servicios (`taskService`, `areaService`, `focusService`, `calendarService`, `tableroService`).
-- Cuando el origen de datos cambie (Supabase, Google Calendar), solo cambian los servicios — las pantallas y componentes no deberían requerir cambios.
+- Ninguna pantalla o componente importa datos mock o el cliente Supabase directamente. Todo pasa por la capa de servicios (`taskService`, `areaService`, `focusService`, `calendarService`, `tableroService`).
+- Cuando el origen de datos de un módulo cambia (por ejemplo, al migrar Tablero de mock a Supabase, o al integrar Google Calendar), solo cambian los servicios — las pantallas y componentes no deberían requerir cambios.
+
