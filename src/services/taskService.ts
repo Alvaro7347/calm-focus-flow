@@ -289,7 +289,8 @@ export async function fetchFocusTasks(): Promise<FocusTasks> {
       sinMovimiento.push(toTarea(row, "sin_movimiento"));
     }
     // pending programada más allá de esta semana: aún no aparece en FOCO
-    // (aparecerá en Calendar cuando esa migración esté hecha).
+    // (se muestra en Calendar, que ya lee desde Supabase).
+
   }
 
   return { hoy, estaSemana, esperando, sinMovimiento };
