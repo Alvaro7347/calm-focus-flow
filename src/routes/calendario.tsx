@@ -38,6 +38,7 @@ import { CalendarHeader } from "@/components/calendar/CalendarHeader";
 import { WeekView } from "@/components/calendar/WeekView";
 import { MonthView } from "@/components/calendar/MonthView";
 import { EventDetail } from "@/components/calendar/EventDetail";
+import { TaskDetailSheet } from "@/components/TaskDetail";
 
 export const Route = createFileRoute("/calendario")({
   head: () => ({
