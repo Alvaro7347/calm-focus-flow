@@ -139,7 +139,8 @@ Nunca usar `any`. Cualquier cambio de esquema regenera los tipos y propaga los e
 ### Prioridades — modelo oficial vs. modelo legacy
 
 - **Modelo oficial (Supabase / `tasks.priority`)**: `high` | `medium` | `low` (default `medium`).
-- **Modelo legacy (mocks del MVP)**: `alta` | `media` | `baja` | `normal`. Sobrevive únicamente mientras FOCO, Calendar y Tablero sigan alimentándose de mocks. Se retira al migrar la UI a Supabase.
+- **Modelo legacy (mocks del MVP)**: `alta` | `media` | `baja` | `normal`. Sobrevive únicamente mientras Tablero siga alimentándose de mocks. Se retira al migrar ese módulo a Supabase.
+
 
 ## Fuente oficial del esquema
 
