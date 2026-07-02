@@ -448,7 +448,11 @@ function CrearTareaScreen() {
               </div>
             </section>
 
-            {/* 6. Recordatorios */}
+            {/* 6. Recordatorios
+                Sección deshabilitada temporalmente: los recordatorios se
+                persistirán en la tabla `task_reminders` cuando se implemente
+                su backend. Se oculta para evitar expectativas de guardado. */}
+            {/*
             <section className="rounded-xl border bg-card p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <h2 className="text-base font-medium">Recordatorios</h2>
@@ -490,6 +494,7 @@ function CrearTareaScreen() {
                 </ul>
               )}
             </section>
+            */}
 
             {/* 7. Adjuntos */}
             <section className="rounded-xl border bg-card p-4 space-y-3">
