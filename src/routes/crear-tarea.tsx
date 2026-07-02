@@ -625,6 +625,62 @@ function CrearTareaScreen() {
           </div>
         </div>
       )}
+
+      {/* Dialog de creación inline (Área / Proyecto / Subproyecto) */}
+      <Dialog
+        open={inlineOpen !== null}
+        onOpenChange={(open) => {
+          if (!open) setInlineOpen(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {inlineOpen === "area" && "Nueva área"}
+              {inlineOpen === "project" && "Nuevo proyecto"}
+              {inlineOpen === "subproject" && "Nuevo subproyecto"}
+            </DialogTitle>
+            <DialogDescription>
+              {inlineOpen === "area" && "Crea un área para organizar tus tareas."}
+              {inlineOpen === "project" &&
+                "El proyecto se creará dentro del área seleccionada."}
+              {inlineOpen === "subproject" &&
+                "El subproyecto se creará dentro del proyecto seleccionado."}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="inline-name">Nombre *</Label>
+            <Input
+              id="inline-name"
+              value={inlineName}
+              onChange={(e) => setInlineName(e.target.value)}
+              placeholder="Ej: Marketing"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleInlineCreate();
+                }
+              }}
+            />
+            {inlineError && <p className="text-xs text-destructive">{inlineError}</p>}
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setInlineOpen(null)}
+              disabled={inlineSaving}
+            >
+              Cancelar
+            </Button>
+            <Button type="button" onClick={handleInlineCreate} disabled={inlineSaving}>
+              {inlineSaving ? "Creando..." : "Crear"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
+
   );
 }
