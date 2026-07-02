@@ -12,12 +12,17 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as TableroRouteImport } from './routes/tablero'
 import { Route as NuevaTareaRouteImport } from './routes/nueva-tarea'
 import { Route as MiCuentaRouteImport } from './routes/mi-cuenta'
+import { Route as LegalRouteImport } from './routes/legal'
 import { Route as FocoRouteImport } from './routes/foco'
 import { Route as CrearTareaRouteImport } from './routes/crear-tarea'
 import { Route as CalendarioRouteImport } from './routes/calendario'
 import { Route as AjustesRouteImport } from './routes/ajustes'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as LegalIndexRouteImport } from './routes/legal.index'
 import { Route as AjustesIndexRouteImport } from './routes/ajustes.index'
+import { Route as LegalTerminosRouteImport } from './routes/legal.terminos'
+import { Route as LegalPrivacidadRouteImport } from './routes/legal.privacidad'
+import { Route as LegalLicenciasRouteImport } from './routes/legal.licencias'
 import { Route as AjustesProductividadRouteImport } from './routes/ajustes.productividad'
 import { Route as AjustesNotificacionesRouteImport } from './routes/ajustes.notificaciones'
 import { Route as AjustesIaRouteImport } from './routes/ajustes.ia'
@@ -38,6 +43,11 @@ const NuevaTareaRoute = NuevaTareaRouteImport.update({
 const MiCuentaRoute = MiCuentaRouteImport.update({
   id: '/mi-cuenta',
   path: '/mi-cuenta',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LegalRoute = LegalRouteImport.update({
+  id: '/legal',
+  path: '/legal',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FocoRoute = FocoRouteImport.update({
@@ -65,10 +75,30 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LegalIndexRoute = LegalIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => LegalRoute,
+} as any)
 const AjustesIndexRoute = AjustesIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AjustesRoute,
+} as any)
+const LegalTerminosRoute = LegalTerminosRouteImport.update({
+  id: '/terminos',
+  path: '/terminos',
+  getParentRoute: () => LegalRoute,
+} as any)
+const LegalPrivacidadRoute = LegalPrivacidadRouteImport.update({
+  id: '/privacidad',
+  path: '/privacidad',
+  getParentRoute: () => LegalRoute,
+} as any)
+const LegalLicenciasRoute = LegalLicenciasRouteImport.update({
+  id: '/licencias',
+  path: '/licencias',
+  getParentRoute: () => LegalRoute,
 } as any)
 const AjustesProductividadRoute = AjustesProductividadRouteImport.update({
   id: '/productividad',
@@ -107,6 +137,7 @@ export interface FileRoutesByFullPath {
   '/calendario': typeof CalendarioRoute
   '/crear-tarea': typeof CrearTareaRoute
   '/foco': typeof FocoRoute
+  '/legal': typeof LegalRouteWithChildren
   '/mi-cuenta': typeof MiCuentaRoute
   '/nueva-tarea': typeof NuevaTareaRoute
   '/tablero': typeof TableroRoute
@@ -116,7 +147,11 @@ export interface FileRoutesByFullPath {
   '/ajustes/ia': typeof AjustesIaRoute
   '/ajustes/notificaciones': typeof AjustesNotificacionesRoute
   '/ajustes/productividad': typeof AjustesProductividadRoute
+  '/legal/licencias': typeof LegalLicenciasRoute
+  '/legal/privacidad': typeof LegalPrivacidadRoute
+  '/legal/terminos': typeof LegalTerminosRoute
   '/ajustes/': typeof AjustesIndexRoute
+  '/legal/': typeof LegalIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -132,7 +167,11 @@ export interface FileRoutesByTo {
   '/ajustes/ia': typeof AjustesIaRoute
   '/ajustes/notificaciones': typeof AjustesNotificacionesRoute
   '/ajustes/productividad': typeof AjustesProductividadRoute
+  '/legal/licencias': typeof LegalLicenciasRoute
+  '/legal/privacidad': typeof LegalPrivacidadRoute
+  '/legal/terminos': typeof LegalTerminosRoute
   '/ajustes': typeof AjustesIndexRoute
+  '/legal': typeof LegalIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -141,6 +180,7 @@ export interface FileRoutesById {
   '/calendario': typeof CalendarioRoute
   '/crear-tarea': typeof CrearTareaRoute
   '/foco': typeof FocoRoute
+  '/legal': typeof LegalRouteWithChildren
   '/mi-cuenta': typeof MiCuentaRoute
   '/nueva-tarea': typeof NuevaTareaRoute
   '/tablero': typeof TableroRoute
@@ -150,7 +190,11 @@ export interface FileRoutesById {
   '/ajustes/ia': typeof AjustesIaRoute
   '/ajustes/notificaciones': typeof AjustesNotificacionesRoute
   '/ajustes/productividad': typeof AjustesProductividadRoute
+  '/legal/licencias': typeof LegalLicenciasRoute
+  '/legal/privacidad': typeof LegalPrivacidadRoute
+  '/legal/terminos': typeof LegalTerminosRoute
   '/ajustes/': typeof AjustesIndexRoute
+  '/legal/': typeof LegalIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -160,6 +204,7 @@ export interface FileRouteTypes {
     | '/calendario'
     | '/crear-tarea'
     | '/foco'
+    | '/legal'
     | '/mi-cuenta'
     | '/nueva-tarea'
     | '/tablero'
@@ -169,7 +214,11 @@ export interface FileRouteTypes {
     | '/ajustes/ia'
     | '/ajustes/notificaciones'
     | '/ajustes/productividad'
+    | '/legal/licencias'
+    | '/legal/privacidad'
+    | '/legal/terminos'
     | '/ajustes/'
+    | '/legal/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -185,7 +234,11 @@ export interface FileRouteTypes {
     | '/ajustes/ia'
     | '/ajustes/notificaciones'
     | '/ajustes/productividad'
+    | '/legal/licencias'
+    | '/legal/privacidad'
+    | '/legal/terminos'
     | '/ajustes'
+    | '/legal'
   id:
     | '__root__'
     | '/'
@@ -193,6 +246,7 @@ export interface FileRouteTypes {
     | '/calendario'
     | '/crear-tarea'
     | '/foco'
+    | '/legal'
     | '/mi-cuenta'
     | '/nueva-tarea'
     | '/tablero'
@@ -202,7 +256,11 @@ export interface FileRouteTypes {
     | '/ajustes/ia'
     | '/ajustes/notificaciones'
     | '/ajustes/productividad'
+    | '/legal/licencias'
+    | '/legal/privacidad'
+    | '/legal/terminos'
     | '/ajustes/'
+    | '/legal/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -211,6 +269,7 @@ export interface RootRouteChildren {
   CalendarioRoute: typeof CalendarioRoute
   CrearTareaRoute: typeof CrearTareaRoute
   FocoRoute: typeof FocoRoute
+  LegalRoute: typeof LegalRouteWithChildren
   MiCuentaRoute: typeof MiCuentaRoute
   NuevaTareaRoute: typeof NuevaTareaRoute
   TableroRoute: typeof TableroRoute
@@ -237,6 +296,13 @@ declare module '@tanstack/react-router' {
       path: '/mi-cuenta'
       fullPath: '/mi-cuenta'
       preLoaderRoute: typeof MiCuentaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/legal': {
+      id: '/legal'
+      path: '/legal'
+      fullPath: '/legal'
+      preLoaderRoute: typeof LegalRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/foco': {
@@ -274,12 +340,40 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/legal/': {
+      id: '/legal/'
+      path: '/'
+      fullPath: '/legal/'
+      preLoaderRoute: typeof LegalIndexRouteImport
+      parentRoute: typeof LegalRoute
+    }
     '/ajustes/': {
       id: '/ajustes/'
       path: '/'
       fullPath: '/ajustes/'
       preLoaderRoute: typeof AjustesIndexRouteImport
       parentRoute: typeof AjustesRoute
+    }
+    '/legal/terminos': {
+      id: '/legal/terminos'
+      path: '/terminos'
+      fullPath: '/legal/terminos'
+      preLoaderRoute: typeof LegalTerminosRouteImport
+      parentRoute: typeof LegalRoute
+    }
+    '/legal/privacidad': {
+      id: '/legal/privacidad'
+      path: '/privacidad'
+      fullPath: '/legal/privacidad'
+      preLoaderRoute: typeof LegalPrivacidadRouteImport
+      parentRoute: typeof LegalRoute
+    }
+    '/legal/licencias': {
+      id: '/legal/licencias'
+      path: '/licencias'
+      fullPath: '/legal/licencias'
+      preLoaderRoute: typeof LegalLicenciasRouteImport
+      parentRoute: typeof LegalRoute
     }
     '/ajustes/productividad': {
       id: '/ajustes/productividad'
@@ -349,12 +443,29 @@ const AjustesRouteChildren: AjustesRouteChildren = {
 const AjustesRouteWithChildren =
   AjustesRoute._addFileChildren(AjustesRouteChildren)
 
+interface LegalRouteChildren {
+  LegalLicenciasRoute: typeof LegalLicenciasRoute
+  LegalPrivacidadRoute: typeof LegalPrivacidadRoute
+  LegalTerminosRoute: typeof LegalTerminosRoute
+  LegalIndexRoute: typeof LegalIndexRoute
+}
+
+const LegalRouteChildren: LegalRouteChildren = {
+  LegalLicenciasRoute: LegalLicenciasRoute,
+  LegalPrivacidadRoute: LegalPrivacidadRoute,
+  LegalTerminosRoute: LegalTerminosRoute,
+  LegalIndexRoute: LegalIndexRoute,
+}
+
+const LegalRouteWithChildren = LegalRoute._addFileChildren(LegalRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AjustesRoute: AjustesRouteWithChildren,
   CalendarioRoute: CalendarioRoute,
   CrearTareaRoute: CrearTareaRoute,
   FocoRoute: FocoRoute,
+  LegalRoute: LegalRouteWithChildren,
   MiCuentaRoute: MiCuentaRoute,
   NuevaTareaRoute: NuevaTareaRoute,
   TableroRoute: TableroRoute,
