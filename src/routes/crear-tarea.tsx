@@ -280,9 +280,11 @@ function CrearTareaScreen() {
       // la nueva tarea aparezca de inmediato sin refrescar la página:
       // - FOCO (columnas calculadas)
       // - Calendar (tareas con starts_at)
+      // - Tablero (árbol Área → Proyecto → Subproyecto → Tareas)
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["focus"] }),
         queryClient.invalidateQueries({ queryKey: ["calendar"] }),
+        queryClient.invalidateQueries({ queryKey: ["tablero"] }),
       ]);
       toast.success("Tarea creada correctamente.");
       navigate({ to: "/foco" });

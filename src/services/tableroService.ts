@@ -4,46 +4,51 @@
  *
  * Responsabilidad:
  * Construye la jerarquía Área → Proyecto → Subproyecto → Tareas
- * a partir de las tareas expuestas por taskService. Es la única
- * fuente de datos de la pantalla Tablero.
+ * a partir de la estructura organizacional real almacenada en
+ * Supabase. Es la única fuente de datos de la pantalla Tablero.
  *
  * Dependencias:
- * - taskService: única fuente de tareas. No accedemos a mocks.
+ * - Cliente de Supabase (`@/integrations/supabase/client`).
+ * - Mapper de prioridad (`priorityMapper`).
  *
  * Regla arquitectónica oficial de CalmApp (permanente):
- * - Toda tarea DEBE pertenecer a un Área, un Proyecto y un
- *   Subproyecto reales.
- * - Este servicio NUNCA crea proyectos automáticamente.
- * - Este servicio NUNCA crea subproyectos automáticamente.
- * - Este servicio NUNCA inventa nodos (no existen "Sin proyecto"
- *   ni "General" ni ninguna categoría de relleno).
- * - Si una tarea llega sin proyecto o sin subproyecto, se
- *   considera un DATO INVÁLIDO: se descarta del árbol y se
- *   registra un warning en consola. La reparación es en origen
- *   (mock actualmente; Supabase cuando Tablero migre), nunca
- *   aquí.
+ * - La jerarquía se arma exclusivamente a partir de las
+ *   relaciones foráneas reales: `areas → projects → subprojects
+ *   → tasks`. Nunca se infieren nodos desde nombres de tareas.
+ * - Este servicio NUNCA crea nodos ficticios (no existen
+ *   "Sin proyecto" ni "General" ni ninguna categoría de relleno).
+ * - Las tareas archivadas (`archived_at IS NOT NULL`) no se
+ *   incluyen en el árbol. Sí se incluyen las completadas: la UI
+ *   decide cómo representarlas.
+ * - Las Áreas / Proyectos / Subproyectos archivados tampoco se
+ *   incluyen.
  *
  * Estado de migración:
- * - Tablero es el ÚLTIMO módulo pendiente de migrar a Supabase.
- *   Crear tarea, FOCO y Calendar ya consumen Supabase.
- * - Hoy este servicio lee del mock vía la API síncrona
- *   `getAllTasks()` de taskService. La interfaz pública
- *   (`getAreaTree`, `getAreaBySlug`, `listAreas`) se mantendrá
- *   estable cuando el origen pase a Supabase.
-
+ * - Tablero opera 100% sobre Supabase. Con esta iteración,
+ *   TODA la aplicación (Crear tarea, FOCO, Calendar y Tablero)
+ *   utiliza Supabase como única fuente oficial de datos.
+ *
+ * Reactividad:
+ * - La pantalla consume esta capa vía TanStack Query con la
+ *   queryKey ["tablero"]. Al crear/editar/archivar tareas o
+ *   nodos organizacionales debe invalidarse ["tablero"] para
+ *   que el árbol se refresque sin recargar la página.
  * ========================================================
  */
-import { getAllTasks } from "@/services/taskService";
+import { supabase } from "@/integrations/supabase/client";
 import { slugify } from "@/lib/slug";
+import { mapDbPriorityToUi, type DbPriority } from "@/services/mappers/priorityMapper";
 import type { Tarea } from "@/types/tarea";
 
 export interface SubproyectoNode {
+  id: string;
   nombre: string;
   slug: string;
   tareas: Tarea[];
 }
 
 export interface ProyectoNode {
+  id: string;
   nombre: string;
   slug: string;
   subproyectos: SubproyectoNode[];
@@ -51,72 +56,164 @@ export interface ProyectoNode {
 }
 
 export interface AreaNode {
+  id: string;
   nombre: string;
   slug: string;
   proyectos: ProyectoNode[];
   totalTareas: number;
 }
 
-function buildTree(): AreaNode[] {
-  const tasks = getAllTasks();
-  const areas = new Map<string, AreaNode>();
+// ------------------------------------------------------------
+// Tipos crudos de la respuesta del select anidado. Se mantienen
+// locales al servicio porque no forman parte del contrato público.
+// ------------------------------------------------------------
+type RawTask = {
+  id: string;
+  title: string;
+  status: string;
+  priority: DbPriority | null;
+  starts_at: string | null;
+  estimated_duration_min: number | null;
+  updated_at: string;
+  archived_at: string | null;
+};
 
-  for (const t of tasks) {
-    const areaName = t.area?.trim();
-    const proyectoName = t.proyecto?.trim();
-    const subName = t.subproyecto?.trim();
+type RawSubproject = {
+  id: string;
+  name: string;
+  display_order: number;
+  archived_at: string | null;
+  tasks: RawTask[] | null;
+};
 
-    // Contrato arquitectónico: una tarea SIEMPRE pertenece a
-    // Área + Proyecto + Subproyecto. Cualquier ausencia es dato
-    // inválido y no se representa en el árbol.
-    if (!areaName || !proyectoName || !subName) {
-      if (typeof console !== "undefined") {
-        console.warn(
-          `[tableroService] Tarea inválida ignorada (falta área/proyecto/subproyecto): ${t.id} - ${t.titulo}`,
-        );
-      }
-      continue;
-    }
+type RawProject = {
+  id: string;
+  name: string;
+  display_order: number;
+  archived_at: string | null;
+  subprojects: RawSubproject[] | null;
+};
 
-    let area = areas.get(areaName);
-    if (!area) {
-      area = { nombre: areaName, slug: slugify(areaName), proyectos: [], totalTareas: 0 };
-      areas.set(areaName, area);
-    }
+type RawArea = {
+  id: string;
+  name: string;
+  display_order: number;
+  archived_at: string | null;
+  projects: RawProject[] | null;
+};
 
-    let proyecto = area.proyectos.find((p) => p.nombre === proyectoName);
-    if (!proyecto) {
-      proyecto = { nombre: proyectoName, slug: slugify(proyectoName), subproyectos: [], totalTareas: 0 };
-      area.proyectos.push(proyecto);
-    }
-
-    let sub = proyecto.subproyectos.find((s) => s.nombre === subName);
-    if (!sub) {
-      sub = { nombre: subName, slug: slugify(subName), tareas: [] };
-      proyecto.subproyectos.push(sub);
-    }
-
-    sub.tareas.push(t);
-    proyecto.totalTareas += 1;
-    area.totalTareas += 1;
-  }
-
-  return Array.from(areas.values());
+function isoDate(iso: string): string {
+  const d = new Date(iso);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-/** Devuelve el árbol completo. */
-export function getAreaTree(): AreaNode[] {
-  return buildTree();
+function mapTask(row: RawTask, areaName: string, projectName: string, subName: string): Tarea {
+  const starts = row.starts_at ? new Date(row.starts_at) : null;
+  const hasTime = !!starts && (starts.getHours() !== 0 || starts.getMinutes() !== 0);
+  const horaInicio =
+    hasTime && starts
+      ? `${String(starts.getHours()).padStart(2, "0")}:${String(starts.getMinutes()).padStart(2, "0")}`
+      : undefined;
+
+  return {
+    id: row.id,
+    titulo: row.title,
+    area: areaName,
+    proyecto: projectName,
+    subproyecto: subName,
+    fechaProgramada: row.starts_at ? isoDate(row.starts_at) : undefined,
+    horaInicio,
+    duracionMin: row.estimated_duration_min ?? undefined,
+    // `categoriaFoco` es un campo del dominio FOCO. Tablero no lo
+    // interpreta, pero `Tarea` lo exige por contrato de tipo.
+    categoriaFoco: "hoy",
+    completada: row.status === "completed",
+    priority: mapDbPriorityToUi(row.priority),
+  };
 }
 
-/** Devuelve un área específica por slug, o `undefined` si no existe. */
-export function getAreaBySlug(areaSlug: string): AreaNode | undefined {
-  return buildTree().find((a) => a.slug === areaSlug);
+/**
+ * Obtiene el árbol completo Área → Proyecto → Subproyecto → Tareas
+ * del usuario autenticado desde Supabase. Excluye nodos archivados
+ * en todos los niveles.
+ *
+ * Nota: `RLS` en Supabase se encarga de acotar el resultado al
+ * usuario actual; aquí no se filtra por `user_id` manualmente.
+ */
+export async function fetchAreaTree(): Promise<AreaNode[]> {
+  const { data, error } = await supabase
+    .from("areas")
+    .select(
+      `id, name, display_order, archived_at,
+       projects (
+         id, name, display_order, archived_at,
+         subprojects (
+           id, name, display_order, archived_at,
+           tasks (
+             id, title, status, priority, starts_at,
+             estimated_duration_min, updated_at, archived_at
+           )
+         )
+       )`,
+    )
+    .is("archived_at", null)
+    .order("display_order", { ascending: true });
+
+  if (error) throw error;
+
+  const rows = (data ?? []) as unknown as RawArea[];
+
+  return rows.map((a) => {
+    const proyectos: ProyectoNode[] = (a.projects ?? [])
+      .filter((p) => p.archived_at === null)
+      .sort((x, y) => x.display_order - y.display_order)
+      .map((p) => {
+        const subproyectos: SubproyectoNode[] = (p.subprojects ?? [])
+          .filter((s) => s.archived_at === null)
+          .sort((x, y) => x.display_order - y.display_order)
+          .map((s) => {
+            const tareas = (s.tasks ?? [])
+              .filter((t) => t.archived_at === null)
+              .map((t) => mapTask(t, a.name, p.name, s.name));
+            return {
+              id: s.id,
+              nombre: s.name,
+              slug: slugify(s.name),
+              tareas,
+            };
+          });
+        const totalTareas = subproyectos.reduce((n, s) => n + s.tareas.length, 0);
+        return {
+          id: p.id,
+          nombre: p.name,
+          slug: slugify(p.name),
+          subproyectos,
+          totalTareas,
+        };
+      });
+    const totalTareas = proyectos.reduce((n, p) => n + p.totalTareas, 0);
+    return {
+      id: a.id,
+      nombre: a.name,
+      slug: slugify(a.name),
+      proyectos,
+      totalTareas,
+    };
+  });
 }
 
-/** Lista de slugs+nombres de todas las áreas conocidas. Útil para el picker
- *  cuando el usuario entra a /tablero sin parámetro. */
-export function listAreas(): Array<{ nombre: string; slug: string; totalTareas: number }> {
-  return buildTree().map((a) => ({ nombre: a.nombre, slug: a.slug, totalTareas: a.totalTareas }));
+/** Busca un área por slug dentro de un árbol ya cargado. */
+export function findAreaBySlug(tree: AreaNode[], areaSlug: string): AreaNode | undefined {
+  return tree.find((a) => a.slug === areaSlug);
 }
 
+/** Resumen ligero de áreas (para el picker cuando no hay `area` en la URL). */
+export interface AreaSummary {
+  nombre: string;
+  slug: string;
+  totalTareas: number;
+}
+
+export function toAreaSummaries(tree: AreaNode[]): AreaSummary[] {
+  return tree.map((a) => ({ nombre: a.nombre, slug: a.slug, totalTareas: a.totalTareas }));
+}
