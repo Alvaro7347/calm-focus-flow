@@ -1,4 +1,4 @@
-import { ChevronRight, Info } from "lucide-react";
+import { Info } from "lucide-react";
 import type { ReactNode } from "react";
 import type { Tarea } from "@/types/tarea";
 import { TareaCard } from "./TareaCard";
@@ -39,16 +39,6 @@ export function FocoColumna({ numero, titulo, subtitulo, icono, descripcion, tar
         ))}
       </div>
 
-      <button
-        type="button"
-        disabled
-        aria-disabled="true"
-        title="Próximamente"
-        className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-slate-400 self-start cursor-not-allowed"
-      >
-        Ver todas ({tareas.length})
-        <ChevronRight className="h-4 w-4" />
-      </button>
     </section>
   );
 }
