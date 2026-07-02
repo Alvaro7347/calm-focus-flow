@@ -17,6 +17,9 @@ import { MobileHeader } from "../components/layout/MobileHeader";
 import { MobileTabBar } from "../components/layout/MobileTabBar";
 import { MobileFab } from "../components/layout/MobileFab";
 import { AreasDrawer } from "../components/layout/AreasDrawer";
+import { LogoSymbol } from "../components/brand/LogoSymbol";
+import { SplashScreen } from "../components/brand/SplashScreen";
+import { BRAND } from "../brand/brand";
 import { useState } from "react";
 
 function NotFoundComponent() {
