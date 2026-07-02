@@ -10,7 +10,7 @@
  *
  * REGLAS:
  * - Todo acceso a datos remotos debe pasar por un servicio (nunca desde UI).
- * - Los mocks (mockTasks) siguen vigentes hasta completar la migración.
+ * - Los mocks (mockTasks) siguen vigentes únicamente para Tablero, el último módulo pendiente de migrar a Supabase.
  * - RLS garantiza que un usuario solo puede leer/editar su propio perfil.
  */
 import { supabase } from "@/integrations/supabase/client";
