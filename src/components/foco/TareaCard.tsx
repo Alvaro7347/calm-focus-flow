@@ -1,4 +1,16 @@
+/**
+ * ========================================================
+ * TareaCard (FOCO)
+ *
+ * Card individual de tarea en la pantalla FOCO. Al hacer
+ * clic abre el TaskDetailSheet (modo edit) sobre la misma
+ * pantalla, sin navegar ni cambiar la URL. Al cerrarse, el
+ * usuario permanece en FOCO exactamente donde estaba.
+ * ========================================================
+ */
+import { useState } from "react";
 import type { Tarea } from "@/types/tarea";
+import { TaskDetailSheet } from "@/components/TaskDetail";
 
 interface Props {
   tarea: Tarea;
@@ -10,12 +22,13 @@ function Breadcrumb({ tarea }: Props) {
 }
 
 export function TareaCard({ tarea }: Props) {
+  const [open, setOpen] = useState(false);
   const base =
-    "rounded-xl border border-slate-200 bg-white p-4 transition-shadow hover:shadow-sm";
+    "w-full text-left rounded-xl border border-slate-200 bg-white p-4 transition-shadow hover:shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300";
 
-  if (tarea.categoriaFoco === "hoy") {
-    return (
-      <div className={base}>
+  const inner = (() => {
+    if (tarea.categoriaFoco === "hoy") {
+      return (
         <div className="flex gap-4">
           <div className="text-sm text-slate-500 w-12 shrink-0 pt-0.5">{tarea.horaInicio}</div>
           <div className="min-w-0 flex-1">
@@ -26,13 +39,10 @@ export function TareaCard({ tarea }: Props) {
             )}
           </div>
         </div>
-      </div>
-    );
-  }
-
-  if (tarea.categoriaFoco === "esta_semana") {
-    return (
-      <div className={base}>
+      );
+    }
+    if (tarea.categoriaFoco === "esta_semana") {
+      return (
         <div className="flex gap-4">
           <div className="text-sm text-slate-500 w-12 shrink-0 pt-0.5">{tarea.diaEtiqueta}</div>
           <div className="min-w-0 flex-1">
@@ -40,22 +50,17 @@ export function TareaCard({ tarea }: Props) {
             <Breadcrumb tarea={tarea} />
           </div>
         </div>
-      </div>
-    );
-  }
-
-  if (tarea.categoriaFoco === "esperando") {
+      );
+    }
+    if (tarea.categoriaFoco === "esperando") {
+      return (
+        <>
+          <div className="text-sm font-semibold text-slate-900 leading-snug">{tarea.titulo}</div>
+          <Breadcrumb tarea={tarea} />
+        </>
+      );
+    }
     return (
-      <div className={base}>
-        <div className="text-sm font-semibold text-slate-900 leading-snug">{tarea.titulo}</div>
-        <Breadcrumb tarea={tarea} />
-      </div>
-    );
-  }
-
-  // sin_movimiento
-  return (
-    <div className={base}>
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
           <div className="text-sm font-semibold text-slate-900 leading-snug">{tarea.titulo}</div>
@@ -66,6 +71,15 @@ export function TareaCard({ tarea }: Props) {
           <div>hace {tarea.diasSinActividad} días</div>
         </div>
       </div>
-    </div>
+    );
+  })();
+
+  return (
+    <>
+      <button type="button" className={base} onClick={() => setOpen(true)}>
+        {inner}
+      </button>
+      <TaskDetailSheet open={open} onOpenChange={setOpen} mode="edit" taskId={tarea.id} />
+    </>
   );
 }
