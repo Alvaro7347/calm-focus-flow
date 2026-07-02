@@ -140,6 +140,32 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [bootstrapped, setBootstrapped] = useState(false);
+  const [bootstrapError, setBootstrapError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        // Modo de desarrollo MVP1: garantiza una sesión activa sin pantalla de Login.
+        // Ver src/lib/devAuth.ts para instrucciones de eliminación cuando exista Login real.
+        const { ensureDevSession } = await import("@/lib/devAuth");
+        const { seedIfEmpty } = await import("@/services/seedService");
+        await ensureDevSession();
+        await seedIfEmpty();
+        if (!cancelled) setBootstrapped(true);
+      } catch (err) {
+        console.error("[bootstrap] error", err);
+        if (!cancelled) {
+          setBootstrapError(err instanceof Error ? err.message : "Error al inicializar la sesión");
+          setBootstrapped(true);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -150,7 +176,17 @@ function RootComponent() {
           <MobileHeader onOpenDrawer={() => setDrawerOpen(true)} />
           <TopBar />
           <main className="flex-1 pb-20 md:pb-0">
-            <Outlet />
+            {!bootstrapped ? (
+              <div className="flex min-h-[60vh] items-center justify-center text-sm text-muted-foreground">
+                Preparando tu espacio…
+              </div>
+            ) : bootstrapError ? (
+              <div className="flex min-h-[60vh] items-center justify-center px-6 text-center text-sm text-destructive">
+                {bootstrapError}
+              </div>
+            ) : (
+              <Outlet />
+            )}
           </main>
         </div>
         <MobileFab />
