@@ -63,21 +63,37 @@ Pantallas / componentes
 
 Esto permite que, cuando conectemos Supabase, IA o Google Calendar, sólo cambien los servicios y las pantallas queden intactas.
 
-## Backend y datos (a partir del MVP0)
+## Backend y datos
 
 **Lovable Cloud (Supabase) es la única fuente oficial de datos de CalmApp.**
 
 - Cliente: `@/integrations/supabase/client` (auto-generado, no editar).
-- Servicios que consumen Supabase: `src/services/*Service.ts` (ver `profileService.ts` como plantilla).
-- Tabla creada en esta iteración: `profiles` (id, nombre, email, avatar_url, created_at, updated_at) con RLS por `auth.uid()` y un trigger que crea el perfil al registrarse un usuario.
+- Servicios: `src/services/*Service.ts` encapsulan todo acceso a datos.
 - **Google Sheets** se utilizará únicamente para la migración inicial de datos hacia Supabase; no es una fuente de datos en runtime.
-- Los **mocks** en `src/data/mockTasks.ts` siguen vigentes de forma temporal hasta que cada servicio (`taskService`, `areaService`, etc.) migre a Supabase.
+- Los **mocks** en `src/data/mockTasks.ts` siguen vigentes de forma temporal hasta que `taskService` migre a Supabase.
+
+### Estructura organizacional (MVP1)
+
+Jerarquía estricta implementada en Supabase:
+
+```
+profiles → areas → projects → subprojects
+```
+
+- Cada nivel pertenece obligatoriamente al superior (FK).
+- Nombres únicos por padre (case-insensitive): áreas por usuario, proyectos por área, subproyectos por proyecto.
+- No hay eliminación física: se usa `archived_at TIMESTAMPTZ`.
+- `display_order` habilita ordenamiento manual (drag & drop futuro).
+- RLS por usuario en todas las tablas.
+
+Detalles completos en [`ARCHITECTURE.md`](./ARCHITECTURE.md).
 
 ## Autenticación
 
-La infraestructura de autenticación de Lovable Cloud queda preparada en esta iteración, pero **no se construyen pantallas de Login todavía**. Los proveedores previstos (Email, Google, otros) se activarán en una iteración posterior sin modificar la navegación actual.
+La infraestructura de autenticación de Lovable Cloud queda preparada, pero **aún no se construyen pantallas de Login**. Los proveedores previstos (Email, Google, otros) se activarán en una iteración posterior sin modificar la navegación actual.
 
 ## Próximos pasos
 
-Diseñar el esquema de base de datos del MVP1 (áreas, proyectos, subproyectos, tareas, adjuntos) y migrar progresivamente los servicios desde mocks a Supabase.
+Diseñar y crear la tabla `tasks` en Supabase, y migrar `taskService` desde mocks hacia la base de datos real.
+
 
