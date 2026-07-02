@@ -91,32 +91,33 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "CalmApp — Tu espacio de claridad" },
-      {
-        name: "description",
-        content:
-          "CalmApp es tu espacio de claridad: una app personal para gestionar tareas y reducir la carga mental, no para exigir más productividad.",
-      },
-      { name: "author", content: "CalmApp" },
-      { property: "og:title", content: "CalmApp — Tu espacio de claridad" },
-      {
-        property: "og:description",
-        content:
-          "Organiza tus tareas con calma. CalmApp te ayuda a reducir la carga mental, no a acumular urgencias.",
-      },
-      { property: "og:site_name", content: "CalmApp" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
+      { name: "theme-color", content: BRAND.themeColor },
+      { title: `${BRAND.name} — ${BRAND.tagline}` },
+      { name: "description", content: BRAND.description },
+      { name: "author", content: BRAND.name },
+      { name: "application-name", content: BRAND.name },
+      { name: "apple-mobile-web-app-title", content: BRAND.name },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "default" },
+      { property: "og:title", content: `${BRAND.name} — ${BRAND.tagline}` },
+      { property: "og:description", content: BRAND.slogan },
+      { property: "og:site_name", content: BRAND.name },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
-      { name: "twitter:title", content: "CalmApp — Tu espacio de claridad" },
-      {
-        name: "twitter:description",
-        content:
-          "Organiza tus tareas con calma. CalmApp te ayuda a reducir la carga mental, no a acumular urgencias.",
-      },
+      { property: "og:image", content: "/og-image.jpg" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: `${BRAND.name} — ${BRAND.tagline}` },
+      { name: "twitter:description", content: BRAND.slogan },
+      { name: "twitter:image", content: "/og-image.jpg" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
+      { rel: "icon", type: "image/x-icon", href: "/favicon.ico" },
+      { rel: "icon", type: "image/png", sizes: "32x32", href: "/favicon-32.png" },
+      { rel: "icon", type: "image/png", sizes: "192x192", href: "/icon-192.png" },
+      { rel: "icon", type: "image/png", sizes: "512x512", href: "/icon-512.png" },
+      { rel: "apple-touch-icon", sizes: "180x180", href: "/apple-touch-icon.png" },
+      { rel: "manifest", href: "/manifest.webmanifest" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
