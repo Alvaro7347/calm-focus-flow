@@ -90,11 +90,4 @@ export function Sidebar() {
   );
 }
 
-function FooterItem({ icon, label }: { icon: React.ReactNode; label: string }) {
-  return (
-    <button className="w-full flex items-center gap-3 rounded-lg px-2 py-2 text-sm text-slate-600 hover:bg-slate-50 transition-colors">
-      <span className="text-slate-500">{icon}</span>
-      <span>{label}</span>
-    </button>
-  );
-}
+
