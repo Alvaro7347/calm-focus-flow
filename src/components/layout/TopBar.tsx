@@ -14,7 +14,7 @@ export function TopBar() {
 
       <div className="ml-auto flex items-center gap-2">
         <Link
-          to="/nueva-tarea"
+          to="/crear-tarea"
           className="inline-flex items-center gap-2 rounded-lg bg-slate-900 text-white px-4 py-2 text-sm font-medium hover:bg-slate-800 transition-colors"
         >
           <Plus className="h-4 w-4" />
