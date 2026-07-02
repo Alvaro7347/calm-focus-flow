@@ -11,10 +11,13 @@
  * - Crear tarea → Supabase.
  * - FOCO → Supabase (`fetchFocusTasks()`).
  * - Calendar → Supabase (`fetchScheduledTasks()`).
- * - Tablero → aún consume la API síncrona (`getAllTasks`,
- *   `getTaskById`) que lee desde el mock. Es el último módulo
- *   pendiente de migración; cuando se complete, esta API
- *   síncrona se retirará.
+ * - Tablero → Supabase (`tableroService.fetchAreaTree()`).
+ * - La migración a Supabase está COMPLETA: ninguna pantalla
+ *   funcional consume ya la API síncrona ni `mockTasks`.
+ * - `getAllTasks()` / `getTaskById()` permanecen únicamente como
+ *   compatibilidad legada para el shell de navegación
+ *   (`Sidebar`, `AreasDrawer`) a través de `areaService.getAreas()`.
+ *   Se retirarán cuando ese shell adopte la API asíncrona.
 
  *
  * Reglas de dominio (ver ARCHITECTURE.md):
@@ -52,8 +55,9 @@ export type CreateTaskInput = Omit<
   "user_id" | "created_at" | "updated_at" | "archived_at" | "completed_at"
 >;
 
-// ---------- API síncrona (mock, temporal para Tablero) ----------
-// Deprecada: se retirará cuando Tablero migre a Supabase (último módulo pendiente).
+// ---------- API síncrona (mock, legado del shell de navegación) ----------
+// Deprecada: sólo la consume `areaService.getAreas()` (Sidebar/AreasDrawer).
+// Ninguna pantalla funcional (FOCO, Calendar, Tablero, Crear tarea) la usa.
 
 
 export function getAllTasks(): Tarea[] {
