@@ -104,7 +104,14 @@ export function AreasDrawer({ open, onClose }: Props) {
             <span className="text-slate-500"><User className="h-4 w-4" /></span>
             <span>Mi cuenta</span>
           </Link>
-          <FooterItem icon={<FileText className="h-4 w-4" />} label="Términos y condiciones" />
+          <Link
+            to="/legal"
+            onClick={onClose}
+            className="w-full flex items-center gap-3 rounded-lg px-2 py-2 text-sm text-slate-600 hover:bg-slate-50"
+          >
+            <span className="text-slate-500"><FileText className="h-4 w-4" /></span>
+            <span>Términos y condiciones</span>
+          </Link>
         </div>
       </aside>
     </>
