@@ -52,8 +52,9 @@ export type CreateTaskInput = Omit<
   "user_id" | "created_at" | "updated_at" | "archived_at" | "completed_at"
 >;
 
-// ---------- API síncrona (mock, temporal para Calendar/Tablero) ----------
-// Deprecada: se retirará cuando Calendar y Tablero migren a Supabase.
+// ---------- API síncrona (mock, temporal para Tablero) ----------
+// Deprecada: se retirará cuando Tablero migre a Supabase (último módulo pendiente).
+
 
 export function getAllTasks(): Tarea[] {
   return tareasFoco;
