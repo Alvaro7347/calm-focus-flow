@@ -518,6 +518,25 @@ function CrearTareaScreen() {
                   </SelectContent>
                 </Select>
               </div>
+
+              <div className="space-y-2">
+                <Label>Estado</Label>
+                <Select
+                  value={status}
+                  onValueChange={(v) => setStatus(v as TaskStatus)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Pendiente</SelectItem>
+                    <SelectItem value="waiting">Esperando</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Elige "Esperando" si la tarea depende de un tercero o de una respuesta externa.
+                </p>
+              </div>
             </section>
 
             {/* 5. Programación */}
