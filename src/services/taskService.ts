@@ -8,11 +8,14 @@
  * mocks directamente ni conocer el origen de los datos.
  *
  * Estado de migración:
- * - FOCO consume exclusivamente `fetchFocusTasks()` (Supabase).
- * - Calendar y Tablero aún consumen la API síncrona
- *   (`getAllTasks`, `getTaskById`) que sigue leyendo desde el
- *   mock. Esos módulos se migrarán en iteraciones siguientes
- *   y esta API síncrona quedará deprecada.
+ * - Crear tarea → Supabase.
+ * - FOCO → Supabase (`fetchFocusTasks()`).
+ * - Calendar → Supabase (`fetchScheduledTasks()`).
+ * - Tablero → aún consume la API síncrona (`getAllTasks`,
+ *   `getTaskById`) que lee desde el mock. Es el último módulo
+ *   pendiente de migración; cuando se complete, esta API
+ *   síncrona se retirará.
+
  *
  * Reglas de dominio (ver ARCHITECTURE.md):
  * - Toda tarea pertenece obligatoriamente a un usuario y a un
@@ -49,8 +52,9 @@ export type CreateTaskInput = Omit<
   "user_id" | "created_at" | "updated_at" | "archived_at" | "completed_at"
 >;
 
-// ---------- API síncrona (mock, temporal para Calendar/Tablero) ----------
-// Deprecada: se retirará cuando Calendar y Tablero migren a Supabase.
+// ---------- API síncrona (mock, temporal para Tablero) ----------
+// Deprecada: se retirará cuando Tablero migre a Supabase (último módulo pendiente).
+
 
 export function getAllTasks(): Tarea[] {
   return tareasFoco;
@@ -285,7 +289,8 @@ export async function fetchFocusTasks(): Promise<FocusTasks> {
       sinMovimiento.push(toTarea(row, "sin_movimiento"));
     }
     // pending programada más allá de esta semana: aún no aparece en FOCO
-    // (aparecerá en Calendar cuando esa migración esté hecha).
+    // (se muestra en Calendar, que ya lee desde Supabase).
+
   }
 
   return { hoy, estaSemana, esperando, sinMovimiento };

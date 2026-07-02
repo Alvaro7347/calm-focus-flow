@@ -8,17 +8,25 @@ El principio de diseño es simple: la interfaz debe transmitir calma, no urgenci
 
 ## Estado actual del proyecto
 
-En esta etapa la aplicación funciona con datos de ejemplo (mock) y ya cuenta con:
+Migración a Supabase parcialmente completada:
+
+- **Crear tarea** → Supabase.
+- **FOCO** → Supabase.
+- **Calendar** → Supabase.
+- **Tablero** → Mock (último módulo pendiente de migración).
+
+Pantallas disponibles:
 
 - Pantalla **FOCO** con sus 4 columnas: Hoy, Esta semana, Esperando y Sin movimiento.
 - Pantalla **Calendario** con vistas Semana y Mes.
 - Pantalla **Tablero**: centro de organización estructural (Área → Proyecto → Subproyecto → Tareas). Muestra una sola área a la vez; el estado (área/proyecto/subproyecto abierto) vive en la URL para permitir enlaces compartibles.
+- Pantalla **Crear tarea** operando 100% sobre Supabase.
 - **Navegación mobile-first**, pensada para usarse principalmente desde el celular.
 - **Sidebar desktop** con la lista de áreas (cada área linkea a `/tablero?area=<slug>`).
 - **Drawer de áreas** para mobile con el mismo comportamiento.
 - **Tab bar inferior** en mobile con FOCO, Calendario, Tablero y Crear tarea.
 - **Botón flotante (FAB)** para ir rápidamente a "Nueva tarea".
-- **Rutas placeholder** para Crear tarea y Nueva tarea (aún no construidas).
+
 
 ## Tecnologías principales
 
@@ -50,7 +58,7 @@ Pantallas / componentes
         ↓
      Servicios
         ↓
- Datos mock o Supabase
+ Supabase (o mock temporal para Tablero)
 ```
 
 Nunca:
@@ -58,10 +66,10 @@ Nunca:
 ```
 Pantallas / componentes
         ↓
-   Mocks directos
+   Mocks o Supabase directos
 ```
 
-Esto permite que, cuando conectemos Supabase, IA o Google Calendar, sólo cambien los servicios y las pantallas queden intactas.
+Esto permite que, cuando conectemos servicios adicionales (IA, Google Calendar) o migre el último módulo pendiente (Tablero), sólo cambien los servicios y las pantallas queden intactas.
 
 ## Backend y datos
 
@@ -70,7 +78,8 @@ Esto permite que, cuando conectemos Supabase, IA o Google Calendar, sólo cambie
 - Cliente: `@/integrations/supabase/client` (auto-generado, no editar).
 - Servicios: `src/services/*Service.ts` encapsulan todo acceso a datos.
 - **Google Sheets** se utilizará únicamente para la migración inicial de datos hacia Supabase; no es una fuente de datos en runtime.
-- Los **mocks** en `src/data/mockTasks.ts` siguen vigentes de forma temporal hasta que `taskService` migre a Supabase.
+- Los **mocks** en `src/data/mockTasks.ts` siguen vigentes de forma temporal únicamente para el módulo Tablero, hasta que se complete su migración a Supabase.
+
 
 ### Estructura organizacional (MVP1)
 
@@ -100,9 +109,9 @@ tasks ─┬─ capture_sessions (opcional, origen de la tarea)
 ```
 
 - Toda tarea pertenece obligatoriamente a `user_id` + `subproject_id`. **No** existen `area_id` ni `project_id` en `tasks`: Área y Proyecto se derivan por relación.
-- `status` sólo puede ser `pending` o `completed`; `completed_at` se sincroniza por CHECK.
+- `status` puede ser `pending`, `waiting` o `completed`; `completed_at` se sincroniza por CHECK.
 - Sin eliminación física — se usa `archived_at`.
-- `taskService` expone una API síncrona (mocks, temporal) y una API asíncrona contra Supabase (`fetchTasks`, `createTask`, `updateTask`, `completeTask`, `reopenTask`, `archiveTask`).
+- `taskService` expone la API asíncrona oficial contra Supabase (`fetchTasks`, `fetchFocusTasks`, `fetchScheduledTasks`, `createTask`, `updateTask`, `completeTask`, `reopenTask`, `waitTask`, `archiveTask`) y, transitoriamente, una API síncrona sobre mocks (`getAllTasks`, `getTaskById`) que consume únicamente Tablero mientras se completa su migración.
 
 ## Autenticación
 
@@ -110,7 +119,8 @@ La infraestructura de autenticación de Lovable Cloud queda preparada, pero **a�
 
 ## Próximos pasos
 
-Construir la pantalla **Crear tarea** consumiendo la nueva API asíncrona de `taskService`, sin volver a tocar el esquema de la base.
+Migrar el módulo **Tablero** a Supabase para completar la transición y retirar la API síncrona de `taskService`.
+
 
 
 

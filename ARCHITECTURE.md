@@ -97,22 +97,25 @@ Las pantallas y componentes **no acceden a Supabase directamente**. Consumen ser
 | Servicio               | Fuente actual                 | Consumidores                          |
 | ---------------------- | ----------------------------- | ------------------------------------- |
 | `profileService`       | Supabase (`profiles`)         | Futuros: pantalla de cuenta.          |
-| `areaService`          | Mocks (sync) + Supabase (async) | Sidebar, AreasDrawer, Tablero (sync). |
-| `projectService`       | Supabase                      | Preparado para MVP1.                  |
-| `subprojectService`    | Supabase                      | Preparado para MVP1.                  |
-| `taskService`          | Mocks (sync) + Supabase (async) | FOCO, Calendar, Tablero (sync); "Crear tarea" y siguientes pantallas (async). |
-| `focusService`         | `taskService`                 | FOCO.                                 |
-| `calendarService`      | `taskService`                 | Calendar.                             |
-| `tableroService`       | `taskService`                 | Tablero.                              |
+| `areaService`          | Mocks (sync) + Supabase (async) | Sidebar, AreasDrawer, Tablero (sync); Crear tarea (async). |
+| `projectService`       | Supabase                      | Crear tarea.                          |
+| `subprojectService`    | Supabase                      | Crear tarea.                          |
+| `taskService`          | Mocks (sync) + Supabase (async) | Tablero (sync, pendiente de migración); Crear tarea, FOCO y Calendar (async). |
+| `focusService`         | `taskService` (Supabase)      | FOCO.                                 |
+| `calendarService`      | `taskService` (Supabase)      | Calendar.                             |
+| `tableroService`       | `taskService` (mock)          | Tablero.                              |
 
-### Compatibilidad MVP0 → MVP1
+### Estado de migración
+
+Crear tarea → Supabase. FOCO → Supabase. Calendar → Supabase. Tablero → mock (último módulo pendiente).
 
 `areaService` expone dos APIs:
 
-- **`getAreas()` (síncrono)** — deriva Áreas desde las tareas de `taskService` (mocks). Mantiene el render del Sidebar/Drawer sin cambios. Se retirará cuando `taskService` migre a Supabase.
-- **`fetchAreas()`, `createArea()`, `updateArea()`, `archiveArea()` (async)** — API definitiva contra Supabase.
+- **`getAreas()` (síncrono)** — deriva Áreas desde las tareas mock de `taskService`. Mantiene el render del Sidebar/Drawer y del Tablero sin cambios. Se retirará cuando Tablero migre a Supabase.
+- **`fetchAreas()`, `createArea()`, `updateArea()`, `archiveArea()` (async)** — API definitiva contra Supabase, ya en uso desde Crear tarea.
 
-`projectService` y `subprojectService` exponen solo API asíncrona: no hay derivación desde mocks porque en MVP0 las pantallas no consumen esos servicios todavía.
+`projectService` y `subprojectService` exponen solo API asíncrona contra Supabase y ya se consumen desde Crear tarea.
+
 
 ## Tipos TypeScript
 
@@ -136,7 +139,8 @@ Nunca usar `any`. Cualquier cambio de esquema regenera los tipos y propaga los e
 ### Prioridades — modelo oficial vs. modelo legacy
 
 - **Modelo oficial (Supabase / `tasks.priority`)**: `high` | `medium` | `low` (default `medium`).
-- **Modelo legacy (mocks del MVP)**: `alta` | `media` | `baja` | `normal`. Sobrevive únicamente mientras FOCO, Calendar y Tablero sigan alimentándose de mocks. Se retira al migrar la UI a Supabase.
+- **Modelo legacy (mocks del MVP)**: `alta` | `media` | `baja` | `normal`. Sobrevive únicamente mientras Tablero siga alimentándose de mocks. Se retira al migrar ese módulo a Supabase.
+
 
 ## Fuente oficial del esquema
 

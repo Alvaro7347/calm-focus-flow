@@ -20,10 +20,17 @@
  * - Si una tarea llega sin proyecto o sin subproyecto, se
  *   considera un DATO INVÁLIDO: se descarta del árbol y se
  *   registra un warning en consola. La reparación es en origen
- *   (mock hoy, Supabase mañana), nunca aquí.
+ *   (mock actualmente; Supabase cuando Tablero migre), nunca
+ *   aquí.
  *
- * La interfaz pública (getAreaTree, getAreaBySlug, listAreas)
- * se mantendrá estable cuando el origen pase a Supabase.
+ * Estado de migración:
+ * - Tablero es el ÚLTIMO módulo pendiente de migrar a Supabase.
+ *   Crear tarea, FOCO y Calendar ya consumen Supabase.
+ * - Hoy este servicio lee del mock vía la API síncrona
+ *   `getAllTasks()` de taskService. La interfaz pública
+ *   (`getAreaTree`, `getAreaBySlug`, `listAreas`) se mantendrá
+ *   estable cuando el origen pase a Supabase.
+
  * ========================================================
  */
 import { getAllTasks } from "@/services/taskService";

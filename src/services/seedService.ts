@@ -17,8 +17,10 @@
  *   quedan NULL y podrán editarse desde la UI.
  * - No inventa datos: usa exactamente lo que existe en el mock.
  *
- * Cuando FOCO/Calendar/Tablero migren a Supabase, este seed
- * puede seguir funcionando como bootstrap de entornos nuevos.
+ * Crear tarea, FOCO y Calendar ya operan sobre Supabase; solo
+ * Tablero permanece pendiente. Este seed sigue funcionando como
+ * bootstrap de entornos nuevos.
+
  * ========================================================
  */
 import { supabase } from "@/integrations/supabase/client";

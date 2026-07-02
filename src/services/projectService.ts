@@ -11,9 +11,11 @@
  * - Se archiva con `archived_at`; nunca se elimina físicamente.
  * - `display_order` habilita ordenamiento manual futuro.
  *
- * En MVP0 el Tablero sigue derivando su árbol desde tareas mock
- * vía `tableroService`. Este servicio es infraestructura lista
- * para MVP1; aún no lo consume ninguna pantalla.
+ * Ya se consume desde Crear tarea (selector en cascada). El
+ * Tablero sigue derivando su árbol desde tareas mock vía
+ * `tableroService` y es el último módulo pendiente de migrar
+ * a Supabase.
+
  * ========================================================
  */
 import { supabase } from "@/integrations/supabase/client";
