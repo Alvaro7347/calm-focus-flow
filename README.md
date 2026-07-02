@@ -58,7 +58,7 @@ Pantallas / componentes
         ↓
      Servicios
         ↓
- Datos mock o Supabase
+ Supabase (o mock temporal para Tablero)
 ```
 
 Nunca:
@@ -66,10 +66,10 @@ Nunca:
 ```
 Pantallas / componentes
         ↓
-   Mocks directos
+   Mocks o Supabase directos
 ```
 
-Esto permite que, cuando conectemos Supabase, IA o Google Calendar, sólo cambien los servicios y las pantallas queden intactas.
+Esto permite que, cuando conectemos servicios adicionales (IA, Google Calendar) o migre el último módulo pendiente (Tablero), sólo cambien los servicios y las pantallas queden intactas.
 
 ## Backend y datos
 
@@ -78,7 +78,8 @@ Esto permite que, cuando conectemos Supabase, IA o Google Calendar, sólo cambie
 - Cliente: `@/integrations/supabase/client` (auto-generado, no editar).
 - Servicios: `src/services/*Service.ts` encapsulan todo acceso a datos.
 - **Google Sheets** se utilizará únicamente para la migración inicial de datos hacia Supabase; no es una fuente de datos en runtime.
-- Los **mocks** en `src/data/mockTasks.ts` siguen vigentes de forma temporal hasta que `taskService` migre a Supabase.
+- Los **mocks** en `src/data/mockTasks.ts` siguen vigentes de forma temporal únicamente para el módulo Tablero, hasta que se complete su migración a Supabase.
+
 
 ### Estructura organizacional (MVP1)
 
