@@ -77,6 +77,51 @@ export async function fetchTaskById(id: string): Promise<TaskRow | null> {
   return data;
 }
 
+/**
+ * Devuelve una tarea junto con los IDs de la jerarquía completa
+ * (subproyecto → proyecto → área). Usado por Task Detail en modo
+ * `edit` para poder poblar los tres selectores en cascada.
+ */
+export interface TaskWithHierarchy {
+  task: TaskRow;
+  subprojectId: string;
+  projectId: string;
+  areaId: string;
+}
+
+export async function fetchTaskForEdit(id: string): Promise<TaskWithHierarchy | null> {
+  const { data, error } = await supabase
+    .from("tasks")
+    .select("*, subprojects!inner(id, project_id, projects!inner(id, area_id))")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return null;
+  const row = data as unknown as TaskRow & {
+    subprojects: { id: string; project_id: string; projects: { id: string; area_id: string } };
+  };
+  const { subprojects, ...task } = row;
+  return {
+    task: task as TaskRow,
+    subprojectId: subprojects.id,
+    projectId: subprojects.project_id,
+    areaId: subprojects.projects.area_id,
+  };
+}
+
+/**
+ * Claves de invalidación en TanStack Query que dependen del conjunto
+ * de tareas. Cualquier mutación (create/update/archive) debe invalidar
+ * TODAS estas claves para mantener la consistencia entre pantallas.
+ */
+export const TASK_INVALIDATION_KEYS: readonly (readonly string[])[] = [
+  ["focus"],
+  ["calendar"],
+  ["tablero"],
+  ["areas", "nav"],
+] as const;
+
+
 export async function createTask(input: CreateTaskInput): Promise<TaskRow> {
   const { data: userData, error: userError } = await supabase.auth.getUser();
   if (userError) throw userError;
