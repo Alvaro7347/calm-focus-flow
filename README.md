@@ -8,12 +8,15 @@ El principio de diseño es simple: la interfaz debe transmitir calma, no urgenci
 
 ## Estado actual del proyecto
 
-Migración a Supabase parcialmente completada:
+Migración a Supabase COMPLETA. Todas las pantallas y el shell de
+navegación leen exclusivamente de Supabase:
 
 - **Crear tarea** → Supabase.
 - **FOCO** → Supabase.
 - **Calendar** → Supabase.
-- **Tablero** → Mock (último módulo pendiente de migración).
+- **Tablero** → Supabase.
+- **Sidebar / AreasDrawer** → Supabase (vía `useAreasNav`).
+
 
 Pantallas disponibles:
 
