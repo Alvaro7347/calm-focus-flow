@@ -46,13 +46,14 @@ Pantallas disponibles:
 - `src/components`: componentes visuales reutilizables.
 - `src/components/layout`: App Shell y navegación (Sidebar, TopBar, MobileHeader, AreasDrawer, MobileTabBar, MobileFab).
 - `src/components/foco`: componentes específicos de la pantalla FOCO (columnas y tarjetas).
-- `src/data`: datos mock temporales que se usarán hasta conectar con el backend real.
+- `src/data`: semillas de bootstrap para desarrollo (`mockTasks`). No es fuente de datos en runtime.
 - `src/services`: capa de acceso y preparación de datos (por ejemplo `focusService`, `areaService`).
 - `src/types`: tipos compartidos entre pantallas, componentes y servicios.
 
 ## Regla de arquitectura
 
-Las pantallas y componentes **no deben importar mocks directamente**. Deben consumir datos a través de servicios.
+Las pantallas y componentes **no deben importar mocks directamente ni
+consultar Supabase directamente**. Deben consumir datos a través de servicios.
 
 Flujo correcto:
 
@@ -61,18 +62,8 @@ Pantallas / componentes
         ↓
      Servicios
         ↓
- Supabase (o mock temporal para Tablero)
+      Supabase
 ```
-
-Nunca:
-
-```
-Pantallas / componentes
-        ↓
-   Mocks o Supabase directos
-```
-
-Esto permite que, cuando conectemos servicios adicionales (IA, Google Calendar) o migre el último módulo pendiente (Tablero), sólo cambien los servicios y las pantallas queden intactas.
 
 ## Backend y datos
 
@@ -81,7 +72,8 @@ Esto permite que, cuando conectemos servicios adicionales (IA, Google Calendar) 
 - Cliente: `@/integrations/supabase/client` (auto-generado, no editar).
 - Servicios: `src/services/*Service.ts` encapsulan todo acceso a datos.
 - **Google Sheets** se utilizará únicamente para la migración inicial de datos hacia Supabase; no es una fuente de datos en runtime.
-- Los **mocks** en `src/data/mockTasks.ts` siguen vigentes de forma temporal únicamente para el módulo Tablero, hasta que se complete su migración a Supabase.
+- Los **mocks** en `src/data/mockTasks.ts` son LEGACY / BOOTSTRAP: sólo los consume `seedService` para inicializar Supabase en entornos de desarrollo nuevos. No forman parte del runtime funcional.
+
 
 
 ### Estructura organizacional (MVP1)
