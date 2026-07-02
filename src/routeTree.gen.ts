@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TableroRouteImport } from './routes/tablero'
 import { Route as NuevaTareaRouteImport } from './routes/nueva-tarea'
+import { Route as MiCuentaRouteImport } from './routes/mi-cuenta'
 import { Route as FocoRouteImport } from './routes/foco'
 import { Route as CrearTareaRouteImport } from './routes/crear-tarea'
 import { Route as CalendarioRouteImport } from './routes/calendario'
@@ -24,6 +25,11 @@ const TableroRoute = TableroRouteImport.update({
 const NuevaTareaRoute = NuevaTareaRouteImport.update({
   id: '/nueva-tarea',
   path: '/nueva-tarea',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MiCuentaRoute = MiCuentaRouteImport.update({
+  id: '/mi-cuenta',
+  path: '/mi-cuenta',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FocoRoute = FocoRouteImport.update({
@@ -52,6 +58,7 @@ export interface FileRoutesByFullPath {
   '/calendario': typeof CalendarioRoute
   '/crear-tarea': typeof CrearTareaRoute
   '/foco': typeof FocoRoute
+  '/mi-cuenta': typeof MiCuentaRoute
   '/nueva-tarea': typeof NuevaTareaRoute
   '/tablero': typeof TableroRoute
 }
@@ -60,6 +67,7 @@ export interface FileRoutesByTo {
   '/calendario': typeof CalendarioRoute
   '/crear-tarea': typeof CrearTareaRoute
   '/foco': typeof FocoRoute
+  '/mi-cuenta': typeof MiCuentaRoute
   '/nueva-tarea': typeof NuevaTareaRoute
   '/tablero': typeof TableroRoute
 }
@@ -69,6 +77,7 @@ export interface FileRoutesById {
   '/calendario': typeof CalendarioRoute
   '/crear-tarea': typeof CrearTareaRoute
   '/foco': typeof FocoRoute
+  '/mi-cuenta': typeof MiCuentaRoute
   '/nueva-tarea': typeof NuevaTareaRoute
   '/tablero': typeof TableroRoute
 }
@@ -79,6 +88,7 @@ export interface FileRouteTypes {
     | '/calendario'
     | '/crear-tarea'
     | '/foco'
+    | '/mi-cuenta'
     | '/nueva-tarea'
     | '/tablero'
   fileRoutesByTo: FileRoutesByTo
@@ -87,6 +97,7 @@ export interface FileRouteTypes {
     | '/calendario'
     | '/crear-tarea'
     | '/foco'
+    | '/mi-cuenta'
     | '/nueva-tarea'
     | '/tablero'
   id:
@@ -95,6 +106,7 @@ export interface FileRouteTypes {
     | '/calendario'
     | '/crear-tarea'
     | '/foco'
+    | '/mi-cuenta'
     | '/nueva-tarea'
     | '/tablero'
   fileRoutesById: FileRoutesById
@@ -104,6 +116,7 @@ export interface RootRouteChildren {
   CalendarioRoute: typeof CalendarioRoute
   CrearTareaRoute: typeof CrearTareaRoute
   FocoRoute: typeof FocoRoute
+  MiCuentaRoute: typeof MiCuentaRoute
   NuevaTareaRoute: typeof NuevaTareaRoute
   TableroRoute: typeof TableroRoute
 }
@@ -122,6 +135,13 @@ declare module '@tanstack/react-router' {
       path: '/nueva-tarea'
       fullPath: '/nueva-tarea'
       preLoaderRoute: typeof NuevaTareaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mi-cuenta': {
+      id: '/mi-cuenta'
+      path: '/mi-cuenta'
+      fullPath: '/mi-cuenta'
+      preLoaderRoute: typeof MiCuentaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/foco': {
@@ -160,6 +180,7 @@ const rootRouteChildren: RootRouteChildren = {
   CalendarioRoute: CalendarioRoute,
   CrearTareaRoute: CrearTareaRoute,
   FocoRoute: FocoRoute,
+  MiCuentaRoute: MiCuentaRoute,
   NuevaTareaRoute: NuevaTareaRoute,
   TableroRoute: TableroRoute,
 }
