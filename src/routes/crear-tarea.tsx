@@ -24,7 +24,7 @@
  */
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Keyboard, LayoutGrid, Mic, Paperclip, Plus, Trash2 } from "lucide-react";
+import { Keyboard, Mic, Paperclip, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -38,12 +38,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
-import { fetchAreas } from "@/services/areaService";
-import { fetchProjects } from "@/services/projectService";
-import { fetchSubprojects } from "@/services/subprojectService";
+import { fetchAreas, createArea } from "@/services/areaService";
+import { fetchProjects, createProject } from "@/services/projectService";
+import { fetchSubprojects, createSubproject } from "@/services/subprojectService";
 import { createTask, type CreateTaskInput, type TaskPriority } from "@/services/taskService";
 import type { AreaRow, ProjectRow, SubprojectRow } from "@/types/tarea";
+
+type InlineKind = "area" | "project" | "subproject" | null;
 
 export const Route = createFileRoute("/crear-tarea")({
   head: () => ({ meta: [{ title: "Crear tarea — CalmApp" }] }),
@@ -82,11 +92,59 @@ function CrearTareaScreen() {
   const [duracion, setDuracion] = useState<string>("");
 
   // Recordatorios: UI deshabilitada hasta que exista persistencia en task_reminders.
-  // La lógica local se conserva para habilitarla en una futura iteración.
   const [reminders, setReminders] = useState<Reminder[]>([]);
 
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Creación inline
+  const [inlineOpen, setInlineOpen] = useState<InlineKind>(null);
+  const [inlineName, setInlineName] = useState("");
+  const [inlineSaving, setInlineSaving] = useState(false);
+  const [inlineError, setInlineError] = useState<string | null>(null);
+
+  function openInline(kind: Exclude<InlineKind, null>) {
+    setInlineName("");
+    setInlineError(null);
+    setInlineOpen(kind);
+  }
+
+  async function handleInlineCreate() {
+    const name = inlineName.trim();
+    if (!name) {
+      setInlineError("El nombre es obligatorio.");
+      return;
+    }
+    setInlineSaving(true);
+    setInlineError(null);
+    try {
+      if (inlineOpen === "area") {
+        const created = await createArea({ name });
+        const rows = await fetchAreas();
+        setAreas(rows);
+        setAreaId(created.id);
+      } else if (inlineOpen === "project") {
+        if (!areaId) throw new Error("Selecciona un área primero.");
+        const created = await createProject({ name, area_id: areaId });
+        const rows = await fetchProjects(areaId);
+        setProjects(rows);
+        setProjectId(created.id);
+      } else if (inlineOpen === "subproject") {
+        if (!projectId) throw new Error("Selecciona un proyecto primero.");
+        const created = await createSubproject({ name, project_id: projectId });
+        const rows = await fetchSubprojects(projectId);
+        setSubprojects(rows);
+        setSubprojectId(created.id);
+      }
+      setInlineOpen(null);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "No se pudo crear.";
+      setInlineError(msg);
+    } finally {
+      setInlineSaving(false);
+    }
+  }
+
 
   // ---- Carga inicial de áreas
   useEffect(() => {
@@ -274,88 +332,128 @@ function CrearTareaScreen() {
                 <p className="text-sm text-muted-foreground">
                   Cargando estructura organizacional…
                 </p>
-              ) : areas.length === 0 ? (
-                <div className="rounded-xl border border-dashed bg-muted/30 p-6 text-center space-y-3">
-                  <div className="mx-auto h-12 w-12 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600">
-                    <LayoutGrid className="h-6 w-6" />
-                  </div>
-                  <div className="space-y-1">
-                    <h3 className="text-sm font-medium">Organiza tu estructura primero</h3>
-                    <p className="text-xs text-muted-foreground">
-                      Necesitas al menos un Área, un Proyecto y un Subproyecto antes de crear tareas.
-                    </p>
-                  </div>
-                </div>
               ) : (
                 <>
+                  {/* Área */}
                   <div className="space-y-2">
                     <Label>Área *</Label>
-                    <Select value={areaId} onValueChange={setAreaId}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecciona un área" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {areas.map((a) => (
-                          <SelectItem key={a.id} value={a.id}>
-                            {a.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        <Select
+                          value={areaId}
+                          onValueChange={setAreaId}
+                          disabled={areas.length === 0}
+                        >
+                          <SelectTrigger>
+                            <SelectValue
+                              placeholder={
+                                areas.length === 0
+                                  ? "Aún no tienes áreas"
+                                  : "Selecciona un área"
+                              }
+                            />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {areas.map((a) => (
+                              <SelectItem key={a.id} value={a.id}>
+                                {a.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => openInline("area")}
+                      >
+                        <Plus className="h-4 w-4" /> Nueva área
+                      </Button>
+                    </div>
                     {errors.area && <p className="text-xs text-destructive">{errors.area}</p>}
                   </div>
 
+                  {/* Proyecto */}
                   <div className="space-y-2">
                     <Label>Proyecto *</Label>
-                    {areaId && projects.length === 0 ? (
-                      <p className="text-xs text-muted-foreground">
-                        No hay proyectos en este área. Crea un proyecto primero.
-                      </p>
-                    ) : (
-                      <Select
-                        value={projectId}
-                        onValueChange={setProjectId}
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        <Select
+                          value={projectId}
+                          onValueChange={setProjectId}
+                          disabled={!areaId || projects.length === 0}
+                        >
+                          <SelectTrigger>
+                            <SelectValue
+                              placeholder={
+                                !areaId
+                                  ? "Primero elige un área"
+                                  : projects.length === 0
+                                    ? "Aún no hay proyectos"
+                                    : "Selecciona un proyecto"
+                              }
+                            />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {projects.map((p) => (
+                              <SelectItem key={p.id} value={p.id}>
+                                {p.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => openInline("project")}
                         disabled={!areaId}
                       >
-                        <SelectTrigger>
-                          <SelectValue placeholder={areaId ? "Selecciona un proyecto" : "Primero elige un área"} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {projects.map((p) => (
-                            <SelectItem key={p.id} value={p.id}>
-                              {p.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
+                        <Plus className="h-4 w-4" /> Nuevo proyecto
+                      </Button>
+                    </div>
                     {errors.project && <p className="text-xs text-destructive">{errors.project}</p>}
                   </div>
 
+                  {/* Subproyecto */}
                   <div className="space-y-2">
                     <Label>Subproyecto *</Label>
-                    {projectId && subprojects.length === 0 ? (
-                      <p className="text-xs text-muted-foreground">
-                        No hay subproyectos en este proyecto. Crea un subproyecto primero.
-                      </p>
-                    ) : (
-                      <Select
-                        value={subprojectId}
-                        onValueChange={setSubprojectId}
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        <Select
+                          value={subprojectId}
+                          onValueChange={setSubprojectId}
+                          disabled={!projectId || subprojects.length === 0}
+                        >
+                          <SelectTrigger>
+                            <SelectValue
+                              placeholder={
+                                !projectId
+                                  ? "Primero elige un proyecto"
+                                  : subprojects.length === 0
+                                    ? "Aún no hay subproyectos"
+                                    : "Selecciona un subproyecto"
+                              }
+                            />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {subprojects.map((s) => (
+                              <SelectItem key={s.id} value={s.id}>
+                                {s.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => openInline("subproject")}
                         disabled={!projectId}
                       >
-                        <SelectTrigger>
-                          <SelectValue placeholder={projectId ? "Selecciona un subproyecto" : "Primero elige un proyecto"} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {subprojects.map((s) => (
-                            <SelectItem key={s.id} value={s.id}>
-                              {s.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
+                        <Plus className="h-4 w-4" /> Nuevo subproyecto
+                      </Button>
+                    </div>
                     {errors.subproject && (
                       <p className="text-xs text-destructive">{errors.subproject}</p>
                     )}
@@ -363,6 +461,7 @@ function CrearTareaScreen() {
                 </>
               )}
             </section>
+
 
             {/* 4. Información de la tarea */}
             <section className="rounded-xl border bg-card p-4 space-y-4">
@@ -526,6 +625,62 @@ function CrearTareaScreen() {
           </div>
         </div>
       )}
+
+      {/* Dialog de creación inline (Área / Proyecto / Subproyecto) */}
+      <Dialog
+        open={inlineOpen !== null}
+        onOpenChange={(open) => {
+          if (!open) setInlineOpen(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {inlineOpen === "area" && "Nueva área"}
+              {inlineOpen === "project" && "Nuevo proyecto"}
+              {inlineOpen === "subproject" && "Nuevo subproyecto"}
+            </DialogTitle>
+            <DialogDescription>
+              {inlineOpen === "area" && "Crea un área para organizar tus tareas."}
+              {inlineOpen === "project" &&
+                "El proyecto se creará dentro del área seleccionada."}
+              {inlineOpen === "subproject" &&
+                "El subproyecto se creará dentro del proyecto seleccionado."}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="inline-name">Nombre *</Label>
+            <Input
+              id="inline-name"
+              value={inlineName}
+              onChange={(e) => setInlineName(e.target.value)}
+              placeholder="Ej: Marketing"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleInlineCreate();
+                }
+              }}
+            />
+            {inlineError && <p className="text-xs text-destructive">{inlineError}</p>}
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setInlineOpen(null)}
+              disabled={inlineSaving}
+            >
+              Cancelar
+            </Button>
+            <Button type="button" onClick={handleInlineCreate} disabled={inlineSaving}>
+              {inlineSaving ? "Creando..." : "Crear"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
+
   );
 }
