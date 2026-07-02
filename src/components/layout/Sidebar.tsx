@@ -23,12 +23,15 @@
 import { Link } from "@tanstack/react-router";
 import { Settings, User, FileText } from "lucide-react";
 import { useAreasNav } from "@/hooks/useAreasNav";
+import { useBootstrapReady } from "@/lib/bootstrapContext";
 import { slugify } from "@/lib/slug";
 import { Logo } from "@/components/brand/Logo";
 import { BRAND } from "@/brand/brand";
 
 export function Sidebar() {
-  const { data: areas = [] } = useAreasNav();
+  const ready = useBootstrapReady();
+  const { data: areas = [], isLoading, isFetching } = useAreasNav({ enabled: ready });
+  const showLoading = !ready || isLoading || (isFetching && areas.length === 0);
   return (
     <aside className="hidden md:flex w-[260px] shrink-0 flex-col border-r border-border bg-background">
       {/* Logo oficial completo */}
