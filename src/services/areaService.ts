@@ -7,15 +7,15 @@
  * la capa de acceso a la tabla `public.areas` de Supabase.
  *
  * Estado de migración:
- * - `getAreas()` (SÍNCRONO) permanece únicamente como compatibilidad
- *   del shell de navegación (Sidebar, AreasDrawer): esos componentes
- *   requieren un valor síncrono y no forman parte de las pantallas
- *   funcionales. Sigue derivando la lista desde `taskService.getAllTasks()`
- *   (mock). Se retirará cuando el shell de navegación adopte la API
- *   asíncrona.
- * - `fetchAreas()`, `createArea()`, `updateArea()`, `archiveArea()`
- *   (ASÍNCRONOS) son la API oficial contra Supabase y las consumen
- *   Crear tarea, FOCO, Calendar y Tablero.
+ * - `fetchAreas()`, `fetchAreasWithCounts()`, `createArea()`,
+ *   `updateArea()`, `archiveArea()` (ASÍNCRONOS) son la API oficial
+ *   contra Supabase y las consumen Crear tarea, FOCO, Calendar,
+ *   Tablero y el shell de navegación (Sidebar, AreasDrawer vía el
+ *   hook `useAreasNav`).
+ * - `getAreas()` (SÍNCRONO, LEGACY) queda únicamente como compat
+ *   interna; ya NO es consumido por la navegación lateral. Se
+ *   retirará en una limpieza técnica posterior. No usar en código
+ *   nuevo.
 
  *
  * Reglas del dominio (definidas en la migración):
@@ -96,6 +96,36 @@ export async function fetchAreas(includeArchived = false): Promise<AreaRow[]> {
   const { data, error } = await query;
   if (error) throw error;
   return (data ?? []) as AreaRow[];
+}
+
+
+/**
+ * Devuelve las Áreas activas del usuario autenticado con su
+ * contador de tareas NO archivadas, en el shape de UI (`Area`).
+ * Fuente de verdad para el shell de navegación (Sidebar, AreasDrawer)
+ * a través del hook `useAreasNav`. Consulta exclusivamente Supabase.
+ */
+export async function fetchAreasWithCounts(): Promise<Area[]> {
+  const rows = await fetchAreas(false);
+
+  const { data: taskRows, error } = await supabase
+    .from("tasks")
+    .select("subprojects!inner(projects!inner(area_id))")
+    .is("archived_at", null);
+  if (error) throw error;
+
+  const counts = new Map<string, number>();
+  for (const t of (taskRows ?? []) as Array<{ subprojects: { projects: { area_id: string | null } } }>) {
+    const areaId = t.subprojects?.projects?.area_id;
+    if (!areaId) continue;
+    counts.set(areaId, (counts.get(areaId) ?? 0) + 1);
+  }
+
+  return rows.map((r) => ({
+    nombre: r.name,
+    color: colorFor(r.name),
+    count: counts.get(r.id) ?? 0,
+  }));
 }
 
 export async function fetchAreaById(id: string): Promise<AreaRow | null> {
