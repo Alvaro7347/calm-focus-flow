@@ -21,6 +21,7 @@
 import { Settings, User, FileText, X } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { useAreasNav } from "@/hooks/useAreasNav";
+import { useBootstrapReady } from "@/lib/bootstrapContext";
 import { slugify } from "@/lib/slug";
 import { Logo } from "@/components/brand/Logo";
 
@@ -30,7 +31,9 @@ interface Props {
 }
 
 export function AreasDrawer({ open, onClose }: Props) {
-  const { data: areas = [] } = useAreasNav();
+  const ready = useBootstrapReady();
+  const { data: areas = [], isLoading, isFetching } = useAreasNav({ enabled: ready });
+  const showLoading = !ready || isLoading || (isFetching && areas.length === 0);
   return (
     <>
       {/* Overlay */}
