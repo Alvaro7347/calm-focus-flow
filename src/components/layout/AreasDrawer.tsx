@@ -49,12 +49,12 @@ export function AreasDrawer({ open, onClose }: Props) {
         role="dialog"
         aria-label="Áreas"
       >
-        <div className="flex items-center justify-between px-6 pt-6 pb-4">
+        <div className="relative flex items-center justify-center px-6 pt-6 pb-4">
           <Logo height={40} />
           <button
             onClick={onClose}
             aria-label="Cerrar"
-            className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-50"
+            className="absolute right-4 top-1/2 -translate-y-1/2 inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-50"
           >
             <X className="h-4 w-4" />
           </button>

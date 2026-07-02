@@ -1,5 +1,5 @@
 import { Menu } from "lucide-react";
-import { LogoSymbol } from "@/components/brand/LogoSymbol";
+import { Wordmark } from "@/components/brand/Wordmark";
 import { BRAND } from "@/brand/brand";
 
 interface Props {
@@ -7,8 +7,8 @@ interface Props {
 }
 
 /**
- * Header compacto mobile. Muestra únicamente el símbolo del
- * logo, sin texto — regla del sistema de marca.
+ * Header compacto mobile. Muestra el wordmark oficial (solo texto)
+ * de CalmApp — regla del sistema de marca en la zona superior.
  */
 export function MobileHeader({ onOpenDrawer }: Props) {
   return (
@@ -20,7 +20,7 @@ export function MobileHeader({ onOpenDrawer }: Props) {
       >
         <Menu className="h-5 w-5" />
       </button>
-      <LogoSymbol size={28} ariaHidden />
+      <Wordmark height={22} />
       <span className="sr-only">{BRAND.name}</span>
     </header>
   );
