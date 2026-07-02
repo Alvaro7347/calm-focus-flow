@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## Corrección arquitectónica — preparación de "Crear tarea" (iteración actual)
+
+- `taskService.createTask()` ahora resuelve internamente `user_id` desde `supabase.auth.getUser()`. Las pantallas ya no envían `user_id`; si no hay usuario autenticado, el servicio lanza un error.
+- Nuevo tipo `CreateTaskInput` en `taskService`: payload que una pantalla puede completar. Excluye `user_id`, `created_at`, `updated_at`, `archived_at` y `completed_at`. `TaskInsert` queda reservado para la capa de servicios.
+- Verificado el encapsulamiento: ningún componente ni pantalla importa `@/integrations/supabase/client`. Todo acceso a Supabase pasa por `src/services/*`.
+- Confirmado que el esquema completo del dominio (enums, tablas, FKs, índices, constraints, triggers y RLS) está versionado en `supabase/migrations/`. No se agregaron migraciones nuevas.
+- Prioridades: el modelo oficial en Supabase es `high` | `medium` | `low`. El modelo antiguo (`alta` | `media` | `baja` | `normal`) permanece **solo** en los mocks del MVP y se retirará al migrar la UI.
+- No se modificaron FOCO, Calendar, Tablero, navegación ni estilos.
+
+
+
 ## MVP2 — Núcleo operativo de tareas en Supabase (iteración actual)
 
 - Se crea en Supabase el dominio central de tareas con RLS por usuario:
