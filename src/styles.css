@@ -2,6 +2,13 @@
 @source "../src";
 @import "tw-animate-css";
 
+/*
+ * CalmApp — Design tokens.
+ * La paleta deriva del logotipo oficial: navy profundo para "Calm"
+ * y un degradado violeta → azul para "App". El resto de la UI usa
+ * colores sólidos derivados; el degradado se reserva para acentos.
+ */
+
 @custom-variant dark (&:is(.dark *));
 
 /*
@@ -19,6 +26,13 @@
  */
 
 @theme inline {
+  --font-sans: "Manrope", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Manrope", ui-sans-serif, system-ui, sans-serif;
+
+  --color-brand-navy: var(--brand-navy);
+  --color-brand-violet: var(--brand-violet);
+  --color-brand-blue: var(--brand-blue);
+
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -62,9 +76,16 @@
 }
 
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.129 0.042 264.695);
+  --radius: 0.75rem;
+
+  /* Brand palette (derivada del logotipo oficial) */
+  --brand-navy: oklch(0.22 0.05 265);          /* "Calm" — navy profundo */
+  --brand-violet: oklch(0.62 0.22 285);        /* inicio del degradado "App" */
+  --brand-blue: oklch(0.66 0.18 250);          /* fin del degradado "App" */
+  --brand-gradient: linear-gradient(90deg, var(--brand-violet) 0%, var(--brand-blue) 100%);
+
+  --background: oklch(0.995 0.003 250);
+  --foreground: oklch(0.22 0.05 265);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.129 0.042 264.695);
   --popover: oklch(1 0 0);
