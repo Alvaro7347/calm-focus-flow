@@ -42,3 +42,19 @@ No se modificaron FOCO ni Calendar.
 - Documentación (`README.md`) actualizada: Supabase es la única fuente oficial de datos; Google Sheets solo para migración inicial; mocks siguen vigentes hasta completar la migración.
 - Autenticación: infraestructura lista; no se construyeron pantallas de Login ni se modificó la navegación.
 - No se modificaron FOCO, Calendar, Tablero ni Crear tarea. Sin cambios visuales.
+
+## Dominio organizacional (MVP1) — Supabase
+
+- Nuevas tablas en Supabase: `areas`, `projects`, `subprojects`, con jerarquía estricta `profile → area → project → subproject`.
+- **Integridad referencial**: FK obligatorias en cada nivel; `ON DELETE RESTRICT` en projects/subprojects para evitar eliminación en cascada accidental. Sin registros huérfanos.
+- **Archivado**: columna `archived_at TIMESTAMPTZ NULL` en las tres tablas. No hay eliminación física. La propagación del archivado a hijos se hará desde la capa de aplicación en una iteración posterior.
+- **Unicidad de nombres**: `(user_id, lower(name))` en areas; `(area_id, lower(name))` en projects; `(project_id, lower(name))` en subprojects.
+- **Orden manual**: `display_order INTEGER` en las tres tablas.
+- **RLS** activo en todas las tablas, con políticas basadas en `auth.uid()` y joins hacia `areas` para projects/subprojects.
+- **Índices** sobre `user_id`, `area_id`, `project_id`, `display_order` y `archived_at`.
+- Trigger `set_updated_at` reutilizado en las tres tablas.
+- Nuevos servicios: `projectService.ts` y `subprojectService.ts` (API asíncrona sobre Supabase: fetch, create, update, archive/unarchive).
+- `areaService.ts` ahora expone doble API: `getAreas()` síncrono (deriva de mocks, mantiene Sidebar/Drawer intactos) + `fetchAreas/createArea/updateArea/archiveArea` async contra Supabase.
+- Tipos TypeScript derivados de `src/integrations/supabase/types.ts`: `AreaRow/Insert/Update`, `ProjectRow/Insert/Update`, `SubprojectRow/Insert/Update`. Sin `any`.
+- Nueva documentación `ARCHITECTURE.md`.
+- No se modificaron pantallas ni componentes. FOCO, Calendar, Tablero y Crear tarea siguen funcionando exactamente igual.

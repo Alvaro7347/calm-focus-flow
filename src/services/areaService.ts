@@ -3,33 +3,31 @@
  * Archivo: areaService
  *
  * Responsabilidad:
- * Provee la lista de Áreas visibles en la aplicación. Es la
- * única fuente de verdad de Áreas del frontend.
+ * Provee la lista de Áreas visibles en la aplicación y expone
+ * la capa de acceso a la tabla `public.areas` de Supabase.
  *
- * Regla arquitectónica (permanente):
- * - Las Áreas se DERIVAN de las tareas expuestas por taskService.
- *   No existen Áreas "fantasma" sin tareas asociadas.
- * - Sidebar, AreasDrawer y Tablero consumen exactamente la
- *   misma información — no hay dos listas paralelas.
- * - Este servicio NO importa mocks directamente. Cuando en el
- *   MVP1 taskService pase a Supabase, este servicio no requerirá
- *   cambios.
+ * Estado (MVP0 → MVP1):
+ * - `getAreas()` (SÍNCRONO) sigue derivando las Áreas desde las
+ *   tareas mock expuestas por `taskService`. Sidebar, AreasDrawer
+ *   y Tablero lo consumen sin cambios visuales. Se mantiene hasta
+ *   que `taskService` migre a Supabase.
+ * - `fetchAreas()`, `createArea()`, `updateArea()`, `archiveArea()`
+ *   (ASÍNCRONOS) son la nueva API definitiva contra Supabase.
+ *   No consumen mocks. Se usarán cuando existan usuarios reales.
  *
- * Utilizado por:
- * - Sidebar (desktop)
- * - AreasDrawer (mobile)
- * - (indirectamente) Tablero, que ya arma su árbol desde
- *   taskService y por lo tanto muestra las mismas Áreas.
+ * Reglas del dominio (definidas en la migración):
+ * - Cada Área pertenece a un `user_id` (FK → profiles.id).
+ * - Nombre único por usuario (case-insensitive).
+ * - `archived_at` marca el archivado; NO se eliminan físicamente.
+ * - `display_order` habilita ordenamiento manual (drag & drop futuro).
  * ========================================================
  */
+import { supabase } from "@/integrations/supabase/client";
 import { getAllTasks } from "@/services/taskService";
-import type { Area } from "@/types/tarea";
+import type { Area, AreaRow, AreaInsert, AreaUpdate } from "@/types/tarea";
 
 /**
- * Colores estables para las Áreas conocidas del proyecto. Mantener
- * este mapa alineado con la paleta oficial de CalmApp. Cualquier
- * Área nueva que aparezca en tareas pero no esté aquí toma un
- * color de la paleta fallback (determinista por nombre).
+ * Colores estables para las Áreas conocidas del proyecto.
  */
 const AREA_COLORS: Record<string, string> = {
   Soundkeleles: "bg-violet-500",
@@ -54,12 +52,16 @@ const FALLBACK_PALETTE = [
 
 function colorFor(nombre: string): string {
   if (AREA_COLORS[nombre]) return AREA_COLORS[nombre];
-  // Hash determinista sobre el nombre para asignar un color estable.
   let hash = 0;
   for (let i = 0; i < nombre.length; i++) hash = (hash * 31 + nombre.charCodeAt(i)) >>> 0;
   return FALLBACK_PALETTE[hash % FALLBACK_PALETTE.length];
 }
 
+/**
+ * API síncrona (compat MVP0). Deriva Áreas desde las tareas mock.
+ * No consulta Supabase para no romper el render actual del Sidebar
+ * y del Drawer, que dependen de un valor síncrono.
+ */
 export function getAreas(): Area[] {
   const counts = new Map<string, number>();
   for (const t of getAllTasks()) {
@@ -67,10 +69,75 @@ export function getAreas(): Area[] {
     if (!nombre) continue;
     counts.set(nombre, (counts.get(nombre) ?? 0) + 1);
   }
-
   return Array.from(counts.entries()).map(([nombre, count]) => ({
     nombre,
     color: colorFor(nombre),
     count,
   }));
 }
+
+// ============================================================
+// API asíncrona sobre Supabase (MVP1)
+// ============================================================
+
+/** Lista las Áreas no archivadas del usuario autenticado, ordenadas por `display_order`. */
+export async function fetchAreas(includeArchived = false): Promise<AreaRow[]> {
+  let query = supabase
+    .from("areas")
+    .select("*")
+    .order("display_order", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  if (!includeArchived) query = query.is("archived_at", null);
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return (data ?? []) as AreaRow[];
+}
+
+export async function fetchAreaById(id: string): Promise<AreaRow | null> {
+  const { data, error } = await supabase.from("areas").select("*").eq("id", id).maybeSingle();
+  if (error) throw error;
+  return (data as AreaRow | null) ?? null;
+}
+
+export async function createArea(input: Omit<AreaInsert, "user_id">): Promise<AreaRow> {
+  const { data: userData } = await supabase.auth.getUser();
+  const user = userData.user;
+  if (!user) throw new Error("No hay usuario autenticado");
+
+  const payload: AreaInsert = { ...input, user_id: user.id };
+  const { data, error } = await supabase
+    .from("areas")
+    .insert(payload)
+    .select("*")
+    .single();
+  if (error) throw error;
+  return data as AreaRow;
+}
+
+export async function updateArea(id: string, patch: AreaUpdate): Promise<AreaRow> {
+  const { data, error } = await supabase
+    .from("areas")
+    .update(patch)
+    .eq("id", id)
+    .select("*")
+    .single();
+  if (error) throw error;
+  return data as AreaRow;
+}
+
+/**
+ * Marca un Área como archivada. NO elimina físicamente.
+ * NOTA: la propagación del archivado a Proyectos y Subproyectos
+ * hijos NO se realiza aquí — está prevista para una capa de
+ * aplicación posterior (ver DECISIONS.md).
+ */
+export async function archiveArea(id: string): Promise<AreaRow> {
+  return updateArea(id, { archived_at: new Date().toISOString() });
+}
+
+export async function unarchiveArea(id: string): Promise<AreaRow> {
+  return updateArea(id, { archived_at: null });
+}
+

@@ -46,3 +46,20 @@ export interface Area {
   color: string; // tailwind bg-* class for the dot
   count: number;
 }
+
+// ============================================================
+// Tipos derivados de Supabase (MVP1 — dominio organizacional)
+// ============================================================
+import type { Database } from "@/integrations/supabase/types";
+
+export type AreaRow = Database["public"]["Tables"]["areas"]["Row"];
+export type AreaInsert = Database["public"]["Tables"]["areas"]["Insert"];
+export type AreaUpdate = Database["public"]["Tables"]["areas"]["Update"];
+
+export type ProjectRow = Database["public"]["Tables"]["projects"]["Row"];
+export type ProjectInsert = Database["public"]["Tables"]["projects"]["Insert"];
+export type ProjectUpdate = Database["public"]["Tables"]["projects"]["Update"];
+
+export type SubprojectRow = Database["public"]["Tables"]["subprojects"]["Row"];
+export type SubprojectInsert = Database["public"]["Tables"]["subprojects"]["Insert"];
+export type SubprojectUpdate = Database["public"]["Tables"]["subprojects"]["Update"];
