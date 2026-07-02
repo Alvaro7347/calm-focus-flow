@@ -97,24 +97,27 @@ Las pantallas y componentes **no acceden a Supabase directamente**. Consumen ser
 | Servicio               | Fuente actual                 | Consumidores                          |
 | ---------------------- | ----------------------------- | ------------------------------------- |
 | `profileService`       | Supabase (`profiles`)         | Futuros: pantalla de cuenta.          |
-| `areaService`          | Mocks (sync) + Supabase (async) | Sidebar, AreasDrawer, Tablero (sync); Crear tarea (async). |
+| `areaService`          | Supabase                      | Crear tarea; Sidebar/AreasDrawer vía `useAreasNav`. |
 | `projectService`       | Supabase                      | Crear tarea.                          |
 | `subprojectService`    | Supabase                      | Crear tarea.                          |
-| `taskService`          | Mocks (sync) + Supabase (async) | Tablero (sync, pendiente de migración); Crear tarea, FOCO y Calendar (async). |
+| `taskService`          | Supabase                      | Crear tarea, FOCO, Calendar, Tablero. |
 | `focusService`         | `taskService` (Supabase)      | FOCO.                                 |
 | `calendarService`      | `taskService` (Supabase)      | Calendar.                             |
-| `tableroService`       | `taskService` (mock)          | Tablero.                              |
+| `tableroService`       | Supabase                      | Tablero.                              |
+| `seedService`          | `mockTasks` → Supabase        | Bootstrap único por usuario (dev).    |
 
 ### Estado de migración
 
-Crear tarea → Supabase. FOCO → Supabase. Calendar → Supabase. Tablero → mock (último módulo pendiente).
+Migración a Supabase COMPLETA: Crear tarea, FOCO, Calendar, Tablero y el
+shell de navegación (Sidebar, AreasDrawer) consumen exclusivamente
+Supabase. `mockTasks` sobrevive únicamente como semilla de bootstrap en
+`seedService` (LEGACY / DEVELOPMENT ONLY) y no forma parte del runtime.
 
-`areaService` expone dos APIs:
+`areaService` expone una única API asíncrona contra Supabase
+(`fetchAreas`, `fetchAreasWithCounts`, `createArea`, `updateArea`,
+`archiveArea`). `projectService` y `subprojectService` exponen solo API
+asíncrona contra Supabase y ya se consumen desde Crear tarea.
 
-- **`getAreas()` (síncrono)** — deriva Áreas desde las tareas mock de `taskService`. Mantiene el render del Sidebar/Drawer y del Tablero sin cambios. Se retirará cuando Tablero migre a Supabase.
-- **`fetchAreas()`, `createArea()`, `updateArea()`, `archiveArea()` (async)** — API definitiva contra Supabase, ya en uso desde Crear tarea.
-
-`projectService` y `subprojectService` exponen solo API asíncrona contra Supabase y ya se consumen desde Crear tarea.
 
 
 ## Tipos TypeScript
