@@ -127,6 +127,7 @@ export async function fetchAreasWithCounts(): Promise<Area[]> {
   }));
 }
 
+export async function fetchAreaById(id: string): Promise<AreaRow | null> {
   const { data, error } = await supabase.from("areas").select("*").eq("id", id).maybeSingle();
   if (error) throw error;
   return (data as AreaRow | null) ?? null;
