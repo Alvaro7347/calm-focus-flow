@@ -24,7 +24,7 @@
  */
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Keyboard, LayoutGrid, Mic, Paperclip, Plus, Trash2 } from "lucide-react";
+import { Keyboard, Mic, Paperclip, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -38,12 +38,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
-import { fetchAreas } from "@/services/areaService";
-import { fetchProjects } from "@/services/projectService";
-import { fetchSubprojects } from "@/services/subprojectService";
+import { fetchAreas, createArea } from "@/services/areaService";
+import { fetchProjects, createProject } from "@/services/projectService";
+import { fetchSubprojects, createSubproject } from "@/services/subprojectService";
 import { createTask, type CreateTaskInput, type TaskPriority } from "@/services/taskService";
 import type { AreaRow, ProjectRow, SubprojectRow } from "@/types/tarea";
+
+type InlineKind = "area" | "project" | "subproject" | null;
 
 export const Route = createFileRoute("/crear-tarea")({
   head: () => ({ meta: [{ title: "Crear tarea — CalmApp" }] }),
