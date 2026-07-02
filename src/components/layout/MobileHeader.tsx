@@ -1,10 +1,15 @@
 import { Menu } from "lucide-react";
-import { Wordmark } from "@/components/brand/Wordmark";
+import { LogoSymbol } from "@/components/brand/LogoSymbol";
+import { BRAND } from "@/brand/brand";
 
 interface Props {
   onOpenDrawer: () => void;
 }
 
+/**
+ * Header compacto mobile. Muestra únicamente el símbolo del
+ * logo, sin texto — regla del sistema de marca.
+ */
 export function MobileHeader({ onOpenDrawer }: Props) {
   return (
     <header className="md:hidden sticky top-0 z-30 flex items-center gap-3 border-b border-border bg-background px-4 h-14">
@@ -15,7 +20,8 @@ export function MobileHeader({ onOpenDrawer }: Props) {
       >
         <Menu className="h-5 w-5" />
       </button>
-      <Wordmark height={22} />
+      <LogoSymbol size={28} ariaHidden />
+      <span className="sr-only">{BRAND.name}</span>
     </header>
   );
 }
