@@ -24,7 +24,7 @@
  */
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Keyboard, Mic, Paperclip, Plus, Trash2 } from "lucide-react";
+import { Keyboard, LayoutGrid, Mic, Paperclip, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
