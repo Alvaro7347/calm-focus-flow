@@ -50,7 +50,7 @@ export function AreasDrawer({ open, onClose }: Props) {
         aria-label="Áreas"
       >
         <div className="flex items-center justify-between px-6 pt-6 pb-4">
-          <Wordmark height={24} />
+          <Logo height={40} />
           <button
             onClick={onClose}
             aria-label="Cerrar"
