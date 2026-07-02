@@ -92,11 +92,59 @@ function CrearTareaScreen() {
   const [duracion, setDuracion] = useState<string>("");
 
   // Recordatorios: UI deshabilitada hasta que exista persistencia en task_reminders.
-  // La lógica local se conserva para habilitarla en una futura iteración.
   const [reminders, setReminders] = useState<Reminder[]>([]);
 
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Creación inline
+  const [inlineOpen, setInlineOpen] = useState<InlineKind>(null);
+  const [inlineName, setInlineName] = useState("");
+  const [inlineSaving, setInlineSaving] = useState(false);
+  const [inlineError, setInlineError] = useState<string | null>(null);
+
+  function openInline(kind: Exclude<InlineKind, null>) {
+    setInlineName("");
+    setInlineError(null);
+    setInlineOpen(kind);
+  }
+
+  async function handleInlineCreate() {
+    const name = inlineName.trim();
+    if (!name) {
+      setInlineError("El nombre es obligatorio.");
+      return;
+    }
+    setInlineSaving(true);
+    setInlineError(null);
+    try {
+      if (inlineOpen === "area") {
+        const created = await createArea({ name });
+        const rows = await fetchAreas();
+        setAreas(rows);
+        setAreaId(created.id);
+      } else if (inlineOpen === "project") {
+        if (!areaId) throw new Error("Selecciona un área primero.");
+        const created = await createProject({ name, area_id: areaId });
+        const rows = await fetchProjects(areaId);
+        setProjects(rows);
+        setProjectId(created.id);
+      } else if (inlineOpen === "subproject") {
+        if (!projectId) throw new Error("Selecciona un proyecto primero.");
+        const created = await createSubproject({ name, project_id: projectId });
+        const rows = await fetchSubprojects(projectId);
+        setSubprojects(rows);
+        setSubprojectId(created.id);
+      }
+      setInlineOpen(null);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "No se pudo crear.";
+      setInlineError(msg);
+    } finally {
+      setInlineSaving(false);
+    }
+  }
+
 
   // ---- Carga inicial de áreas
   useEffect(() => {
