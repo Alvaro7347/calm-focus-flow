@@ -88,12 +88,29 @@ profiles → areas → projects → subprojects
 
 Detalles completos en [`ARCHITECTURE.md`](./ARCHITECTURE.md).
 
+### Núcleo operativo de tareas (MVP2)
+
+Se agrega el dominio central en Supabase, con RLS por usuario:
+
+```
+tasks ─┬─ capture_sessions (opcional, origen de la tarea)
+       ├─ attachments      (archivos en Supabase Storage)
+       ├─ task_reminders   (múltiples por tarea)
+       └─ activity_log     (bitácora append-only)
+```
+
+- Toda tarea pertenece obligatoriamente a `user_id` + `subproject_id`. **No** existen `area_id` ni `project_id` en `tasks`: Área y Proyecto se derivan por relación.
+- `status` sólo puede ser `pending` o `completed`; `completed_at` se sincroniza por CHECK.
+- Sin eliminación física — se usa `archived_at`.
+- `taskService` expone una API síncrona (mocks, temporal) y una API asíncrona contra Supabase (`fetchTasks`, `createTask`, `updateTask`, `completeTask`, `reopenTask`, `archiveTask`).
+
 ## Autenticación
 
 La infraestructura de autenticación de Lovable Cloud queda preparada, pero **aún no se construyen pantallas de Login**. Los proveedores previstos (Email, Google, otros) se activarán en una iteración posterior sin modificar la navegación actual.
 
 ## Próximos pasos
 
-Diseñar y crear la tabla `tasks` en Supabase, y migrar `taskService` desde mocks hacia la base de datos real.
+Construir la pantalla **Crear tarea** consumiendo la nueva API asíncrona de `taskService`, sin volver a tocar el esquema de la base.
+
 
 
