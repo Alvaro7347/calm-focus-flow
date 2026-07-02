@@ -14,7 +14,7 @@ Registro de decisiones de producto ya cerradas. No reabrir sin justificación ex
 - Jerarquía: Área → Proyecto → Subproyecto → Tarea.
 - Regla permanente: toda tarea pertenece siempre a un Área, un Proyecto y un Subproyecto reales. No existen nodos de relleno tipo "Sin proyecto" o "General". Una tarea incompleta es un dato inválido, no un caso a resolver con un nodo automático.
 - Las Áreas se derivan de las tareas reales (no hay lista de Áreas hardcodeada aparte). Sidebar, Drawer y Tablero muestran siempre la misma lista.
-- Fuente de verdad de datos: Google Sheets en v1 (MVP1). Migración a Supabase planeada para v2. La interfaz pública de los servicios (`taskService`, `areaService`, etc.) debe mantenerse estable a través de ese cambio de origen de datos.
+- Fuente de verdad de datos: **Supabase** es la fuente oficial. Crear tarea, FOCO y Calendar ya operan sobre Supabase; Tablero es el último módulo que sigue leyendo del mock y está pendiente de migración. La interfaz pública de los servicios (`taskService`, `areaService`, etc.) se mantiene estable a lo largo de esa migración.
 - Dependencias entre tareas: fuera de alcance de MVP1.
 - Tiempo estimado por tarea: campo manual desde MVP1 (valores típicos: 15/30/45/60/90/120 min).
 - Distinción conceptual: `Fecha límite` = deadline duro/no negociable. `Fecha programada` = cuándo el usuario decide ejecutarla. Son campos distintos, no intercambiables.
