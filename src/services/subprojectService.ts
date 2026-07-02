@@ -12,10 +12,11 @@
  * - Se archiva con `archived_at`; nunca se elimina físicamente.
  * - `display_order` habilita ordenamiento manual futuro.
  *
- * Este servicio ya se consume desde Crear tarea (selector en
- * cascada). El Tablero seguirá funcionando con mocks hasta que
- * migre a Supabase (último módulo pendiente).
-
+ * Se consume desde Crear tarea (selector en cascada) y desde
+ * el Tablero. El Tablero, al igual que FOCO y Calendar, opera
+ * con Supabase como fuente única de datos. Los mocks solo
+ * sobreviven como semilla de desarrollo (seedService) y nunca
+ * como fuente funcional en runtime.
  * ========================================================
  */
 import { supabase } from "@/integrations/supabase/client";
