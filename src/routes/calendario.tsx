@@ -38,6 +38,7 @@ import { CalendarHeader } from "@/components/calendar/CalendarHeader";
 import { WeekView } from "@/components/calendar/WeekView";
 import { MonthView } from "@/components/calendar/MonthView";
 import { EventDetail } from "@/components/calendar/EventDetail";
+import { TaskDetailSheet } from "@/components/TaskDetail";
 
 export const Route = createFileRoute("/calendario")({
   head: () => ({
@@ -134,7 +135,18 @@ function CalendarioPage() {
       </div>
 
 
-      <EventDetail event={selected} onClose={() => setSelected(null)} />
+      {/* Tareas CalmApp → TaskDetailSheet (edición completa).
+          Eventos externos (p. ej. Google Calendar en el futuro) → EventDetail (solo lectura). */}
+      <TaskDetailSheet
+        open={!!selected && selected.source === "calmapp"}
+        onOpenChange={(o) => { if (!o) setSelected(null); }}
+        mode="edit"
+        taskId={selected?.source === "calmapp" ? selected.id : undefined}
+      />
+      <EventDetail
+        event={selected && selected.source !== "calmapp" ? selected : null}
+        onClose={() => setSelected(null)}
+      />
     </div>
   );
 }
