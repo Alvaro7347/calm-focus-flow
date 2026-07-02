@@ -12,12 +12,11 @@
  * - FOCO → Supabase (`fetchFocusTasks()`).
  * - Calendar → Supabase (`fetchScheduledTasks()`).
  * - Tablero → Supabase (`tableroService.fetchAreaTree()`).
- * - La migración a Supabase está COMPLETA: ninguna pantalla
- *   funcional consume ya la API síncrona ni `mockTasks`.
- * - `getAllTasks()` / `getTaskById()` permanecen únicamente como
- *   compatibilidad legada para el shell de navegación
- *   (`Sidebar`, `AreasDrawer`) a través de `areaService.getAreas()`.
- *   Se retirarán cuando ese shell adopte la API asíncrona.
+ * - Sidebar / AreasDrawer → Supabase (`areaService.fetchAreasWithCounts()`).
+ * - La migración a Supabase está COMPLETA: ninguna pantalla ni
+ *   servicio en runtime consume `mockTasks`. Los mocks sobreviven
+ *   únicamente en `seedService` como bootstrap del entorno de
+ *   desarrollo (ver `seedService.ts`).
 
  *
  * Reglas de dominio (ver ARCHITECTURE.md):
