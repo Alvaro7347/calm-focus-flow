@@ -12,11 +12,8 @@
  *   contra Supabase y las consumen Crear tarea, FOCO, Calendar,
  *   Tablero y el shell de navegación (Sidebar, AreasDrawer vía el
  *   hook `useAreasNav`).
- * - `getAreas()` (SÍNCRONO, LEGACY) queda únicamente como compat
- *   interna; ya NO es consumido por la navegación lateral. Se
- *   retirará en una limpieza técnica posterior. No usar en código
- *   nuevo.
-
+ * - No existe API síncrona: la migración a Supabase está completa
+ *   y toda la aplicación pasa por Supabase.
  *
  * Reglas del dominio (definidas en la migración):
  * - Cada Área pertenece a un `user_id` (FK → profiles.id).
@@ -26,7 +23,6 @@
  * ========================================================
  */
 import { supabase } from "@/integrations/supabase/client";
-import { getAllTasks } from "@/services/taskService";
 import type { Area, AreaRow, AreaInsert, AreaUpdate } from "@/types/tarea";
 
 /**
@@ -58,25 +54,6 @@ function colorFor(nombre: string): string {
   let hash = 0;
   for (let i = 0; i < nombre.length; i++) hash = (hash * 31 + nombre.charCodeAt(i)) >>> 0;
   return FALLBACK_PALETTE[hash % FALLBACK_PALETTE.length];
-}
-
-/**
- * API síncrona (compat MVP0). Deriva Áreas desde las tareas mock.
- * No consulta Supabase para no romper el render actual del Sidebar
- * y del Drawer, que dependen de un valor síncrono.
- */
-export function getAreas(): Area[] {
-  const counts = new Map<string, number>();
-  for (const t of getAllTasks()) {
-    const nombre = t.area?.trim();
-    if (!nombre) continue;
-    counts.set(nombre, (counts.get(nombre) ?? 0) + 1);
-  }
-  return Array.from(counts.entries()).map(([nombre, count]) => ({
-    nombre,
-    color: colorFor(nombre),
-    count,
-  }));
 }
 
 // ============================================================
