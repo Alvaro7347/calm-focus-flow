@@ -98,7 +98,35 @@ export async function fetchAreas(includeArchived = false): Promise<AreaRow[]> {
   return (data ?? []) as AreaRow[];
 }
 
-export async function fetchAreaById(id: string): Promise<AreaRow | null> {
+
+/**
+ * Devuelve las Áreas activas del usuario autenticado con su
+ * contador de tareas NO archivadas, en el shape de UI (`Area`).
+ * Fuente de verdad para el shell de navegación (Sidebar, AreasDrawer)
+ * a través del hook `useAreasNav`. Consulta exclusivamente Supabase.
+ */
+export async function fetchAreasWithCounts(): Promise<Area[]> {
+  const rows = await fetchAreas(false);
+
+  const { data: taskRows, error } = await supabase
+    .from("tasks")
+    .select("area_id")
+    .is("archived_at", null);
+  if (error) throw error;
+
+  const counts = new Map<string, number>();
+  for (const t of taskRows ?? []) {
+    if (!t.area_id) continue;
+    counts.set(t.area_id, (counts.get(t.area_id) ?? 0) + 1);
+  }
+
+  return rows.map((r) => ({
+    nombre: r.name,
+    color: colorFor(r.name),
+    count: counts.get(r.id) ?? 0,
+  }));
+}
+
   const { data, error } = await supabase.from("areas").select("*").eq("id", id).maybeSingle();
   if (error) throw error;
   return (data as AreaRow | null) ?? null;
