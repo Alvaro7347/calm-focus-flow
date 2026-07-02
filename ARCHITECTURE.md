@@ -38,6 +38,37 @@ Campos: `id` (= `auth.users.id`), `nombre`, `email`, `avatar_url`, `created_at`,
 - **Unicidad**: `(project_id, lower(name))`.
 - Índices: `project_id`, `(project_id, display_order)`, `archived_at`.
 
+## Núcleo operativo de tareas (MVP2)
+
+### `tasks`
+- Pertenece a **`user_id`** (FK → `profiles.id`, `ON DELETE CASCADE`) **y a `subproject_id`** (FK → `subprojects.id`, `ON DELETE RESTRICT`). **No guarda `area_id` ni `project_id`**: Área y Proyecto se derivan siempre por relación `subprojects → projects → areas`.
+- Campos de contenido: `title` (obligatorio, no vacío por CHECK), `description`.
+- Estado: `status` (`pending` | `completed`), `blocked_reason`. `CHECK` garantiza que `completed` implica `completed_at IS NOT NULL` y que `pending` implica `completed_at IS NULL`.
+- Prioridad: `priority` (`high` | `medium` | `low`, default `medium`).
+- Tiempo: `starts_at`, `estimated_duration_min`, `actual_duration_min`, `completed_at`.
+- Origen: `source` (`text` | `voice` | `manual` | `import` | `api`).
+- Captura: `capture_session_id` (FK → `capture_sessions.id`, `ON DELETE SET NULL`).
+- Auditoría: `archived_at`, `created_at`, `updated_at` (mantenido por trigger `set_updated_at`).
+- **Sin eliminación física** — usar `archived_at`.
+- Índices: `user_id`, `subproject_id`, `status`, `priority`, `starts_at`, `completed_at`, `archived_at`, `capture_session_id`.
+
+### `capture_sessions`
+- Pertenece a `user_id`. Campos: `source` (`text` | `voice`), `transcription`, `created_at`.
+- Prepara la captura por texto o voz. La interpretación IA se agregará en una iteración posterior (no existe aún `ai_history`).
+
+### `attachments`
+- Pertenece a `task_id` (`ON DELETE CASCADE`). Campos: `storage_path`, `filename`, `mime_type`, `size_bytes`, `created_at`.
+- Los archivos **no se guardan en la base**: viven en Supabase Storage; esta tabla solo almacena metadatos y la ruta.
+
+### `task_reminders`
+- Pertenece a `task_id` (`ON DELETE CASCADE`). Campos: `remind_at`, `sent_at`, `created_at`.
+- Una tarea puede tener múltiples recordatorios.
+
+### `activity_log`
+- Pertenece a `task_id` (`ON DELETE CASCADE`). Campos: `action` (texto libre), `old_value` (JSONB), `new_value` (JSONB), `created_at`.
+- Bitácora append-only por RLS: el usuario puede leer e insertar, pero no editar ni borrar. Registrará creación, edición, cambio de subproyecto, cambio de fecha, cambio de prioridad, completada, archivada. La lógica de escritura se implementará en próximas iteraciones.
+
+
 ## Row Level Security
 
 Todas las tablas del dominio tienen RLS activo. Un usuario solo puede ver/crear/editar/archivar sus propios registros:
