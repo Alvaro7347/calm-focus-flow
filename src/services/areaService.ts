@@ -7,15 +7,15 @@
  * la capa de acceso a la tabla `public.areas` de Supabase.
  *
  * Estado de migración:
- * - `getAreas()` (SÍNCRONO) permanece únicamente como compatibilidad
- *   del shell de navegación (Sidebar, AreasDrawer): esos componentes
- *   requieren un valor síncrono y no forman parte de las pantallas
- *   funcionales. Sigue derivando la lista desde `taskService.getAllTasks()`
- *   (mock). Se retirará cuando el shell de navegación adopte la API
- *   asíncrona.
- * - `fetchAreas()`, `createArea()`, `updateArea()`, `archiveArea()`
- *   (ASÍNCRONOS) son la API oficial contra Supabase y las consumen
- *   Crear tarea, FOCO, Calendar y Tablero.
+ * - `fetchAreas()`, `fetchAreasWithCounts()`, `createArea()`,
+ *   `updateArea()`, `archiveArea()` (ASÍNCRONOS) son la API oficial
+ *   contra Supabase y las consumen Crear tarea, FOCO, Calendar,
+ *   Tablero y el shell de navegación (Sidebar, AreasDrawer vía el
+ *   hook `useAreasNav`).
+ * - `getAreas()` (SÍNCRONO, LEGACY) queda únicamente como compat
+ *   interna; ya NO es consumido por la navegación lateral. Se
+ *   retirará en una limpieza técnica posterior. No usar en código
+ *   nuevo.
 
  *
  * Reglas del dominio (definidas en la migración):
