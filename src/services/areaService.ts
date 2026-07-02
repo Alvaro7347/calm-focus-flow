@@ -106,9 +106,10 @@ export async function createArea(input: Omit<AreaInsert, "user_id">): Promise<Ar
   const user = userData.user;
   if (!user) throw new Error("No hay usuario autenticado");
 
+  const payload: AreaInsert = { ...input, user_id: user.id };
   const { data, error } = await supabase
     .from("areas")
-    .insert({ ...input, user_id: user.id })
+    .insert(payload)
     .select("*")
     .single();
   if (error) throw error;
