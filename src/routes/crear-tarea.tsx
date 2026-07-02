@@ -64,6 +64,7 @@ function CrearTareaScreen() {
 
   // Organización
   const [areas, setAreas] = useState<AreaRow[]>([]);
+  const [areasLoading, setAreasLoading] = useState(true);
   const [projects, setProjects] = useState<ProjectRow[]>([]);
   const [subprojects, setSubprojects] = useState<SubprojectRow[]>([]);
   const [areaId, setAreaId] = useState<string>("");
