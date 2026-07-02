@@ -24,6 +24,7 @@
  */
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Keyboard, Mic, Paperclip, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -50,7 +51,12 @@ import {
 import { fetchAreas, createArea } from "@/services/areaService";
 import { fetchProjects, createProject } from "@/services/projectService";
 import { fetchSubprojects, createSubproject } from "@/services/subprojectService";
-import { createTask, type CreateTaskInput, type TaskPriority } from "@/services/taskService";
+import {
+  createTask,
+  type CreateTaskInput,
+  type TaskPriority,
+  type TaskStatus,
+} from "@/services/taskService";
 import type { AreaRow, ProjectRow, SubprojectRow } from "@/types/tarea";
 
 type InlineKind = "area" | "project" | "subproject" | null;
@@ -67,6 +73,7 @@ interface Reminder {
 
 function CrearTareaScreen() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   // Captura
   const [captura, setCaptura] = useState("");
@@ -85,6 +92,9 @@ function CrearTareaScreen() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<TaskPriority>("medium");
+  // Estado inicial: pending por defecto; "waiting" si la tarea nace detenida
+  // a la espera de un tercero (aparece automáticamente en la columna ESPERANDO).
+  const [status, setStatus] = useState<TaskStatus>("pending");
 
   // Programación
   const [fecha, setFecha] = useState("");
@@ -260,12 +270,15 @@ function CrearTareaScreen() {
         title: title.trim(),
         description: description.trim() || null,
         priority,
-        status: "pending",
+        status,
         source: "manual",
         starts_at: buildStartsAt(),
         estimated_duration_min: duracion ? Number(duracion) : null,
       };
       await createTask(input);
+      // Invalida la caché de FOCO para que la nueva tarea aparezca de
+      // inmediato en la columna correspondiente sin refrescar la página.
+      await queryClient.invalidateQueries({ queryKey: ["focus"] });
       toast.success("Tarea creada correctamente.");
       navigate({ to: "/foco" });
     } catch (err) {
@@ -504,6 +517,25 @@ function CrearTareaScreen() {
                     <SelectItem value="low">Baja</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Estado</Label>
+                <Select
+                  value={status}
+                  onValueChange={(v) => setStatus(v as TaskStatus)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Pendiente</SelectItem>
+                    <SelectItem value="waiting">Esperando</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Elige "Esperando" si la tarea depende de un tercero o de una respuesta externa.
+                </p>
               </div>
             </section>
 

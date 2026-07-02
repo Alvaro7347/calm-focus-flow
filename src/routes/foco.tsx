@@ -1,24 +1,21 @@
 /**
  * ========================================================
- * Archivo: routes/foco (FocoPage)
+ * Ruta: /foco
  *
- * Responsabilidad:
  * Pantalla FOCO. Renderiza las 4 columnas (Hoy, Esta semana,
  * Esperando, Sin movimiento) a partir de los datos entregados
- * por focusService.
+ * por focusService, que a su vez lee EXCLUSIVAMENTE desde
+ * Supabase vía taskService.
  *
- * Utilizado por:
- * - TanStack Router (ruta /foco).
- *
- * No debe importar datos mock directamente ni contener lógica
- * de filtrado o transformación de tareas. Toda esa lógica
- * vive en src/services/focusService.ts.
- *
- * En el MVP1, focusService pasará a leer desde Supabase; esta
- * pantalla no requerirá cambios.
+ * Reactividad:
+ * - Los datos se cachean bajo la queryKey ["focus"].
+ * - Al crear/editar/completar una tarea, invalidar esa key
+ *   con `queryClient.invalidateQueries({ queryKey: ["focus"] })`.
+ *   FOCO se refresca automáticamente sin necesidad de recargar.
  * ========================================================
  */
 import { createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { Clock, Calendar, Hourglass, TrendingUp, Target, Filter } from "lucide-react";
 import { FocoColumna } from "@/components/foco/FocoColumna";
 import { getFocusTasks } from "@/services/focusService";
@@ -27,14 +24,28 @@ export const Route = createFileRoute("/foco")({
   head: () => ({
     meta: [
       { title: "FOCO — CalmApp" },
-      { name: "description", content: "Lo que necesita tu foco total. Suelta lo que te pesa y avanza en lo importante." },
+      {
+        name: "description",
+        content: "Lo que necesita tu foco total. Suelta lo que te pesa y avanza en lo importante.",
+      },
     ],
   }),
   component: FocoPage,
 });
 
+export const focusQueryKey = ["focus"] as const;
+
 function FocoPage() {
-  const { hoy, estaSemana: semana, esperando, sinMovimiento: sinMov } = getFocusTasks();
+  const { data, isLoading, isError, error } = useQuery({
+    queryKey: focusQueryKey,
+    queryFn: getFocusTasks,
+    staleTime: 15_000,
+  });
+
+  const hoy = data?.hoy ?? [];
+  const semana = data?.estaSemana ?? [];
+  const esperando = data?.esperando ?? [];
+  const sinMov = data?.sinMovimiento ?? [];
 
   return (
     <div className="px-6 md:px-10 py-8 pb-32 md:pb-8">
@@ -57,41 +68,48 @@ function FocoPage() {
         </button>
       </div>
 
-      {/* Columnas */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
-        <FocoColumna
-          numero={1}
-          titulo="Hoy"
-          subtitulo="Agendado para hoy + todo lo vencido"
-          descripcion="Tareas agendadas para hoy, incluyendo lo vencido de días anteriores."
-          icono={<Clock className="h-5 w-5" />}
-          tareas={hoy}
-        />
-        <FocoColumna
-          numero={2}
-          titulo="Esta semana"
-          subtitulo="Lo agendado el resto de la semana"
-          descripcion="Tareas programadas para el resto de la semana."
-          icono={<Calendar className="h-5 w-5" />}
-          tareas={semana}
-        />
-        <FocoColumna
-          numero={3}
-          titulo="Esperando"
-          subtitulo="Tareas en espera o bloqueadas"
-          descripcion="Tareas detenidas a la espera de una respuesta o acción externa."
-          icono={<Hourglass className="h-5 w-5" />}
-          tareas={esperando}
-        />
-        <FocoColumna
-          numero={4}
-          titulo="Sin movimiento"
-          subtitulo="Tareas sin actividad reciente"
-          descripcion="Tareas que llevan varios días sin ningún avance."
-          icono={<TrendingUp className="h-5 w-5" />}
-          tareas={sinMov}
-        />
-      </div>
+      {isLoading ? (
+        <div className="text-sm text-slate-500">Cargando tus tareas…</div>
+      ) : isError ? (
+        <div className="text-sm text-destructive">
+          No pudimos cargar tus tareas. {error instanceof Error ? error.message : ""}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
+          <FocoColumna
+            numero={1}
+            titulo="Hoy"
+            subtitulo="Agendado para hoy + todo lo vencido"
+            descripcion="Tareas agendadas para hoy, incluyendo lo vencido de días anteriores."
+            icono={<Clock className="h-5 w-5" />}
+            tareas={hoy}
+          />
+          <FocoColumna
+            numero={2}
+            titulo="Esta semana"
+            subtitulo="Lo agendado el resto de la semana"
+            descripcion="Tareas programadas para el resto de la semana."
+            icono={<Calendar className="h-5 w-5" />}
+            tareas={semana}
+          />
+          <FocoColumna
+            numero={3}
+            titulo="Esperando"
+            subtitulo="Tareas en espera o bloqueadas"
+            descripcion="Tareas detenidas a la espera de una respuesta o acción externa."
+            icono={<Hourglass className="h-5 w-5" />}
+            tareas={esperando}
+          />
+          <FocoColumna
+            numero={4}
+            titulo="Sin movimiento"
+            subtitulo="Tareas sin actividad reciente"
+            descripcion="Tareas que llevan varios días sin ningún avance."
+            icono={<TrendingUp className="h-5 w-5" />}
+            tareas={sinMov}
+          />
+        </div>
+      )}
 
       {/* Pie */}
       <div className="mt-16 flex flex-col items-center text-center">
