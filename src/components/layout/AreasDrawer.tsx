@@ -88,7 +88,14 @@ export function AreasDrawer({ open, onClose }: Props) {
         </div>
 
         <div className="border-t border-slate-200 px-6 py-4 space-y-1">
-          <FooterItem icon={<Settings className="h-4 w-4" />} label="Ajustes" />
+          <Link
+            to="/ajustes"
+            onClick={onClose}
+            className="w-full flex items-center gap-3 rounded-lg px-2 py-2 text-sm text-slate-600 hover:bg-slate-50"
+          >
+            <span className="text-slate-500"><Settings className="h-4 w-4" /></span>
+            <span>Ajustes</span>
+          </Link>
           <Link
             to="/mi-cuenta"
             onClick={onClose}
