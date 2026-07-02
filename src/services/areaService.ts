@@ -110,14 +110,15 @@ export async function fetchAreasWithCounts(): Promise<Area[]> {
 
   const { data: taskRows, error } = await supabase
     .from("tasks")
-    .select("area_id")
+    .select("subprojects!inner(projects!inner(area_id))")
     .is("archived_at", null);
   if (error) throw error;
 
   const counts = new Map<string, number>();
-  for (const t of taskRows ?? []) {
-    if (!t.area_id) continue;
-    counts.set(t.area_id, (counts.get(t.area_id) ?? 0) + 1);
+  for (const t of (taskRows ?? []) as Array<{ subprojects: { projects: { area_id: string | null } } }>) {
+    const areaId = t.subprojects?.projects?.area_id;
+    if (!areaId) continue;
+    counts.set(areaId, (counts.get(areaId) ?? 0) + 1);
   }
 
   return rows.map((r) => ({
