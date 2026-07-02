@@ -3,37 +3,34 @@
  * Archivo: taskService
  *
  * Responsabilidad:
- * Única fuente de verdad para el acceso a tareas en toda la
- * aplicación. Cualquier pantalla o servicio que necesite
- * tareas debe pasar por aquí — nunca importar mocks
- * directamente ni conocer el origen de los datos.
+ * Única fuente de verdad para el acceso a tareas. Cualquier
+ * pantalla o servicio debe pasar por aquí — nunca importar
+ * mocks directamente ni conocer el origen de los datos.
  *
- * Estrategia MVP0 → MVP2 (arquitectura híbrida):
- * - API síncrona (getAllTasks, getTasksByFocusCategory,
- *   getTaskById): sigue leyendo desde el mock local para
- *   mantener intactos FOCO, Calendar y Tablero mientras la
- *   UI no ha migrado. Es temporal.
- * - API asíncrona (fetchTasks, fetchTaskById, createTask,
- *   updateTask, completeTask, archiveTask): consulta y
- *   escribe en la tabla `tasks` de Supabase. Es la fuente
- *   oficial que se usará al construir "Crear tarea" y las
- *   siguientes pantallas.
+ * Estado de migración:
+ * - FOCO consume exclusivamente `fetchFocusTasks()` (Supabase).
+ * - Calendar y Tablero aún consumen la API síncrona
+ *   (`getAllTasks`, `getTaskById`) que sigue leyendo desde el
+ *   mock. Esos módulos se migrarán en iteraciones siguientes
+ *   y esta API síncrona quedará deprecada.
  *
  * Reglas de dominio (ver ARCHITECTURE.md):
- * - Toda tarea pertenece obligatoriamente a un usuario y a
- *   un subproyecto. Área y Proyecto se derivan por relación
- *   subprojects → projects → areas; jamás se guardan en
- *   `tasks`.
- * - No existe eliminación física: usar archiveTask() que
+ * - Toda tarea pertenece obligatoriamente a un usuario y a un
+ *   subproyecto. Área y Proyecto se derivan por relación.
+ * - No existe eliminación física: usar `archiveTask()` que
  *   escribe `archived_at`.
- * - Estados válidos: 'pending' | 'completed'. `completed_at`
- *   se sincroniza con el estado por CHECK constraint.
+ * - Estados válidos: 'pending' | 'waiting' | 'completed'.
+ *   `waiting` = detenida a la espera de un tercero. El
+ *   archivado NO es un estado: sigue viviendo en `archived_at`.
+ * - Las columnas de FOCO NO se almacenan: se calculan en
+ *   `fetchFocusTasks()` a partir de `status`, `starts_at` y
+ *   `updated_at`.
  * ========================================================
  */
 import { tareasFoco } from "@/data/mockTasks";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
-import type { CategoriaFoco, Tarea } from "@/types/tarea";
+import type { CategoriaFoco, Priority, Tarea } from "@/types/tarea";
 
 export type TaskRow = Database["public"]["Tables"]["tasks"]["Row"];
 export type TaskInsert = Database["public"]["Tables"]["tasks"]["Insert"];
@@ -43,29 +40,19 @@ export type TaskPriority = Database["public"]["Enums"]["task_priority"];
 export type TaskSource = Database["public"]["Enums"]["task_source"];
 
 /**
- * CreateTaskInput — payload que una pantalla puede enviar al crear una tarea.
- *
- * Contiene únicamente los campos que la UI conoce. Excluye deliberadamente:
- * - `user_id`         → lo agrega `taskService.createTask()` a partir de `supabase.auth.getUser()`.
- * - `created_at` / `updated_at` → los gestiona la base de datos.
- * - `archived_at`     → se controla vía `archiveTask()`.
- * - `completed_at`    → se controla vía `completeTask()` / `reopenTask()`.
- *
- * `TaskInsert` queda reservado para uso interno de la capa de servicios.
+ * Payload de creación. Excluye deliberadamente los campos que
+ * gestiona la capa de servicios o la base de datos.
  */
 export type CreateTaskInput = Omit<
   TaskInsert,
   "user_id" | "created_at" | "updated_at" | "archived_at" | "completed_at"
 >;
 
-// ---------- API síncrona (mock, temporal) ----------
+// ---------- API síncrona (mock, temporal para Calendar/Tablero) ----------
+// Deprecada: se retirará cuando Calendar y Tablero migren a Supabase.
 
 export function getAllTasks(): Tarea[] {
   return tareasFoco;
-}
-
-export function getTasksByFocusCategory(categoria: CategoriaFoco): Tarea[] {
-  return tareasFoco.filter((t) => t.categoriaFoco === categoria);
 }
 
 export function getTaskById(id: string): Tarea | undefined {
@@ -82,17 +69,9 @@ export interface FetchTasksOptions {
 
 export async function fetchTasks(options: FetchTasksOptions = {}): Promise<TaskRow[]> {
   let query = supabase.from("tasks").select("*");
-
-  if (!options.includeArchived) {
-    query = query.is("archived_at", null);
-  }
-  if (options.status) {
-    query = query.eq("status", options.status);
-  }
-  if (options.subprojectId) {
-    query = query.eq("subproject_id", options.subprojectId);
-  }
-
+  if (!options.includeArchived) query = query.is("archived_at", null);
+  if (options.status) query = query.eq("status", options.status);
+  if (options.subprojectId) query = query.eq("subproject_id", options.subprojectId);
   const { data, error } = await query.order("created_at", { ascending: false });
   if (error) throw error;
   return data ?? [];
@@ -104,25 +83,13 @@ export async function fetchTaskById(id: string): Promise<TaskRow | null> {
   return data;
 }
 
-/**
- * Crea una tarea en Supabase.
- *
- * Responsabilidad exclusiva del servicio: resolver el `user_id` a partir del
- * usuario autenticado. Las pantallas nunca deben enviar `user_id` — envían un
- * `CreateTaskInput` con los campos de dominio (subproject_id, title, etc.).
- *
- * Lanza un error si no hay usuario autenticado.
- */
 export async function createTask(input: CreateTaskInput): Promise<TaskRow> {
   const { data: userData, error: userError } = await supabase.auth.getUser();
   if (userError) throw userError;
   const user = userData?.user;
-  if (!user) {
-    throw new Error("No hay usuario autenticado: no se puede crear la tarea.");
-  }
+  if (!user) throw new Error("No hay usuario autenticado: no se puede crear la tarea.");
 
   const payload: TaskInsert = { ...input, user_id: user.id };
-
   const { data, error } = await supabase.from("tasks").insert(payload).select("*").single();
   if (error) throw error;
   return data;
@@ -147,6 +114,178 @@ export async function reopenTask(id: string): Promise<TaskRow> {
   return updateTask(id, { status: "pending", completed_at: null });
 }
 
+export async function waitTask(id: string): Promise<TaskRow> {
+  return updateTask(id, { status: "waiting", completed_at: null });
+}
+
 export async function archiveTask(id: string): Promise<TaskRow> {
   return updateTask(id, { archived_at: new Date().toISOString() });
+}
+
+// ============================================================
+// FOCO — cálculo de columnas a partir del estado real
+// ============================================================
+
+/**
+ * Umbral (en días) sin `updated_at` reciente a partir del cual una
+ * tarea `pending` se considera "sin movimiento".
+ */
+const SIN_MOVIMIENTO_DIAS = 7;
+
+export interface FocusTasks {
+  hoy: Tarea[];
+  estaSemana: Tarea[];
+  esperando: Tarea[];
+  sinMovimiento: Tarea[];
+}
+
+type JoinedTaskRow = TaskRow & {
+  subprojects:
+    | {
+        name: string;
+        projects: { name: string; areas: { name: string } | null } | null;
+      }
+    | null;
+};
+
+function startOfLocalDay(d: Date): Date {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  return x;
+}
+
+function endOfWeekLocal(d: Date): Date {
+  // Semana ISO: lunes(1)..domingo(0). Fin = domingo 23:59:59.
+  const x = startOfLocalDay(d);
+  const dow = x.getDay(); // 0=domingo
+  const diff = dow === 0 ? 0 : 7 - dow;
+  x.setDate(x.getDate() + diff);
+  x.setHours(23, 59, 59, 999);
+  return x;
+}
+
+const SHORT_DOW_ES = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+
+function toTarea(row: JoinedTaskRow, categoria: CategoriaFoco): Tarea {
+  const sub = row.subprojects;
+  const proj = sub?.projects ?? null;
+  const areaName = proj?.areas?.name ?? "";
+  const projectName = proj?.name ?? undefined;
+  const subName = sub?.name ?? undefined;
+
+  const starts = row.starts_at ? new Date(row.starts_at) : null;
+  const hasTime = !!starts && (starts.getHours() !== 0 || starts.getMinutes() !== 0);
+  const horaInicio =
+    hasTime && starts
+      ? `${String(starts.getHours()).padStart(2, "0")}:${String(starts.getMinutes()).padStart(2, "0")}`
+      : undefined;
+  const fechaProgramada = starts
+    ? `${starts.getFullYear()}-${String(starts.getMonth() + 1).padStart(2, "0")}-${String(starts.getDate()).padStart(2, "0")}`
+    : undefined;
+
+  let diaEtiqueta: string | undefined;
+  if (categoria === "esta_semana" && starts) {
+    diaEtiqueta = `${SHORT_DOW_ES[starts.getDay()]} ${starts.getDate()}`;
+  }
+
+  const today = startOfLocalDay(new Date());
+  const vencida =
+    categoria === "hoy" && !!starts && startOfLocalDay(starts).getTime() < today.getTime();
+
+  const diasSinActividad =
+    categoria === "sin_movimiento"
+      ? Math.floor(
+          (Date.now() - new Date(row.updated_at).getTime()) / (24 * 60 * 60 * 1000),
+        )
+      : undefined;
+
+  return {
+    id: row.id,
+    titulo: row.title,
+    area: areaName,
+    proyecto: projectName,
+    subproyecto: subName,
+    fechaProgramada,
+    horaInicio,
+    duracionMin: row.estimated_duration_min ?? undefined,
+    diaEtiqueta,
+    categoriaFoco: categoria,
+    vencida: vencida || undefined,
+    diasSinActividad,
+    completada: row.status === "completed",
+    priority: (row.priority as Priority) ?? "normal",
+  };
+}
+
+/**
+ * Obtiene todas las tareas activas del usuario y las agrupa en las
+ * 4 columnas de FOCO. Las categorías se CALCULAN, no se almacenan.
+ *
+ * Reglas:
+ * - HOY:            pending, con `starts_at` de hoy, MÁS todas las
+ *                   pending vencidas (starts_at anterior a hoy).
+ * - ESTA SEMANA:    pending, con `starts_at` entre mañana y el
+ *                   final de la semana (domingo local incluido).
+ * - ESPERANDO:      todas las tareas con status = 'waiting'.
+ * - SIN MOVIMIENTO: pending sin fecha, o pending sin actividad
+ *                   reciente (updated_at > SIN_MOVIMIENTO_DIAS)
+ *                   que no encajen en HOY o ESTA SEMANA.
+ */
+export async function fetchFocusTasks(): Promise<FocusTasks> {
+  const { data, error } = await supabase
+    .from("tasks")
+    .select(
+      "*, subprojects!inner(name, projects!inner(name, areas!inner(name)))",
+    )
+    .is("archived_at", null)
+    .neq("status", "completed")
+    .order("starts_at", { ascending: true, nullsFirst: false });
+
+  if (error) throw error;
+
+  const rows = (data ?? []) as unknown as JoinedTaskRow[];
+
+  const today = startOfLocalDay(new Date());
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const endOfWeek = endOfWeekLocal(today);
+  const staleThreshold = today.getTime() - SIN_MOVIMIENTO_DIAS * 24 * 60 * 60 * 1000;
+
+  const hoy: Tarea[] = [];
+  const estaSemana: Tarea[] = [];
+  const esperando: Tarea[] = [];
+  const sinMovimiento: Tarea[] = [];
+
+  for (const row of rows) {
+    if (row.status === "waiting") {
+      esperando.push(toTarea(row, "esperando"));
+      continue;
+    }
+    // pending desde aquí
+    const starts = row.starts_at ? new Date(row.starts_at) : null;
+    if (starts) {
+      const day = startOfLocalDay(starts).getTime();
+      if (day <= today.getTime()) {
+        hoy.push(toTarea(row, "hoy"));
+        continue;
+      }
+      if (day >= tomorrow.getTime() && starts.getTime() <= endOfWeek.getTime()) {
+        estaSemana.push(toTarea(row, "esta_semana"));
+        continue;
+      }
+    }
+    // Sin fecha, o programada más allá de esta semana pero sin actividad reciente.
+    const updatedMs = new Date(row.updated_at).getTime();
+    if (!starts && updatedMs <= staleThreshold) {
+      sinMovimiento.push(toTarea(row, "sin_movimiento"));
+    } else if (!starts) {
+      // pending sin fecha y con actividad reciente: la dejamos en sin_movimiento
+      // igualmente para que el usuario no la pierda de vista.
+      sinMovimiento.push(toTarea(row, "sin_movimiento"));
+    }
+    // pending programada más allá de esta semana: aún no aparece en FOCO
+    // (aparecerá en Calendar cuando esa migración esté hecha).
+  }
+
+  return { hoy, estaSemana, esperando, sinMovimiento };
 }

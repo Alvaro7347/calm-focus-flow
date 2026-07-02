@@ -3,29 +3,21 @@
  * Archivo: focusService
  *
  * Responsabilidad:
- * Prepara los datos para la pantalla FOCO agrupando las
- * tareas en sus 4 categorías. Consume taskService — nunca
- * accede al mock ni a Supabase directamente.
+ * Fachada de la pantalla FOCO. Consume `taskService.fetchFocusTasks()`
+ * (Supabase) y expone la misma interfaz que ya usaba la UI.
  *
- * Utilizado por:
- * - FocoPage (src/routes/foco.tsx)
+ * Reglas:
+ * - No accede a mocks ni a Supabase directamente.
+ * - Las 4 categorías (Hoy, Esta semana, Esperando, Sin movimiento)
+ *   se CALCULAN en `taskService.fetchFocusTasks()` a partir de
+ *   `status`, `starts_at` y `updated_at`. Aquí no hay lógica de
+ *   negocio adicional.
  * ========================================================
  */
-import { getTasksByFocusCategory } from "@/services/taskService";
-import type { Tarea } from "@/types/tarea";
+import { fetchFocusTasks, type FocusTasks } from "@/services/taskService";
 
-export interface FocusTasks {
-  hoy: Tarea[];
-  estaSemana: Tarea[];
-  esperando: Tarea[];
-  sinMovimiento: Tarea[];
-}
+export type { FocusTasks };
 
-export function getFocusTasks(): FocusTasks {
-  return {
-    hoy: getTasksByFocusCategory("hoy"),
-    estaSemana: getTasksByFocusCategory("esta_semana"),
-    esperando: getTasksByFocusCategory("esperando"),
-    sinMovimiento: getTasksByFocusCategory("sin_movimiento"),
-  };
+export async function getFocusTasks(): Promise<FocusTasks> {
+  return fetchFocusTasks();
 }
