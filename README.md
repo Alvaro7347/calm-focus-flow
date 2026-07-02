@@ -106,7 +106,7 @@ tasks ─┬─ capture_sessions (opcional, origen de la tarea)
 - Toda tarea pertenece obligatoriamente a `user_id` + `subproject_id`. **No** existen `area_id` ni `project_id` en `tasks`: Área y Proyecto se derivan por relación.
 - `status` puede ser `pending`, `waiting` o `completed`; `completed_at` se sincroniza por CHECK.
 - Sin eliminación física — se usa `archived_at`.
-- `taskService` expone la API asíncrona oficial contra Supabase (`fetchTasks`, `fetchFocusTasks`, `fetchScheduledTasks`, `createTask`, `updateTask`, `completeTask`, `reopenTask`, `waitTask`, `archiveTask`) y, transitoriamente, una API síncrona sobre mocks (`getAllTasks`, `getTaskById`) que consume únicamente Tablero mientras se completa su migración.
+- `taskService` expone únicamente la API asíncrona oficial contra Supabase (`fetchTasks`, `fetchFocusTasks`, `fetchScheduledTasks`, `createTask`, `updateTask`, `completeTask`, `reopenTask`, `waitTask`, `archiveTask`). No existe API síncrona ni acceso a mocks en runtime.
 
 ## Autenticación
 
