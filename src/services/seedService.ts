@@ -2,12 +2,22 @@
  * ========================================================
  * Archivo: seedService
  *
- * Carga inicial (idempotente) de la estructura organizacional
- * de CalmApp para el usuario autenticado.
+ * LEGACY / BOOTSTRAP / DEVELOPMENT ONLY
  *
- * Fuente de verdad: `src/data/mockTasks.ts` — es la estructura
- * definida en la documentación del proyecto (Área → Proyecto →
- * Subproyecto → Tarea).
+ * NO forma parte del runtime funcional de CalmApp: todas las
+ * pantallas (Crear tarea, FOCO, Calendar, Tablero) y el shell
+ * de navegación (Sidebar, AreasDrawer) leen exclusivamente de
+ * Supabase.
+ *
+ * Este módulo se ejecuta una única vez por usuario nuevo, al
+ * inicializar el entorno de desarrollo, para poblar Supabase
+ * con la estructura organizacional de referencia definida en
+ * `src/data/mockTasks.ts`. Es idempotente: si el usuario ya
+ * tiene áreas, no hace nada.
+ *
+ * NO utilizar para nuevas funcionalidades. NO consultar los
+ * mocks desde otras capas. Se retirará cuando el bootstrap
+ * migre a semillas SQL versionadas.
  *
  * Reglas:
  * - Si el usuario ya tiene áreas → no hace nada.
@@ -16,11 +26,6 @@
  * - Tareas sin fecha/hora/duración se guardan igual: esos campos
  *   quedan NULL y podrán editarse desde la UI.
  * - No inventa datos: usa exactamente lo que existe en el mock.
- *
- * Crear tarea, FOCO y Calendar ya operan sobre Supabase; solo
- * Tablero permanece pendiente. Este seed sigue funcionando como
- * bootstrap de entornos nuevos.
-
  * ========================================================
  */
 import { supabase } from "@/integrations/supabase/client";

@@ -2,22 +2,18 @@
  * ========================================================
  * Archivo: mockTasks
  *
- * Responsabilidad:
- * Datos de ejemplo temporales de tareas para el MVP1. Es la
- * única fuente de tareas en el frontend actual y sólo debe
- * leerse a través de src/services/taskService.ts.
+ * LEGACY / BOOTSTRAP / DEVELOPMENT ONLY
  *
- * Consumidores (indirectos, vía taskService):
- * - focusService (FOCO)
- * - calendarService (Calendar)
- * - tableroService (Tablero)
- * - areaService (Áreas visibles se derivan de estas tareas)
+ * NO es fuente de datos del runtime de CalmApp. Todas las
+ * pantallas (Crear tarea, FOCO, Calendar, Tablero) y el shell
+ * de navegación (Sidebar, AreasDrawer) leen exclusivamente de
+ * Supabase.
  *
- * Las `fechaProgramada` están fijas (semana del 29 jun al
- * 5 jul de 2026) para que Calendar tenga contenido real
- * sin generar fechas desde etiquetas visuales. Las
- * etiquetas `diaEtiqueta` son sólo presentación de FOCO
- * y no se interpretan como fecha.
+ * Único consumidor: `seedService`, que utiliza esta estructura
+ * como semilla al inicializar Supabase para un usuario nuevo
+ * en entornos de desarrollo. No importar desde ningún otro
+ * módulo. Se retirará cuando el bootstrap migre a semillas
+ * SQL versionadas.
  * ========================================================
  */
 import type { Tarea } from "@/types/tarea";

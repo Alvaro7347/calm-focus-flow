@@ -12,12 +12,11 @@
  * - FOCO → Supabase (`fetchFocusTasks()`).
  * - Calendar → Supabase (`fetchScheduledTasks()`).
  * - Tablero → Supabase (`tableroService.fetchAreaTree()`).
- * - La migración a Supabase está COMPLETA: ninguna pantalla
- *   funcional consume ya la API síncrona ni `mockTasks`.
- * - `getAllTasks()` / `getTaskById()` permanecen únicamente como
- *   compatibilidad legada para el shell de navegación
- *   (`Sidebar`, `AreasDrawer`) a través de `areaService.getAreas()`.
- *   Se retirarán cuando ese shell adopte la API asíncrona.
+ * - Sidebar / AreasDrawer → Supabase (`areaService.fetchAreasWithCounts()`).
+ * - La migración a Supabase está COMPLETA: ninguna pantalla ni
+ *   servicio en runtime consume `mockTasks`. Los mocks sobreviven
+ *   únicamente en `seedService` como bootstrap del entorno de
+ *   desarrollo (ver `seedService.ts`).
 
  *
  * Reglas de dominio (ver ARCHITECTURE.md):
@@ -33,7 +32,6 @@
  *   `updated_at`.
  * ========================================================
  */
-import { tareasFoco } from "@/data/mockTasks";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import type { CategoriaFoco, Tarea } from "@/types/tarea";
@@ -54,19 +52,6 @@ export type CreateTaskInput = Omit<
   TaskInsert,
   "user_id" | "created_at" | "updated_at" | "archived_at" | "completed_at"
 >;
-
-// ---------- API síncrona (mock, legado del shell de navegación) ----------
-// Deprecada: sólo la consume `areaService.getAreas()` (Sidebar/AreasDrawer).
-// Ninguna pantalla funcional (FOCO, Calendar, Tablero, Crear tarea) la usa.
-
-
-export function getAllTasks(): Tarea[] {
-  return tareasFoco;
-}
-
-export function getTaskById(id: string): Tarea | undefined {
-  return tareasFoco.find((t) => t.id === id);
-}
 
 // ---------- API asíncrona (Supabase, oficial) ----------
 
