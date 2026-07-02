@@ -22,6 +22,7 @@ import { Settings, User, FileText, X } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { useAreasNav } from "@/hooks/useAreasNav";
 import { slugify } from "@/lib/slug";
+import { Wordmark } from "@/components/brand/Wordmark";
 
 interface Props {
   open: boolean;
@@ -34,7 +35,7 @@ export function AreasDrawer({ open, onClose }: Props) {
     <>
       {/* Overlay */}
       <div
-        className={`fixed inset-0 z-40 bg-slate-900/40 transition-opacity md:hidden ${
+        className={`fixed inset-0 z-40 bg-foreground/40 transition-opacity md:hidden ${
           open ? "opacity-100" : "pointer-events-none opacity-0"
         }`}
         onClick={onClose}
@@ -42,20 +43,14 @@ export function AreasDrawer({ open, onClose }: Props) {
       />
       {/* Panel */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-4/5 max-w-[320px] bg-white shadow-xl transition-transform md:hidden flex flex-col ${
+        className={`fixed inset-y-0 left-0 z-50 w-4/5 max-w-[320px] bg-background shadow-xl transition-transform md:hidden flex flex-col ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}
         role="dialog"
         aria-label="Áreas"
       >
         <div className="flex items-center justify-between px-6 pt-6 pb-4">
-          <div className="flex items-center gap-3">
-            <svg width="32" height="32" viewBox="0 0 36 36" fill="none" aria-hidden>
-              <path d="M6 28 L18 8 L30 28 Z" stroke="#4f46e5" strokeWidth="2.5" strokeLinejoin="round" fill="none" />
-              <path d="M13 22 L18 14 L23 22" stroke="#4f46e5" strokeWidth="2" strokeLinejoin="round" fill="none" />
-            </svg>
-            <div className="font-bold text-slate-900">CalmApp</div>
-          </div>
+          <Wordmark height={24} />
           <button
             onClick={onClose}
             aria-label="Cerrar"
