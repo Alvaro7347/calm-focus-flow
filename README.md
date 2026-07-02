@@ -8,17 +8,25 @@ El principio de diseño es simple: la interfaz debe transmitir calma, no urgenci
 
 ## Estado actual del proyecto
 
-En esta etapa la aplicación funciona con datos de ejemplo (mock) y ya cuenta con:
+Migración a Supabase parcialmente completada:
+
+- **Crear tarea** → Supabase.
+- **FOCO** → Supabase.
+- **Calendar** → Supabase.
+- **Tablero** → Mock (último módulo pendiente de migración).
+
+Pantallas disponibles:
 
 - Pantalla **FOCO** con sus 4 columnas: Hoy, Esta semana, Esperando y Sin movimiento.
 - Pantalla **Calendario** con vistas Semana y Mes.
 - Pantalla **Tablero**: centro de organización estructural (Área → Proyecto → Subproyecto → Tareas). Muestra una sola área a la vez; el estado (área/proyecto/subproyecto abierto) vive en la URL para permitir enlaces compartibles.
+- Pantalla **Crear tarea** operando 100% sobre Supabase.
 - **Navegación mobile-first**, pensada para usarse principalmente desde el celular.
 - **Sidebar desktop** con la lista de áreas (cada área linkea a `/tablero?area=<slug>`).
 - **Drawer de áreas** para mobile con el mismo comportamiento.
 - **Tab bar inferior** en mobile con FOCO, Calendario, Tablero y Crear tarea.
 - **Botón flotante (FAB)** para ir rápidamente a "Nueva tarea".
-- **Rutas placeholder** para Crear tarea y Nueva tarea (aún no construidas).
+
 
 ## Tecnologías principales
 
