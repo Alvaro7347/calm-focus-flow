@@ -191,9 +191,6 @@ function RootComponent() {
               <div className="flex min-h-[60vh] items-center justify-center px-6 text-center text-sm text-destructive">
                 {bootstrapError}
               </div>
-              <div className="flex min-h-[60vh] items-center justify-center px-6 text-center text-sm text-destructive">
-                {bootstrapError}
-              </div>
             ) : (
               <Outlet />
             )}
