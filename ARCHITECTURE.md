@@ -43,7 +43,7 @@ Campos: `id` (= `auth.users.id`), `nombre`, `email`, `avatar_url`, `created_at`,
 ### `tasks`
 - Pertenece a **`user_id`** (FK → `profiles.id`, `ON DELETE CASCADE`) **y a `subproject_id`** (FK → `subprojects.id`, `ON DELETE RESTRICT`). **No guarda `area_id` ni `project_id`**: Área y Proyecto se derivan siempre por relación `subprojects → projects → areas`.
 - Campos de contenido: `title` (obligatorio, no vacío por CHECK), `description`.
-- Estado: `status` (`pending` | `completed`), `blocked_reason`. `CHECK` garantiza que `completed` implica `completed_at IS NOT NULL` y que `pending` implica `completed_at IS NULL`.
+- Estado: `status` (`pending` | `waiting` | `completed`), `blocked_reason`. `waiting` = tarea detenida a la espera de un tercero, respuesta o evento externo; sigue siendo una tarea pendiente. `CHECK` garantiza que `completed` implica `completed_at IS NOT NULL` y que tanto `pending` como `waiting` implican `completed_at IS NULL`. El **archivado NO es un estado**: vive exclusivamente en `archived_at`.
 - Prioridad: `priority` (`high` | `medium` | `low`, default `medium`).
 - Tiempo: `starts_at`, `estimated_duration_min`, `actual_duration_min`, `completed_at`.
 - Origen: `source` (`text` | `voice` | `manual` | `import` | `api`).
