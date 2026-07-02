@@ -332,88 +332,128 @@ function CrearTareaScreen() {
                 <p className="text-sm text-muted-foreground">
                   Cargando estructura organizacional…
                 </p>
-              ) : areas.length === 0 ? (
-                <div className="rounded-xl border border-dashed bg-muted/30 p-6 text-center space-y-3">
-                  <div className="mx-auto h-12 w-12 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600">
-                    <LayoutGrid className="h-6 w-6" />
-                  </div>
-                  <div className="space-y-1">
-                    <h3 className="text-sm font-medium">Organiza tu estructura primero</h3>
-                    <p className="text-xs text-muted-foreground">
-                      Necesitas al menos un Área, un Proyecto y un Subproyecto antes de crear tareas.
-                    </p>
-                  </div>
-                </div>
               ) : (
                 <>
+                  {/* Área */}
                   <div className="space-y-2">
                     <Label>Área *</Label>
-                    <Select value={areaId} onValueChange={setAreaId}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecciona un área" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {areas.map((a) => (
-                          <SelectItem key={a.id} value={a.id}>
-                            {a.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        <Select
+                          value={areaId}
+                          onValueChange={setAreaId}
+                          disabled={areas.length === 0}
+                        >
+                          <SelectTrigger>
+                            <SelectValue
+                              placeholder={
+                                areas.length === 0
+                                  ? "Aún no tienes áreas"
+                                  : "Selecciona un área"
+                              }
+                            />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {areas.map((a) => (
+                              <SelectItem key={a.id} value={a.id}>
+                                {a.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => openInline("area")}
+                      >
+                        <Plus className="h-4 w-4" /> Nueva área
+                      </Button>
+                    </div>
                     {errors.area && <p className="text-xs text-destructive">{errors.area}</p>}
                   </div>
 
+                  {/* Proyecto */}
                   <div className="space-y-2">
                     <Label>Proyecto *</Label>
-                    {areaId && projects.length === 0 ? (
-                      <p className="text-xs text-muted-foreground">
-                        No hay proyectos en este área. Crea un proyecto primero.
-                      </p>
-                    ) : (
-                      <Select
-                        value={projectId}
-                        onValueChange={setProjectId}
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        <Select
+                          value={projectId}
+                          onValueChange={setProjectId}
+                          disabled={!areaId || projects.length === 0}
+                        >
+                          <SelectTrigger>
+                            <SelectValue
+                              placeholder={
+                                !areaId
+                                  ? "Primero elige un área"
+                                  : projects.length === 0
+                                    ? "Aún no hay proyectos"
+                                    : "Selecciona un proyecto"
+                              }
+                            />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {projects.map((p) => (
+                              <SelectItem key={p.id} value={p.id}>
+                                {p.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => openInline("project")}
                         disabled={!areaId}
                       >
-                        <SelectTrigger>
-                          <SelectValue placeholder={areaId ? "Selecciona un proyecto" : "Primero elige un área"} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {projects.map((p) => (
-                            <SelectItem key={p.id} value={p.id}>
-                              {p.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
+                        <Plus className="h-4 w-4" /> Nuevo proyecto
+                      </Button>
+                    </div>
                     {errors.project && <p className="text-xs text-destructive">{errors.project}</p>}
                   </div>
 
+                  {/* Subproyecto */}
                   <div className="space-y-2">
                     <Label>Subproyecto *</Label>
-                    {projectId && subprojects.length === 0 ? (
-                      <p className="text-xs text-muted-foreground">
-                        No hay subproyectos en este proyecto. Crea un subproyecto primero.
-                      </p>
-                    ) : (
-                      <Select
-                        value={subprojectId}
-                        onValueChange={setSubprojectId}
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        <Select
+                          value={subprojectId}
+                          onValueChange={setSubprojectId}
+                          disabled={!projectId || subprojects.length === 0}
+                        >
+                          <SelectTrigger>
+                            <SelectValue
+                              placeholder={
+                                !projectId
+                                  ? "Primero elige un proyecto"
+                                  : subprojects.length === 0
+                                    ? "Aún no hay subproyectos"
+                                    : "Selecciona un subproyecto"
+                              }
+                            />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {subprojects.map((s) => (
+                              <SelectItem key={s.id} value={s.id}>
+                                {s.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => openInline("subproject")}
                         disabled={!projectId}
                       >
-                        <SelectTrigger>
-                          <SelectValue placeholder={projectId ? "Selecciona un subproyecto" : "Primero elige un proyecto"} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {subprojects.map((s) => (
-                            <SelectItem key={s.id} value={s.id}>
-                              {s.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
+                        <Plus className="h-4 w-4" /> Nuevo subproyecto
+                      </Button>
+                    </div>
                     {errors.subproject && (
                       <p className="text-xs text-destructive">{errors.subproject}</p>
                     )}
@@ -421,6 +461,7 @@ function CrearTareaScreen() {
                 </>
               )}
             </section>
+
 
             {/* 4. Información de la tarea */}
             <section className="rounded-xl border bg-card p-4 space-y-4">
