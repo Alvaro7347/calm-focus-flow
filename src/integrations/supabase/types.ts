@@ -14,6 +14,41 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_log: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          new_value: Json | null
+          old_value: Json | null
+          task_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          new_value?: Json | null
+          old_value?: Json | null
+          task_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          new_value?: Json | null
+          old_value?: Json | null
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_log_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       areas: {
         Row: {
           archived_at: string | null
@@ -51,6 +86,76 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "areas_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      attachments: {
+        Row: {
+          created_at: string
+          filename: string
+          id: string
+          mime_type: string | null
+          size_bytes: number | null
+          storage_path: string
+          task_id: string
+        }
+        Insert: {
+          created_at?: string
+          filename: string
+          id?: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          storage_path: string
+          task_id: string
+        }
+        Update: {
+          created_at?: string
+          filename?: string
+          id?: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          storage_path?: string
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attachments_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      capture_sessions: {
+        Row: {
+          created_at: string
+          id: string
+          source: Database["public"]["Enums"]["capture_source"]
+          transcription: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          source: Database["public"]["Enums"]["capture_source"]
+          transcription?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          source?: Database["public"]["Enums"]["capture_source"]
+          transcription?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "capture_sessions_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -164,6 +269,120 @@ export type Database = {
           },
         ]
       }
+      task_reminders: {
+        Row: {
+          created_at: string
+          id: string
+          remind_at: string
+          sent_at: string | null
+          task_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          remind_at: string
+          sent_at?: string | null
+          task_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          remind_at?: string
+          sent_at?: string | null
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_reminders_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tasks: {
+        Row: {
+          actual_duration_min: number | null
+          archived_at: string | null
+          blocked_reason: string | null
+          capture_session_id: string | null
+          completed_at: string | null
+          created_at: string
+          description: string | null
+          estimated_duration_min: number | null
+          id: string
+          priority: Database["public"]["Enums"]["task_priority"]
+          source: Database["public"]["Enums"]["task_source"]
+          starts_at: string | null
+          status: Database["public"]["Enums"]["task_status"]
+          subproject_id: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          actual_duration_min?: number | null
+          archived_at?: string | null
+          blocked_reason?: string | null
+          capture_session_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          estimated_duration_min?: number | null
+          id?: string
+          priority?: Database["public"]["Enums"]["task_priority"]
+          source?: Database["public"]["Enums"]["task_source"]
+          starts_at?: string | null
+          status?: Database["public"]["Enums"]["task_status"]
+          subproject_id: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          actual_duration_min?: number | null
+          archived_at?: string | null
+          blocked_reason?: string | null
+          capture_session_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          estimated_duration_min?: number | null
+          id?: string
+          priority?: Database["public"]["Enums"]["task_priority"]
+          source?: Database["public"]["Enums"]["task_source"]
+          starts_at?: string | null
+          status?: Database["public"]["Enums"]["task_status"]
+          subproject_id?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_capture_session_id_fkey"
+            columns: ["capture_session_id"]
+            isOneToOne: false
+            referencedRelation: "capture_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_subproject_id_fkey"
+            columns: ["subproject_id"]
+            isOneToOne: false
+            referencedRelation: "subprojects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -172,7 +391,10 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      capture_source: "text" | "voice"
+      task_priority: "high" | "medium" | "low"
+      task_source: "text" | "voice" | "manual" | "import" | "api"
+      task_status: "pending" | "completed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -299,6 +521,11 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      capture_source: ["text", "voice"],
+      task_priority: ["high", "medium", "low"],
+      task_source: ["text", "voice", "manual", "import", "api"],
+      task_status: ["pending", "completed"],
+    },
   },
 } as const
