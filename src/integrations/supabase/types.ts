@@ -394,7 +394,7 @@ export type Database = {
       capture_source: "text" | "voice"
       task_priority: "high" | "medium" | "low"
       task_source: "text" | "voice" | "manual" | "import" | "api"
-      task_status: "pending" | "completed"
+      task_status: "pending" | "completed" | "waiting"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -525,7 +525,7 @@ export const Constants = {
       capture_source: ["text", "voice"],
       task_priority: ["high", "medium", "low"],
       task_source: ["text", "voice", "manual", "import", "api"],
-      task_status: ["pending", "completed"],
+      task_status: ["pending", "completed", "waiting"],
     },
   },
 } as const
