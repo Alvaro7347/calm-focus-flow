@@ -5,25 +5,27 @@
  * Responsabilidad:
  * Provee los eventos que se muestran en el módulo Calendar.
  * Actúa como capa única y desacoplada entre la UI y el
- * modelo de tareas: consume taskService y transforma las
- * tareas con `fechaProgramada` en `CalendarEvent`s. En el
- * futuro combinará también eventos externos (Google
- * Calendar) sin que la UI cambie.
+ * modelo de tareas: consume `taskService.fetchScheduledTasks()`
+ * (Supabase) y transforma las tareas con `fechaProgramada` en
+ * `CalendarEvent`s. En el futuro combinará también eventos
+ * externos (Google Calendar) sin que la UI cambie.
  *
  * Reglas:
- * - No conoce mocks ni Supabase; sólo taskService.
- * - Sólo aparecen en Calendar las tareas con `fechaProgramada`
- *   válida. Las etiquetas visuales de FOCO ("Mié 2", etc.)
- *   son presentación y no se interpretan aquí.
+ * - No conoce mocks ni consulta Supabase directamente: sólo
+ *   habla con taskService.
+ * - Sólo aparecen en Calendar las tareas con `starts_at`
+ *   válido (garantizado ya por taskService).
  * - El estado (completada, prioridad) proviene siempre de
- *   la propia tarea. No hay reglas de demo por ID.
+ *   la propia tarea.
+ * - El filtrado por rango [from, to] es responsabilidad de
+ *   esta capa, no de la UI.
  *
  * Utilizado por:
- * - CalendarioPage (src/routes/calendario.tsx)
- * - Vistas Semana y Mes
+ * - CalendarioPage (src/routes/calendario.tsx) vía TanStack
+ *   Query bajo la queryKey ["calendar", from, to].
  * ========================================================
  */
-import { getAllTasks } from "@/services/taskService";
+import { fetchScheduledTasks } from "@/services/taskService";
 import type { Tarea, Priority } from "@/types/tarea";
 import { isSameDay, parseISO, addMinutes } from "date-fns";
 
@@ -84,13 +86,17 @@ function tareaToEvent(t: Tarea): CalendarEvent | null {
 }
 
 /**
- * Devuelve los eventos del calendario. Si se pasan `from`/`to`,
- * filtra a los que solapan con ese rango (inclusive). Esta capa
- * es el único punto donde se define el filtrado por rango, listo
- * para cuando la fuente sea Supabase o Google Calendar.
+ * Devuelve los eventos del calendario desde Supabase. Si se pasan
+ * `from`/`to`, filtra a los que solapan con ese rango (inclusive).
+ * Esta capa es el único punto donde se define el filtrado por rango,
+ * listo para cuando se combinen eventos de Google Calendar.
  */
-export function getCalendarEvents(from?: Date, to?: Date): CalendarEvent[] {
-  const desdeCalmApp = getAllTasks()
+export async function getCalendarEvents(
+  from?: Date,
+  to?: Date,
+): Promise<CalendarEvent[]> {
+  const tareas = await fetchScheduledTasks();
+  const desdeCalmApp = tareas
     .map(tareaToEvent)
     .filter((e): e is CalendarEvent => e !== null);
 
@@ -101,10 +107,15 @@ export function getCalendarEvents(from?: Date, to?: Date): CalendarEvent[] {
   const desde = from?.getTime() ?? -Infinity;
   const hasta = to?.getTime() ?? Infinity;
   // Un evento entra si su intervalo [start, end] solapa con [from, to].
-  return todos.filter((e) => e.end.getTime() >= desde && e.start.getTime() <= hasta);
+  return todos.filter(
+    (e) => e.end.getTime() >= desde && e.start.getTime() <= hasta,
+  );
 }
 
 /** Devuelve todos los eventos que caen en un día dado (incluye all-day). */
-export function eventsOnDay(events: CalendarEvent[], day: Date): CalendarEvent[] {
+export function eventsOnDay(
+  events: CalendarEvent[],
+  day: Date,
+): CalendarEvent[] {
   return events.filter((e) => isSameDay(e.start, day));
 }
