@@ -100,7 +100,7 @@ Las pantallas y componentes **no acceden a Supabase directamente**. Consumen ser
 | `areaService`          | Mocks (sync) + Supabase (async) | Sidebar, AreasDrawer, Tablero (sync). |
 | `projectService`       | Supabase                      | Preparado para MVP1.                  |
 | `subprojectService`    | Supabase                      | Preparado para MVP1.                  |
-| `taskService`          | Mocks                         | FOCO, Calendar, Tablero.              |
+| `taskService`          | Mocks (sync) + Supabase (async) | FOCO, Calendar, Tablero (sync); "Crear tarea" y siguientes pantallas (async). |
 | `focusService`         | `taskService`                 | FOCO.                                 |
 | `calendarService`      | `taskService`                 | Calendar.                             |
 | `tableroService`       | `taskService`                 | Tablero.                              |
