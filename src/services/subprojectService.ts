@@ -12,9 +12,10 @@
  * - Se archiva con `archived_at`; nunca se elimina físicamente.
  * - `display_order` habilita ordenamiento manual futuro.
  *
- * Este servicio es infraestructura MVP1; aún no lo consume ninguna
- * pantalla. El Tablero seguirá funcionando con mocks hasta que
- * `taskService` migre a Supabase.
+ * Este servicio ya se consume desde Crear tarea (selector en
+ * cascada). El Tablero seguirá funcionando con mocks hasta que
+ * migre a Supabase (último módulo pendiente).
+
  * ========================================================
  */
 import { supabase } from "@/integrations/supabase/client";
