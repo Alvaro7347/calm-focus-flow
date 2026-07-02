@@ -20,6 +20,7 @@
  */
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   addDays,
   addMonths,
@@ -48,6 +49,14 @@ export const Route = createFileRoute("/calendario")({
   component: CalendarioPage,
 });
 
+/**
+ * Clave raíz de la caché de Calendar. Cualquier mutación que pueda
+ * afectar a las tareas programadas (crear/editar/archivar) debe
+ * invalidar esta key para que Calendar se refresque sin recargar:
+ *   queryClient.invalidateQueries({ queryKey: calendarQueryKey })
+ */
+export const calendarQueryKey = ["calendar"] as const;
+
 function CalendarioPage() {
   const [view, setView] = useCalendarView("semana");
   const [anchor, setAnchor] = useState<Date>(new Date());
@@ -69,7 +78,19 @@ function CalendarioPage() {
     };
   }, [view, anchor]);
 
-  const events = useMemo(() => getCalendarEvents(from, to), [from, to]);
+  const {
+    data: events = [],
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
+    // Incluimos el rango en la key: cambiar de semana/mes dispara
+    // una nueva consulta y evita mezclar rangos en la caché.
+    queryKey: [...calendarQueryKey, from.toISOString(), to.toISOString()],
+    queryFn: () => getCalendarEvents(from, to),
+    staleTime: 15_000,
+  });
+
 
   const titulo = useMemo(() => {
     if (view === "semana") {

@@ -290,3 +290,80 @@ export async function fetchFocusTasks(): Promise<FocusTasks> {
 
   return { hoy, estaSemana, esperando, sinMovimiento };
 }
+
+// ============================================================
+// CALENDAR — tareas programadas (con `starts_at`)
+// ============================================================
+
+/**
+ * Mapea una fila `tasks` (con joins de subproject → project → area)
+ * al tipo `Tarea` usado por la UI, en modo "programada".
+ *
+ * A diferencia de `toTarea()`, este mapeo NO calcula `categoriaFoco`,
+ * `diaEtiqueta`, `vencida` ni `diasSinActividad`: esas dimensiones
+ * pertenecen al dominio FOCO. Calendar sólo necesita título, área,
+ * jerarquía, fecha/hora, duración, estado de completado y prioridad.
+ *
+ * `categoriaFoco` se mantiene por compatibilidad de tipo con `Tarea`
+ * pero no debe ser interpretado por consumidores del Calendar.
+ */
+function rowToScheduledTarea(row: JoinedTaskRow): Tarea {
+  const sub = row.subprojects;
+  const proj = sub?.projects ?? null;
+  const starts = row.starts_at ? new Date(row.starts_at) : null;
+  const hasTime =
+    !!starts && (starts.getHours() !== 0 || starts.getMinutes() !== 0);
+  const horaInicio =
+    hasTime && starts
+      ? `${String(starts.getHours()).padStart(2, "0")}:${String(starts.getMinutes()).padStart(2, "0")}`
+      : undefined;
+  const fechaProgramada = starts
+    ? `${starts.getFullYear()}-${String(starts.getMonth() + 1).padStart(2, "0")}-${String(starts.getDate()).padStart(2, "0")}`
+    : undefined;
+
+  return {
+    id: row.id,
+    titulo: row.title,
+    area: proj?.areas?.name ?? "",
+    proyecto: proj?.name ?? undefined,
+    subproyecto: sub?.name ?? undefined,
+    fechaProgramada,
+    horaInicio,
+    duracionMin: row.estimated_duration_min ?? undefined,
+    // Placeholder: Calendar no interpreta esta categoría; se conserva
+    // sólo porque `Tarea` la exige. No confiar en este valor.
+    categoriaFoco: "hoy",
+    completada: row.status === "completed",
+    priority: mapDbPriorityToUi(row.priority),
+  };
+}
+
+/**
+ * Devuelve todas las tareas del usuario que tienen `starts_at`
+ * definido y no están archivadas. Es la única fuente de datos
+ * del módulo Calendar.
+ *
+ * Reglas:
+ * - Sólo entran tareas con `starts_at IS NOT NULL`. Las tareas
+ *   sin fecha NO aparecen en Calendar (ver ARCHITECTURE.md).
+ * - Incluye completadas y en espera: Calendar refleja el estado
+ *   real de Supabase; la UI decide cómo mostrarlas.
+ * - No aplica filtrado por rango: eso vive en `calendarService`,
+ *   que es quien conoce la vista visible.
+ */
+export async function fetchScheduledTasks(): Promise<Tarea[]> {
+  const { data, error } = await supabase
+    .from("tasks")
+    .select(
+      "*, subprojects!inner(name, projects!inner(name, areas!inner(name)))",
+    )
+    .is("archived_at", null)
+    .not("starts_at", "is", null)
+    .order("starts_at", { ascending: true });
+
+  if (error) throw error;
+
+  const rows = (data ?? []) as unknown as JoinedTaskRow[];
+  return rows.map(rowToScheduledTarea);
+}
+
