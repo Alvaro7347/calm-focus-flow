@@ -104,8 +104,26 @@ export async function fetchTaskById(id: string): Promise<TaskRow | null> {
   return data;
 }
 
-export async function createTask(input: TaskInsert): Promise<TaskRow> {
-  const { data, error } = await supabase.from("tasks").insert(input).select("*").single();
+/**
+ * Crea una tarea en Supabase.
+ *
+ * Responsabilidad exclusiva del servicio: resolver el `user_id` a partir del
+ * usuario autenticado. Las pantallas nunca deben enviar `user_id` — envían un
+ * `CreateTaskInput` con los campos de dominio (subproject_id, title, etc.).
+ *
+ * Lanza un error si no hay usuario autenticado.
+ */
+export async function createTask(input: CreateTaskInput): Promise<TaskRow> {
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError) throw userError;
+  const user = userData?.user;
+  if (!user) {
+    throw new Error("No hay usuario autenticado: no se puede crear la tarea.");
+  }
+
+  const payload: TaskInsert = { ...input, user_id: user.id };
+
+  const { data, error } = await supabase.from("tasks").insert(payload).select("*").single();
   if (error) throw error;
   return data;
 }
