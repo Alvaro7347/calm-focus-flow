@@ -6,14 +6,16 @@
  * Provee la lista de Áreas visibles en la aplicación y expone
  * la capa de acceso a la tabla `public.areas` de Supabase.
  *
- * Estado (MVP0 → MVP1):
- * - `getAreas()` (SÍNCRONO) sigue derivando las Áreas desde las
- *   tareas mock expuestas por `taskService`. Sidebar, AreasDrawer
- *   y Tablero lo consumen sin cambios visuales. Se mantiene hasta
- *   que `taskService` migre a Supabase.
+ * Estado de migración:
+ * - `getAreas()` (SÍNCRONO) deriva las Áreas desde las tareas
+ *   mock expuestas por `taskService.getAllTasks()`. Sidebar,
+ *   AreasDrawer y Tablero lo consumen sin cambios visuales. Se
+ *   mantiene mientras Tablero (último módulo pendiente) siga
+ *   sobre mocks; se retirará cuando Tablero migre a Supabase.
  * - `fetchAreas()`, `createArea()`, `updateArea()`, `archiveArea()`
- *   (ASÍNCRONOS) son la nueva API definitiva contra Supabase.
- *   No consumen mocks. Se usarán cuando existan usuarios reales.
+ *   (ASÍNCRONOS) son la API definitiva contra Supabase y ya se
+ *   usan desde Crear tarea, FOCO y Calendar.
+
  *
  * Reglas del dominio (definidas en la migración):
  * - Cada Área pertenece a un `user_id` (FK → profiles.id).
