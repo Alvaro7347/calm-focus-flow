@@ -120,12 +120,19 @@ function CalendarioPage() {
       />
 
       <div className="mt-6">
-        {view === "semana" ? (
+        {isLoading ? (
+          <div className="text-sm text-slate-500">Cargando tu calendario…</div>
+        ) : isError ? (
+          <div className="text-sm text-destructive">
+            No pudimos cargar tu calendario. {error instanceof Error ? error.message : ""}
+          </div>
+        ) : view === "semana" ? (
           <WeekView anchor={anchor} events={events} onSelectEvent={setSelected} />
         ) : (
           <MonthView anchor={anchor} events={events} onSelectEvent={setSelected} />
         )}
       </div>
+
 
       <EventDetail event={selected} onClose={() => setSelected(null)} />
     </div>

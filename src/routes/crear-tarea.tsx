@@ -276,9 +276,14 @@ function CrearTareaScreen() {
         estimated_duration_min: duracion ? Number(duracion) : null,
       };
       await createTask(input);
-      // Invalida la caché de FOCO para que la nueva tarea aparezca de
-      // inmediato en la columna correspondiente sin refrescar la página.
-      await queryClient.invalidateQueries({ queryKey: ["focus"] });
+      // Invalida las cachés que dependen del conjunto de tareas para que
+      // la nueva tarea aparezca de inmediato sin refrescar la página:
+      // - FOCO (columnas calculadas)
+      // - Calendar (tareas con starts_at)
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["focus"] }),
+        queryClient.invalidateQueries({ queryKey: ["calendar"] }),
+      ]);
       toast.success("Tarea creada correctamente.");
       navigate({ to: "/foco" });
     } catch (err) {
