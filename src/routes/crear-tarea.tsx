@@ -81,7 +81,8 @@ function CrearTareaScreen() {
   const [hora, setHora] = useState("");
   const [duracion, setDuracion] = useState<string>("");
 
-  // Recordatorios (por ahora: solo lista local, no se persisten)
+  // Recordatorios: UI deshabilitada hasta que exista persistencia en task_reminders.
+  // La lógica local se conserva para habilitarla en una futura iteración.
   const [reminders, setReminders] = useState<Reminder[]>([]);
 
   const [saving, setSaving] = useState(false);
