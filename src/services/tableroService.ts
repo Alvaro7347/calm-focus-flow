@@ -37,7 +37,7 @@
  */
 import { supabase } from "@/integrations/supabase/client";
 import { slugify } from "@/lib/slug";
-import { mapDbPriorityToUi } from "@/services/mappers/priorityMapper";
+import { mapDbPriorityToUi, type DbPriority } from "@/services/mappers/priorityMapper";
 import type { Tarea } from "@/types/tarea";
 
 export interface SubproyectoNode {
@@ -71,7 +71,7 @@ type RawTask = {
   id: string;
   title: string;
   status: string;
-  priority: string | null;
+  priority: DbPriority | null;
   starts_at: string | null;
   estimated_duration_min: number | null;
   updated_at: string;
