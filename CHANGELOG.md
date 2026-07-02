@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## MVP2 — Núcleo operativo de tareas en Supabase (iteración actual)
+
+- Se crea en Supabase el dominio central de tareas con RLS por usuario:
+  - `tasks` — pertenece obligatoriamente a `user_id` + `subproject_id`. No guarda `area_id` ni `project_id`: Área y Proyecto se derivan por relación. Sin eliminación física — se usa `archived_at`. CHECK que sincroniza `status` con `completed_at`.
+  - `capture_sessions` — sesiones de captura (`text` | `voice`) con `transcription`.
+  - `attachments` — metadatos de archivos en Supabase Storage (`storage_path`, `filename`, `mime_type`, `size_bytes`).
+  - `task_reminders` — múltiples recordatorios por tarea (`remind_at`, `sent_at`).
+  - `activity_log` — bitácora append-only por tarea (`action`, `old_value`, `new_value`).
+- Enums nuevos: `task_status` (pending/completed), `task_priority` (high/medium/low), `task_source` (text/voice/manual/import/api), `capture_source` (text/voice).
+- Índices sobre `user_id`, `subproject_id`, `status`, `priority`, `starts_at`, `completed_at`, `archived_at`, `capture_session_id` y `task_id`.
+- `taskService` gana una API asíncrona contra Supabase (`fetchTasks`, `fetchTaskById`, `createTask`, `updateTask`, `completeTask`, `reopenTask`, `archiveTask`) manteniendo la API síncrona existente sobre mocks para no tocar FOCO, Calendar ni Tablero.
+- No se modificaron pantallas, navegación ni diseño visual. La app funciona idéntica.
+
+
 ## Consolidación arquitectónica (iteración actual)
 
 - `src/data/mockFocus.ts` se renombra a `src/data/mockTasks.ts`: ya no alimenta sólo FOCO, sino a FOCO, Calendar y Tablero vía `taskService`.
