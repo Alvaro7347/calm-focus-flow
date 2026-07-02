@@ -90,12 +90,19 @@ function CrearTareaScreen() {
   // ---- Carga inicial de áreas
   useEffect(() => {
     let cancelled = false;
+    setAreasLoading(true);
     fetchAreas()
       .then((rows) => {
-        if (!cancelled) setAreas(rows);
+        if (!cancelled) {
+          setAreas(rows);
+          setAreasLoading(false);
+        }
       })
       .catch(() => {
-        if (!cancelled) setAreas([]);
+        if (!cancelled) {
+          setAreas([]);
+          setAreasLoading(false);
+        }
       });
     return () => {
       cancelled = true;
