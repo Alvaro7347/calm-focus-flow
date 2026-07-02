@@ -122,10 +122,26 @@ Los tipos de las tablas se derivan directamente de `src/integrations/supabase/ty
 export type AreaRow    = Database["public"]["Tables"]["areas"]["Row"];
 export type AreaInsert = Database["public"]["Tables"]["areas"]["Insert"];
 export type AreaUpdate = Database["public"]["Tables"]["areas"]["Update"];
-// idem projects, subprojects
+// idem projects, subprojects, tasks
 ```
 
 Nunca usar `any`. Cualquier cambio de esquema regenera los tipos y propaga los errores de compilación a los servicios.
+
+### `CreateTaskInput` vs `TaskInsert`
+
+- **`CreateTaskInput`** es el payload que una pantalla puede completar al crear una tarea. Excluye `user_id`, `created_at`, `updated_at`, `archived_at` y `completed_at`.
+- **`TaskInsert`** (derivado de los tipos de Supabase) queda reservado para uso interno de `taskService`.
+- `taskService.createTask(input: CreateTaskInput)` es responsable de resolver `user_id` a partir de `supabase.auth.getUser()` y ensamblar el `TaskInsert` final. Las pantallas **nunca** envían `user_id`.
+
+### Prioridades — modelo oficial vs. modelo legacy
+
+- **Modelo oficial (Supabase / `tasks.priority`)**: `high` | `medium` | `low` (default `medium`).
+- **Modelo legacy (mocks del MVP)**: `alta` | `media` | `baja` | `normal`. Sobrevive únicamente mientras FOCO, Calendar y Tablero sigan alimentándose de mocks. Se retira al migrar la UI a Supabase.
+
+## Fuente oficial del esquema
+
+El esquema completo del dominio (enums, tablas, foreign keys, índices, constraints, triggers y políticas RLS) vive como código en `supabase/migrations/`. Las migraciones son la **única fuente de verdad**: cualquier cambio de estructura entra por una nueva migración, no por edición directa de la base.
+
 
 ## Flujo de datos correcto
 
