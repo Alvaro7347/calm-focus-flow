@@ -1,7 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { Placeholder } from "@/components/layout/Placeholder";
+import { createFileRoute, Navigate } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/nueva-tarea")({
   head: () => ({ meta: [{ title: "Nueva tarea — CalmApp" }] }),
-  component: () => <Placeholder titulo="Nueva tarea" />,
+  component: () => <Navigate to="/crear-tarea" />,
 });
