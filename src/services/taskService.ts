@@ -30,7 +30,8 @@
 import { tareasFoco } from "@/data/mockTasks";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
-import type { CategoriaFoco, Priority, Tarea } from "@/types/tarea";
+import type { CategoriaFoco, Tarea } from "@/types/tarea";
+import { mapDbPriorityToUi } from "@/services/mappers/priorityMapper";
 
 export type TaskRow = Database["public"]["Tables"]["tasks"]["Row"];
 export type TaskInsert = Database["public"]["Tables"]["tasks"]["Insert"];
@@ -213,7 +214,7 @@ function toTarea(row: JoinedTaskRow, categoria: CategoriaFoco): Tarea {
     vencida: vencida || undefined,
     diasSinActividad,
     completada: row.status === "completed",
-    priority: (row.priority as Priority) ?? "normal",
+    priority: mapDbPriorityToUi(row.priority),
   };
 }
 
