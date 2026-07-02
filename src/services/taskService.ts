@@ -42,6 +42,22 @@ export type TaskStatus = Database["public"]["Enums"]["task_status"];
 export type TaskPriority = Database["public"]["Enums"]["task_priority"];
 export type TaskSource = Database["public"]["Enums"]["task_source"];
 
+/**
+ * CreateTaskInput — payload que una pantalla puede enviar al crear una tarea.
+ *
+ * Contiene únicamente los campos que la UI conoce. Excluye deliberadamente:
+ * - `user_id`         → lo agrega `taskService.createTask()` a partir de `supabase.auth.getUser()`.
+ * - `created_at` / `updated_at` → los gestiona la base de datos.
+ * - `archived_at`     → se controla vía `archiveTask()`.
+ * - `completed_at`    → se controla vía `completeTask()` / `reopenTask()`.
+ *
+ * `TaskInsert` queda reservado para uso interno de la capa de servicios.
+ */
+export type CreateTaskInput = Omit<
+  TaskInsert,
+  "user_id" | "created_at" | "updated_at" | "archived_at" | "completed_at"
+>;
+
 // ---------- API síncrona (mock, temporal) ----------
 
 export function getAllTasks(): Tarea[] {
