@@ -16,7 +16,8 @@
  */
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Clock, Calendar, Hourglass, TrendingUp, Target, Filter } from "lucide-react";
+import { Clock, Calendar, Hourglass, TrendingUp, Target } from "lucide-react";
+
 import { FocoColumna } from "@/components/foco/FocoColumna";
 import { getFocusTasks } from "@/services/focusService";
 
@@ -62,19 +63,6 @@ function FocoPage() {
             Lo que necesita tu foco total. Suelta lo que te pesa y avanza en lo importante.
           </p>
         </div>
-        <button
-          type="button"
-          disabled
-          aria-disabled="true"
-          title="Próximamente"
-          className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-400 cursor-not-allowed opacity-60"
-        >
-          <Filter className="h-4 w-4" />
-          Filtros
-          <span className="text-[10px] uppercase tracking-wide text-slate-400 border border-slate-200 rounded px-1.5 py-0.5 ml-1">
-            Próximamente
-          </span>
-        </button>
       </div>
 
       {isLoading ? (
