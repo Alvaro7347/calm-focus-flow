@@ -15,7 +15,15 @@ import { Route as MiCuentaRouteImport } from './routes/mi-cuenta'
 import { Route as FocoRouteImport } from './routes/foco'
 import { Route as CrearTareaRouteImport } from './routes/crear-tarea'
 import { Route as CalendarioRouteImport } from './routes/calendario'
+import { Route as AjustesRouteImport } from './routes/ajustes'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AjustesIndexRouteImport } from './routes/ajustes.index'
+import { Route as AjustesProductividadRouteImport } from './routes/ajustes.productividad'
+import { Route as AjustesNotificacionesRouteImport } from './routes/ajustes.notificaciones'
+import { Route as AjustesIaRouteImport } from './routes/ajustes.ia'
+import { Route as AjustesCalendarioRouteImport } from './routes/ajustes.calendario'
+import { Route as AjustesAparienciaRouteImport } from './routes/ajustes.apariencia'
+import { Route as AjustesAcercaDeRouteImport } from './routes/ajustes.acerca-de'
 
 const TableroRoute = TableroRouteImport.update({
   id: '/tablero',
@@ -47,20 +55,68 @@ const CalendarioRoute = CalendarioRouteImport.update({
   path: '/calendario',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AjustesRoute = AjustesRouteImport.update({
+  id: '/ajustes',
+  path: '/ajustes',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AjustesIndexRoute = AjustesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AjustesRoute,
+} as any)
+const AjustesProductividadRoute = AjustesProductividadRouteImport.update({
+  id: '/productividad',
+  path: '/productividad',
+  getParentRoute: () => AjustesRoute,
+} as any)
+const AjustesNotificacionesRoute = AjustesNotificacionesRouteImport.update({
+  id: '/notificaciones',
+  path: '/notificaciones',
+  getParentRoute: () => AjustesRoute,
+} as any)
+const AjustesIaRoute = AjustesIaRouteImport.update({
+  id: '/ia',
+  path: '/ia',
+  getParentRoute: () => AjustesRoute,
+} as any)
+const AjustesCalendarioRoute = AjustesCalendarioRouteImport.update({
+  id: '/calendario',
+  path: '/calendario',
+  getParentRoute: () => AjustesRoute,
+} as any)
+const AjustesAparienciaRoute = AjustesAparienciaRouteImport.update({
+  id: '/apariencia',
+  path: '/apariencia',
+  getParentRoute: () => AjustesRoute,
+} as any)
+const AjustesAcercaDeRoute = AjustesAcercaDeRouteImport.update({
+  id: '/acerca-de',
+  path: '/acerca-de',
+  getParentRoute: () => AjustesRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/ajustes': typeof AjustesRouteWithChildren
   '/calendario': typeof CalendarioRoute
   '/crear-tarea': typeof CrearTareaRoute
   '/foco': typeof FocoRoute
   '/mi-cuenta': typeof MiCuentaRoute
   '/nueva-tarea': typeof NuevaTareaRoute
   '/tablero': typeof TableroRoute
+  '/ajustes/acerca-de': typeof AjustesAcercaDeRoute
+  '/ajustes/apariencia': typeof AjustesAparienciaRoute
+  '/ajustes/calendario': typeof AjustesCalendarioRoute
+  '/ajustes/ia': typeof AjustesIaRoute
+  '/ajustes/notificaciones': typeof AjustesNotificacionesRoute
+  '/ajustes/productividad': typeof AjustesProductividadRoute
+  '/ajustes/': typeof AjustesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -70,27 +126,50 @@ export interface FileRoutesByTo {
   '/mi-cuenta': typeof MiCuentaRoute
   '/nueva-tarea': typeof NuevaTareaRoute
   '/tablero': typeof TableroRoute
+  '/ajustes/acerca-de': typeof AjustesAcercaDeRoute
+  '/ajustes/apariencia': typeof AjustesAparienciaRoute
+  '/ajustes/calendario': typeof AjustesCalendarioRoute
+  '/ajustes/ia': typeof AjustesIaRoute
+  '/ajustes/notificaciones': typeof AjustesNotificacionesRoute
+  '/ajustes/productividad': typeof AjustesProductividadRoute
+  '/ajustes': typeof AjustesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/ajustes': typeof AjustesRouteWithChildren
   '/calendario': typeof CalendarioRoute
   '/crear-tarea': typeof CrearTareaRoute
   '/foco': typeof FocoRoute
   '/mi-cuenta': typeof MiCuentaRoute
   '/nueva-tarea': typeof NuevaTareaRoute
   '/tablero': typeof TableroRoute
+  '/ajustes/acerca-de': typeof AjustesAcercaDeRoute
+  '/ajustes/apariencia': typeof AjustesAparienciaRoute
+  '/ajustes/calendario': typeof AjustesCalendarioRoute
+  '/ajustes/ia': typeof AjustesIaRoute
+  '/ajustes/notificaciones': typeof AjustesNotificacionesRoute
+  '/ajustes/productividad': typeof AjustesProductividadRoute
+  '/ajustes/': typeof AjustesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/ajustes'
     | '/calendario'
     | '/crear-tarea'
     | '/foco'
     | '/mi-cuenta'
     | '/nueva-tarea'
     | '/tablero'
+    | '/ajustes/acerca-de'
+    | '/ajustes/apariencia'
+    | '/ajustes/calendario'
+    | '/ajustes/ia'
+    | '/ajustes/notificaciones'
+    | '/ajustes/productividad'
+    | '/ajustes/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -100,19 +179,35 @@ export interface FileRouteTypes {
     | '/mi-cuenta'
     | '/nueva-tarea'
     | '/tablero'
+    | '/ajustes/acerca-de'
+    | '/ajustes/apariencia'
+    | '/ajustes/calendario'
+    | '/ajustes/ia'
+    | '/ajustes/notificaciones'
+    | '/ajustes/productividad'
+    | '/ajustes'
   id:
     | '__root__'
     | '/'
+    | '/ajustes'
     | '/calendario'
     | '/crear-tarea'
     | '/foco'
     | '/mi-cuenta'
     | '/nueva-tarea'
     | '/tablero'
+    | '/ajustes/acerca-de'
+    | '/ajustes/apariencia'
+    | '/ajustes/calendario'
+    | '/ajustes/ia'
+    | '/ajustes/notificaciones'
+    | '/ajustes/productividad'
+    | '/ajustes/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AjustesRoute: typeof AjustesRouteWithChildren
   CalendarioRoute: typeof CalendarioRoute
   CrearTareaRoute: typeof CrearTareaRoute
   FocoRoute: typeof FocoRoute
@@ -165,6 +260,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CalendarioRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/ajustes': {
+      id: '/ajustes'
+      path: '/ajustes'
+      fullPath: '/ajustes'
+      preLoaderRoute: typeof AjustesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -172,11 +274,84 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/ajustes/': {
+      id: '/ajustes/'
+      path: '/'
+      fullPath: '/ajustes/'
+      preLoaderRoute: typeof AjustesIndexRouteImport
+      parentRoute: typeof AjustesRoute
+    }
+    '/ajustes/productividad': {
+      id: '/ajustes/productividad'
+      path: '/productividad'
+      fullPath: '/ajustes/productividad'
+      preLoaderRoute: typeof AjustesProductividadRouteImport
+      parentRoute: typeof AjustesRoute
+    }
+    '/ajustes/notificaciones': {
+      id: '/ajustes/notificaciones'
+      path: '/notificaciones'
+      fullPath: '/ajustes/notificaciones'
+      preLoaderRoute: typeof AjustesNotificacionesRouteImport
+      parentRoute: typeof AjustesRoute
+    }
+    '/ajustes/ia': {
+      id: '/ajustes/ia'
+      path: '/ia'
+      fullPath: '/ajustes/ia'
+      preLoaderRoute: typeof AjustesIaRouteImport
+      parentRoute: typeof AjustesRoute
+    }
+    '/ajustes/calendario': {
+      id: '/ajustes/calendario'
+      path: '/calendario'
+      fullPath: '/ajustes/calendario'
+      preLoaderRoute: typeof AjustesCalendarioRouteImport
+      parentRoute: typeof AjustesRoute
+    }
+    '/ajustes/apariencia': {
+      id: '/ajustes/apariencia'
+      path: '/apariencia'
+      fullPath: '/ajustes/apariencia'
+      preLoaderRoute: typeof AjustesAparienciaRouteImport
+      parentRoute: typeof AjustesRoute
+    }
+    '/ajustes/acerca-de': {
+      id: '/ajustes/acerca-de'
+      path: '/acerca-de'
+      fullPath: '/ajustes/acerca-de'
+      preLoaderRoute: typeof AjustesAcercaDeRouteImport
+      parentRoute: typeof AjustesRoute
+    }
   }
 }
 
+interface AjustesRouteChildren {
+  AjustesAcercaDeRoute: typeof AjustesAcercaDeRoute
+  AjustesAparienciaRoute: typeof AjustesAparienciaRoute
+  AjustesCalendarioRoute: typeof AjustesCalendarioRoute
+  AjustesIaRoute: typeof AjustesIaRoute
+  AjustesNotificacionesRoute: typeof AjustesNotificacionesRoute
+  AjustesProductividadRoute: typeof AjustesProductividadRoute
+  AjustesIndexRoute: typeof AjustesIndexRoute
+}
+
+const AjustesRouteChildren: AjustesRouteChildren = {
+  AjustesAcercaDeRoute: AjustesAcercaDeRoute,
+  AjustesAparienciaRoute: AjustesAparienciaRoute,
+  AjustesCalendarioRoute: AjustesCalendarioRoute,
+  AjustesIaRoute: AjustesIaRoute,
+  AjustesNotificacionesRoute: AjustesNotificacionesRoute,
+  AjustesProductividadRoute: AjustesProductividadRoute,
+  AjustesIndexRoute: AjustesIndexRoute,
+}
+
+const AjustesRouteWithChildren =
+  AjustesRoute._addFileChildren(AjustesRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AjustesRoute: AjustesRouteWithChildren,
   CalendarioRoute: CalendarioRoute,
   CrearTareaRoute: CrearTareaRoute,
   FocoRoute: FocoRoute,
