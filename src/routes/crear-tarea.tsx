@@ -24,7 +24,7 @@
  */
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Keyboard, Mic, Paperclip, Plus, Trash2 } from "lucide-react";
+import { Keyboard, LayoutGrid, Mic, Paperclip, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -64,6 +64,7 @@ function CrearTareaScreen() {
 
   // Organización
   const [areas, setAreas] = useState<AreaRow[]>([]);
+  const [areasLoading, setAreasLoading] = useState(true);
   const [projects, setProjects] = useState<ProjectRow[]>([]);
   const [subprojects, setSubprojects] = useState<SubprojectRow[]>([]);
   const [areaId, setAreaId] = useState<string>("");
@@ -80,7 +81,8 @@ function CrearTareaScreen() {
   const [hora, setHora] = useState("");
   const [duracion, setDuracion] = useState<string>("");
 
-  // Recordatorios (por ahora: solo lista local, no se persisten)
+  // Recordatorios: UI deshabilitada hasta que exista persistencia en task_reminders.
+  // La lógica local se conserva para habilitarla en una futura iteración.
   const [reminders, setReminders] = useState<Reminder[]>([]);
 
   const [saving, setSaving] = useState(false);
@@ -89,12 +91,19 @@ function CrearTareaScreen() {
   // ---- Carga inicial de áreas
   useEffect(() => {
     let cancelled = false;
+    setAreasLoading(true);
     fetchAreas()
       .then((rows) => {
-        if (!cancelled) setAreas(rows);
+        if (!cancelled) {
+          setAreas(rows);
+          setAreasLoading(false);
+        }
       })
       .catch(() => {
-        if (!cancelled) setAreas([]);
+        if (!cancelled) {
+          setAreas([]);
+          setAreasLoading(false);
+        }
       });
     return () => {
       cancelled = true;
@@ -261,66 +270,98 @@ function CrearTareaScreen() {
             <section className="rounded-xl border bg-card p-4 space-y-4">
               <h2 className="text-base font-medium">Organización</h2>
 
-              <div className="space-y-2">
-                <Label>Área *</Label>
-                <Select value={areaId} onValueChange={setAreaId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecciona un área" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {areas.map((a) => (
-                      <SelectItem key={a.id} value={a.id}>
-                        {a.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.area && <p className="text-xs text-destructive">{errors.area}</p>}
-              </div>
+              {areasLoading ? (
+                <p className="text-sm text-muted-foreground">
+                  Cargando estructura organizacional…
+                </p>
+              ) : areas.length === 0 ? (
+                <div className="rounded-xl border border-dashed bg-muted/30 p-6 text-center space-y-3">
+                  <div className="mx-auto h-12 w-12 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600">
+                    <LayoutGrid className="h-6 w-6" />
+                  </div>
+                  <div className="space-y-1">
+                    <h3 className="text-sm font-medium">Organiza tu estructura primero</h3>
+                    <p className="text-xs text-muted-foreground">
+                      Necesitas al menos un Área, un Proyecto y un Subproyecto antes de crear tareas.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-2">
+                    <Label>Área *</Label>
+                    <Select value={areaId} onValueChange={setAreaId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecciona un área" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {areas.map((a) => (
+                          <SelectItem key={a.id} value={a.id}>
+                            {a.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {errors.area && <p className="text-xs text-destructive">{errors.area}</p>}
+                  </div>
 
-              <div className="space-y-2">
-                <Label>Proyecto *</Label>
-                <Select
-                  value={projectId}
-                  onValueChange={setProjectId}
-                  disabled={!areaId}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={areaId ? "Selecciona un proyecto" : "Primero elige un área"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {projects.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.project && <p className="text-xs text-destructive">{errors.project}</p>}
-              </div>
+                  <div className="space-y-2">
+                    <Label>Proyecto *</Label>
+                    {areaId && projects.length === 0 ? (
+                      <p className="text-xs text-muted-foreground">
+                        No hay proyectos en este área. Crea un proyecto primero.
+                      </p>
+                    ) : (
+                      <Select
+                        value={projectId}
+                        onValueChange={setProjectId}
+                        disabled={!areaId}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={areaId ? "Selecciona un proyecto" : "Primero elige un área"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {projects.map((p) => (
+                            <SelectItem key={p.id} value={p.id}>
+                              {p.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                    {errors.project && <p className="text-xs text-destructive">{errors.project}</p>}
+                  </div>
 
-              <div className="space-y-2">
-                <Label>Subproyecto *</Label>
-                <Select
-                  value={subprojectId}
-                  onValueChange={setSubprojectId}
-                  disabled={!projectId}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={projectId ? "Selecciona un subproyecto" : "Primero elige un proyecto"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {subprojects.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.subproject && (
-                  <p className="text-xs text-destructive">{errors.subproject}</p>
-                )}
-              </div>
+                  <div className="space-y-2">
+                    <Label>Subproyecto *</Label>
+                    {projectId && subprojects.length === 0 ? (
+                      <p className="text-xs text-muted-foreground">
+                        No hay subproyectos en este proyecto. Crea un subproyecto primero.
+                      </p>
+                    ) : (
+                      <Select
+                        value={subprojectId}
+                        onValueChange={setSubprojectId}
+                        disabled={!projectId}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={projectId ? "Selecciona un subproyecto" : "Primero elige un proyecto"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {subprojects.map((s) => (
+                            <SelectItem key={s.id} value={s.id}>
+                              {s.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                    {errors.subproject && (
+                      <p className="text-xs text-destructive">{errors.subproject}</p>
+                    )}
+                  </div>
+                </>
+              )}
             </section>
 
             {/* 4. Información de la tarea */}
@@ -408,7 +449,11 @@ function CrearTareaScreen() {
               </div>
             </section>
 
-            {/* 6. Recordatorios */}
+            {/* 6. Recordatorios
+                Sección deshabilitada temporalmente: los recordatorios se
+                persistirán en la tabla `task_reminders` cuando se implemente
+                su backend. Se oculta para evitar expectativas de guardado. */}
+            {/*
             <section className="rounded-xl border bg-card p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <h2 className="text-base font-medium">Recordatorios</h2>
@@ -450,6 +495,7 @@ function CrearTareaScreen() {
                 </ul>
               )}
             </section>
+            */}
 
             {/* 7. Adjuntos */}
             <section className="rounded-xl border bg-card p-4 space-y-3">
