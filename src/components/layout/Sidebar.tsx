@@ -23,12 +23,15 @@
 import { Link } from "@tanstack/react-router";
 import { Settings, User, FileText } from "lucide-react";
 import { useAreasNav } from "@/hooks/useAreasNav";
+import { useBootstrapReady } from "@/lib/bootstrapContext";
 import { slugify } from "@/lib/slug";
 import { Logo } from "@/components/brand/Logo";
 import { BRAND } from "@/brand/brand";
 
 export function Sidebar() {
-  const { data: areas = [] } = useAreasNav();
+  const ready = useBootstrapReady();
+  const { data: areas = [], isLoading, isFetching } = useAreasNav({ enabled: ready });
+  const showLoading = !ready || isLoading || (isFetching && areas.length === 0);
   return (
     <aside className="hidden md:flex w-[260px] shrink-0 flex-col border-r border-border bg-background">
       {/* Logo oficial completo */}
@@ -40,24 +43,30 @@ export function Sidebar() {
       {/* Áreas */}
       <div className="px-6">
         <div className="text-xs font-semibold text-slate-400 tracking-widest mb-3">ÁREAS</div>
-        <ul className="space-y-1">
-          {areas.map((a) => (
-            <li key={a.nombre}>
-              <Link
-                to="/tablero"
-                search={{ area: slugify(a.nombre) }}
-                className="w-full flex items-center gap-3 rounded-lg px-2 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
-                activeProps={{ className: "bg-indigo-50 text-indigo-700" }}
-              >
-                <span className={`h-2.5 w-2.5 rounded-full ${a.color}`} aria-hidden />
-                <span className="flex-1 text-left">{a.nombre}</span>
-                <span className="text-xs text-slate-500 bg-slate-100 rounded-md px-2 py-0.5 min-w-6 text-center">
-                  {a.count}
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
+        {showLoading ? (
+          <div className="px-2 py-2 text-sm text-slate-400">Cargando áreas...</div>
+        ) : areas.length === 0 ? (
+          <div className="px-2 py-2 text-sm text-slate-400">Sin áreas todavía</div>
+        ) : (
+          <ul className="space-y-1">
+            {areas.map((a) => (
+              <li key={a.nombre}>
+                <Link
+                  to="/tablero"
+                  search={{ area: slugify(a.nombre) }}
+                  className="w-full flex items-center gap-3 rounded-lg px-2 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                  activeProps={{ className: "bg-indigo-50 text-indigo-700" }}
+                >
+                  <span className={`h-2.5 w-2.5 rounded-full ${a.color}`} aria-hidden />
+                  <span className="flex-1 text-left">{a.nombre}</span>
+                  <span className="text-xs text-slate-500 bg-slate-100 rounded-md px-2 py-0.5 min-w-6 text-center">
+                    {a.count}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       <div className="mt-auto border-t border-slate-200 px-6 py-4 space-y-1">

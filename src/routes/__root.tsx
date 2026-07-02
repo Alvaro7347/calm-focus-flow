@@ -21,6 +21,8 @@ import { LogoSymbol } from "../components/brand/LogoSymbol";
 import { SplashScreen } from "../components/brand/SplashScreen";
 import { BRAND } from "../brand/brand";
 import { useState } from "react";
+import { BootstrapProvider } from "../lib/bootstrapContext";
+import { AREAS_NAV_QUERY_KEY } from "../hooks/useAreasNav";
 
 function NotFoundComponent() {
   return (
@@ -162,7 +164,13 @@ function RootComponent() {
         const { seedIfEmpty } = await import("@/services/seedService");
         await ensureDevSession();
         await seedIfEmpty();
-        if (!cancelled) setBootstrapped(true);
+        if (cancelled) return;
+        // Invalidar queries que pudieron haberse ejecutado sin sesión / sin datos.
+        queryClient.invalidateQueries({ queryKey: AREAS_NAV_QUERY_KEY });
+        queryClient.invalidateQueries({ queryKey: ["focus"] });
+        queryClient.invalidateQueries({ queryKey: ["calendar"] });
+        queryClient.invalidateQueries({ queryKey: ["tablero"] });
+        setBootstrapped(true);
       } catch (err) {
         console.error("[bootstrap] error", err);
         if (!cancelled) {
@@ -174,31 +182,35 @@ function RootComponent() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [queryClient]);
+
+  const ready = bootstrapped && !bootstrapError;
 
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="flex min-h-screen bg-background font-sans text-foreground">
-        <Sidebar />
-        <AreasDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
-        <div className="flex-1 flex flex-col min-w-0">
-          <MobileHeader onOpenDrawer={() => setDrawerOpen(true)} />
-          <TopBar />
-          <main className="flex-1 pb-20 md:pb-0">
-            {!bootstrapped ? (
-              <SplashScreen />
-            ) : bootstrapError ? (
-              <div className="flex min-h-[60vh] items-center justify-center px-6 text-center text-sm text-destructive">
-                {bootstrapError}
-              </div>
-            ) : (
-              <Outlet />
-            )}
-          </main>
+      <BootstrapProvider value={{ bootstrapped, bootstrapError }}>
+        <div className="flex min-h-screen bg-background font-sans text-foreground">
+          <Sidebar />
+          <AreasDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
+          <div className="flex-1 flex flex-col min-w-0">
+            <MobileHeader onOpenDrawer={() => setDrawerOpen(true)} />
+            <TopBar />
+            <main className="flex-1 pb-20 md:pb-0">
+              {!bootstrapped ? (
+                <SplashScreen />
+              ) : bootstrapError ? (
+                <div className="flex min-h-[60vh] items-center justify-center px-6 text-center text-sm text-destructive">
+                  {bootstrapError}
+                </div>
+              ) : (
+                <Outlet />
+              )}
+            </main>
+          </div>
+          {ready && <MobileFab />}
+          <MobileTabBar />
         </div>
-        <MobileFab />
-        <MobileTabBar />
-      </div>
+      </BootstrapProvider>
     </QueryClientProvider>
   );
 }
