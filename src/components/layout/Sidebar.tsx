@@ -32,9 +32,9 @@ export function Sidebar() {
   return (
     <aside className="hidden md:flex w-[260px] shrink-0 flex-col border-r border-border bg-background">
       {/* Logo oficial completo */}
-      <Link to="/foco" className="flex flex-col items-start gap-2 px-6 pt-6 pb-8" aria-label={BRAND.name}>
+      <Link to="/foco" className="flex flex-col items-center gap-2 px-6 pt-8 pb-8" aria-label={BRAND.name}>
         <Logo height={56} />
-        <div className="text-xs text-muted-foreground pl-0.5">{BRAND.tagline}</div>
+        <div className="text-xs text-muted-foreground text-center">{BRAND.tagline}</div>
       </Link>
 
       {/* Áreas */}
