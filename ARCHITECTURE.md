@@ -9,7 +9,7 @@ Profile (usuario autenticado)
   └── Area
        └── Project
             └── Subproject
-                 └── Task   (aún en mocks, MVP2)
+                 └── Task
 ```
 
 Cada nivel pertenece obligatoriamente al nivel superior. No existen registros huérfanos: la integridad referencial se garantiza con Foreign Keys en Supabase.
