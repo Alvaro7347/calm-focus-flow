@@ -32,3 +32,13 @@
 - Componentes reutilizables preparados para futuras acciones (crear/renombrar/eliminar/mover): `ProyectoAccordion`, `SubproyectoAccordion`, `TareaRow`.
 
 No se modificaron FOCO ni Calendar.
+
+## Infraestructura Supabase (MVP0) — preparación
+
+- Conectado el proyecto a **Lovable Cloud (Supabase)**. Cliente auto-generado en `src/integrations/supabase/client.ts`.
+- Nueva tabla `public.profiles` (`id`, `nombre`, `email`, `avatar_url`, `created_at`, `updated_at`) con RLS por `auth.uid()` y trigger `on_auth_user_created` que crea el perfil al registrarse un usuario.
+- Trigger `profiles_set_updated_at` para mantener `updated_at`.
+- Nuevo servicio `src/services/profileService.ts` como plantilla oficial de servicios que consumen Supabase.
+- Documentación (`README.md`) actualizada: Supabase es la única fuente oficial de datos; Google Sheets solo para migración inicial; mocks siguen vigentes hasta completar la migración.
+- Autenticación: infraestructura lista; no se construyeron pantallas de Login ni se modificó la navegación.
+- No se modificaron FOCO, Calendar, Tablero ni Crear tarea. Sin cambios visuales.
