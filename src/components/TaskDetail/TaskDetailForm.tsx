@@ -78,6 +78,7 @@ import {
   type TaskWithHierarchy,
 } from "@/services/taskService";
 import type { AreaRow, ProjectRow, SubprojectRow } from "@/types/tarea";
+import { getProjectColor } from "@/lib/projectIdentity";
 
 export type TaskDetailMode = "create" | "edit";
 
