@@ -71,8 +71,10 @@ export async function updateProject(id: string, patch: ProjectUpdate): Promise<P
 }
 
 /**
- * Marca el Proyecto como archivado. La propagación a Subproyectos
- * hijos se hará en una capa de aplicación posterior (ver DECISIONS.md).
+ * Marca el Proyecto como archivado. Los Subproyectos hijos y sus
+ * tareas dejan de aparecer en las vistas activas automáticamente
+ * porque `tableroService` y `taskService` filtran `archived_at`
+ * en toda la cadena Área → Proyecto → Subproyecto → Tarea.
  */
 export async function archiveProject(id: string): Promise<ProjectRow> {
   return updateProject(id, { archived_at: new Date().toISOString() });
