@@ -265,6 +265,42 @@ export function TaskDetailForm({
     setInlineOpen(kind);
   }
 
+  /**
+   * Ejecuta la creación "en crudo" (sin sugerencia) del elemento inline
+   * y refresca la jerarquía relevante. Es la única ruta que INSERTA
+   * un Área/Proyecto/Subproyecto desde este formulario.
+   */
+  async function performInlineCreate(name: string): Promise<void> {
+    if (inlineOpen === "area") {
+      const created = await createArea({ name });
+      const rows = await fetchAreas();
+      setAreas(rows);
+      setAreaId(created.id);
+      setProjectId("");
+      setSubprojectId("");
+    } else if (inlineOpen === "project") {
+      if (!areaId) throw new Error("Selecciona un área primero.");
+      const created = await createProject({ name, area_id: areaId });
+      const rows = await fetchProjects(areaId);
+      setProjects(rows);
+      setProjectId(created.id);
+      setSubprojectId("");
+    } else if (inlineOpen === "subproject") {
+      if (!projectId) throw new Error("Selecciona un proyecto primero.");
+      const created = await createSubproject({ name, project_id: projectId });
+      const rows = await fetchSubprojects(projectId);
+      setSubprojects(rows);
+      setSubprojectId(created.id);
+    }
+  }
+
+  /** Clave estable para no re-sugerir la misma coincidencia si el usuario la rechazó. */
+  function suggestionKey(kind: InlineKind, name: string): string {
+    const scope =
+      kind === "project" ? areaId : kind === "subproject" ? projectId : "-";
+    return `${kind}::${name.toLowerCase().trim()}::${scope}`;
+  }
+
   async function handleInlineCreate() {
     const name = inlineName.trim();
     if (!name) {
@@ -274,27 +310,100 @@ export function TaskDetailForm({
     setInlineSaving(true);
     setInlineError(null);
     try {
-      if (inlineOpen === "area") {
-        const created = await createArea({ name });
+      // Validaciones previas de scope antes de consultar la memoria.
+      if (inlineOpen === "project" && !areaId) {
+        throw new Error("Selecciona un área primero.");
+      }
+      if (inlineOpen === "subproject" && !projectId) {
+        throw new Error("Selecciona un proyecto primero.");
+      }
+
+      // Consulta a la Memoria Inteligente. Nunca modifica datos: sólo sugiere.
+      const key = suggestionKey(inlineOpen, name);
+      if (inlineOpen && !rejectedSuggestions.has(key)) {
+        const match = await findSimilarStructure(inlineOpen, name, {
+          areaId: areaId || undefined,
+          projectId: projectId || undefined,
+        });
+        if (match) {
+          setSuggestion(match);
+          setInlineSaving(false);
+          return; // La UI decide: Reutilizar o Crear desde cero.
+        }
+      }
+
+      await performInlineCreate(name);
+      setInlineOpen(null);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "No se pudo crear.";
+      setInlineError(msg);
+    } finally {
+      setInlineSaving(false);
+    }
+  }
+
+  /** Confirmación del usuario: duplicar la estructura sugerida. */
+  async function handleReuseSuggestion() {
+    if (!suggestion || !inlineOpen) return;
+    setSuggestionBusy(true);
+    setInlineError(null);
+    try {
+      const result = await duplicateStructure(suggestion, inlineName.trim(), {
+        areaId: areaId || undefined,
+        projectId: projectId || undefined,
+      });
+      // Refrescar la jerarquía dependiente y seleccionar el nuevo nodo.
+      if (result.kind === "area") {
         const rows = await fetchAreas();
         setAreas(rows);
-        setAreaId(created.id);
+        setAreaId(result.newId);
         setProjectId("");
         setSubprojectId("");
-      } else if (inlineOpen === "project") {
-        if (!areaId) throw new Error("Selecciona un área primero.");
-        const created = await createProject({ name, area_id: areaId });
+      } else if (result.kind === "project") {
         const rows = await fetchProjects(areaId);
         setProjects(rows);
-        setProjectId(created.id);
+        setProjectId(result.newId);
         setSubprojectId("");
-      } else if (inlineOpen === "subproject") {
-        if (!projectId) throw new Error("Selecciona un proyecto primero.");
-        const created = await createSubproject({ name, project_id: projectId });
+      } else {
         const rows = await fetchSubprojects(projectId);
         setSubprojects(rows);
-        setSubprojectId(created.id);
+        setSubprojectId(result.newId);
       }
+      // Propagar a las vistas que dependen de la jerarquía.
+      await Promise.all(
+        TASK_INVALIDATION_KEYS.map((k) =>
+          queryClient.invalidateQueries({ queryKey: k as unknown as string[] }),
+        ),
+      );
+      toast.success(
+        `Estructura reutilizada · ${result.counts.subprojects} subproyectos, ${result.counts.tasks} tareas.`,
+      );
+      setSuggestion(null);
+      setInlineOpen(null);
+    } catch (err) {
+      const msg =
+        err instanceof Error ? err.message : "No se pudo reutilizar la estructura.";
+      setInlineError(msg);
+    } finally {
+      setSuggestionBusy(false);
+    }
+  }
+
+  /** El usuario rechaza la sugerencia y continúa con la creación normal. */
+  async function handleCreateFromScratch() {
+    if (!inlineOpen) return;
+    const name = inlineName.trim();
+    // Recordar el rechazo para no volver a insistir con el mismo nombre/scope.
+    setRejectedSuggestions((prev) => {
+      const next = new Set(prev);
+      next.add(suggestionKey(inlineOpen, name));
+      return next;
+    });
+    setSuggestion(null);
+    setInlineSaving(true);
+    setInlineError(null);
+    try {
+      await performInlineCreate(name);
       setInlineOpen(null);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "No se pudo crear.";
