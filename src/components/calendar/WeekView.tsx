@@ -61,19 +61,32 @@ const DAY_COL_MIN = 128; // px — dentro del rango 120–140 solicitado
  * Función de escalado de la altura de una franja horaria a
  * partir de la concurrencia máxima observada en ella.
  *
- *   concurrencia ≤ 2 → altura base (HOUR_PX)
- *   concurrencia = 3-4 → 2× la altura base
- *   concurrencia = 5-6 → 3× la altura base
- *   …y así sucesivamente
+ * Iteración de legibilidad ("nunca ocultar información"):
  *
- * Regla: cada "par" adicional de eventos simultáneos añade una
- * fila de HOUR_PX. Así garantizamos que cada bloque mantenga
- * al menos ~28 px verticales, suficiente para leer el título.
+ *   concurrencia ≤ 2 → altura base (HOUR_PX)
+ *                       — se reparte en 2 carriles horizontales.
+ *   concurrencia ≥ 3 → la franja crece linealmente en altura y
+ *                       la UI reorganiza el clúster en una
+ *                       cuadrícula de 2 columnas × N filas.
+ *                       Preferimos aumentar la altura antes que
+ *                       seguir estrechando el ancho de cada
+ *                       bloque, para que los títulos sigan
+ *                       siendo legibles (idealmente 2 líneas).
+ *
+ * Con concurrencia 3 → 1.5×, 4 → 2×, 5 → 2.5×, 6 → 3×, etc.
+ * Es decir, cada evento simultáneo adicional (por encima de 2)
+ * aporta media fila (HOUR_PX / 2 ≈ 28 px), suficiente para que
+ * al partir el clúster en 2 columnas cada slot mantenga
+ * ~36-40 px verticales.
  */
 function rowHeightForConcurrency(concurrency: number): number {
-  const factor = Math.max(1, Math.ceil(concurrency / 2));
-  return HOUR_PX * factor;
+  if (concurrency <= 2) return HOUR_PX;
+  const extra = concurrency - 2;
+  return HOUR_PX + extra * (HOUR_PX / 2);
 }
+
+/** Ancho mínimo aceptable por bloque cuando repartimos en carriles. */
+const MAX_HORIZONTAL_LANES = 2;
 
 export function WeekView({ anchor, events, onSelectEvent }: Props) {
   const inicio = useMemo(() => startOfWeek(anchor, { weekStartsOn: 1 }), [anchor]);
