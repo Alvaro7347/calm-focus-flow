@@ -178,11 +178,12 @@ function DayDetailSheet({
               )}
               {events.map((e) => {
                 const c = areaColor(e.area);
+                const pc = getProjectColor(e.proyectoColor);
                 return (
                   <li key={e.id}>
                     <button
                       onClick={() => onSelectEvent(e)}
-                      className={`w-full rounded-lg border border-slate-100 p-3 text-left hover:bg-slate-50 ${e.completada ? "opacity-70" : ""}`}
+                      className={`w-full rounded-lg border border-slate-100 border-l-2 ${pc.border} p-3 text-left hover:bg-slate-50 ${e.completada ? "opacity-70" : ""}`}
                     >
                       <div className="flex items-center gap-2 text-[11px] text-slate-500">
                         <span className={`h-1.5 w-1.5 rounded-full ${c.dot}`} aria-hidden />
