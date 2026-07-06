@@ -1,11 +1,11 @@
 /**
  * Ruta: /ajustes/organizacion
  *
- * Centro de Gestión de Organización de CalmApp.
- * En esta iteración es una vista de solo lectura de la jerarquía
- * Área → Proyecto → Subproyecto. Futuras iteraciones agregarán
- * edición, archivado, colores y proyectos compartidos sobre esta
- * misma estructura sin rediseñar la pantalla.
+ * Centro de Gestión de Organización de CalmApp. Permite ver la
+ * jerarquía Área → Proyecto → Subproyecto, renombrar cualquier nodo
+ * y archivarlo (soft-delete). Al archivar, el nodo y todas sus
+ * tareas asociadas se ocultan automáticamente de Sidebar, FOCO,
+ * Calendario y Tablero, sin borrar historial.
  */
 import { createFileRoute } from "@tanstack/react-router";
 import { SettingsSubpage } from "@/components/settings/SettingsSubpage";
