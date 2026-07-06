@@ -154,6 +154,7 @@ function AreaRow({ area }: { area: AreaNode }) {
   return (
     <div>
       <NodeRow
+        id={area.id}
         label={area.nombre}
         type="area"
         depth={0}
@@ -162,6 +163,7 @@ function AreaRow({ area }: { area: AreaNode }) {
         onToggle={() => setOpen((v) => !v)}
         count={area.proyectos.length || undefined}
       />
+
       {hasChildren && open ? (
         <div className="animate-in fade-in slide-in-from-top-1 duration-200">
           {area.proyectos.map((p) => (
