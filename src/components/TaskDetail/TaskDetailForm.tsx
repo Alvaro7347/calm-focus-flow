@@ -67,6 +67,12 @@ import { fetchAreas, createArea } from "@/services/areaService";
 import { fetchProjects, createProject } from "@/services/projectService";
 import { fetchSubprojects, createSubproject } from "@/services/subprojectService";
 import {
+  findSimilarStructure,
+  duplicateStructure,
+  type StructureMatch,
+} from "@/services/memorySuggestionService";
+import { ReuseStructureDialog } from "@/components/memory/ReuseStructureDialog";
+import {
   archiveTask,
   createTask,
   updateTask,
