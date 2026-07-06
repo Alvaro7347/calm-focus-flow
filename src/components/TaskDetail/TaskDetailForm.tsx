@@ -854,6 +854,18 @@ export function TaskDetailForm({
         </DialogContent>
       </Dialog>
 
+      {/* Sugerencia de reutilización — Memoria Inteligente */}
+      <ReuseStructureDialog
+        open={suggestion !== null}
+        match={suggestion}
+        newName={inlineName}
+        busy={suggestionBusy}
+        onReuse={handleReuseSuggestion}
+        onCreateFromScratch={handleCreateFromScratch}
+      />
+
+
+
       {/* Confirmación de archivado */}
       <AlertDialog open={confirmArchive} onOpenChange={setConfirmArchive}>
         <AlertDialogContent>
