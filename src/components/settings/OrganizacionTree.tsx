@@ -28,14 +28,17 @@ import { useQuery } from "@tanstack/react-query";
 import { ChevronRight, Folder, FolderOpen, Hash, Layers } from "lucide-react";
 import { fetchAreaTree, type AreaNode, type ProyectoNode, type SubproyectoNode } from "@/services/tableroService";
 import { useBootstrapReady } from "@/lib/bootstrapContext";
+import {
+  OrganizacionActions,
+  type OrgNodeType,
+} from "@/components/settings/OrganizacionActions";
 
 export const ORGANIZACION_QUERY_KEY = ["organizacion"] as const;
 
-type NodeType = "area" | "project" | "subproject";
-
 interface RowProps {
+  id: string;
   label: string;
-  type: NodeType;
+  type: OrgNodeType;
   depth: number;
   expandable?: boolean;
   expanded?: boolean;
@@ -43,7 +46,16 @@ interface RowProps {
   count?: number;
 }
 
-function NodeRow({ label, type, depth, expandable, expanded, onToggle, count }: RowProps) {
+function NodeRow({
+  id,
+  label,
+  type,
+  depth,
+  expandable,
+  expanded,
+  onToggle,
+  count,
+}: RowProps) {
   const Icon = type === "subproject" ? Hash : expanded ? FolderOpen : Folder;
   const iconColor =
     type === "area"
@@ -54,7 +66,7 @@ function NodeRow({ label, type, depth, expandable, expanded, onToggle, count }: 
 
   const paddingLeft = 16 + depth * 20;
 
-  const content = (
+  const inner = (
     <>
       <span
         className="inline-flex h-5 w-5 shrink-0 items-center justify-center text-slate-400"
@@ -80,32 +92,32 @@ function NodeRow({ label, type, depth, expandable, expanded, onToggle, count }: 
     </>
   );
 
-  if (expandable) {
-    return (
-      <button
-        type="button"
-        onClick={onToggle}
-        aria-expanded={expanded}
-        className="flex w-full items-center gap-2.5 py-2.5 pr-4 hover:bg-slate-50 transition-colors text-left"
-        style={{ paddingLeft }}
-      >
-        {content}
-      </button>
-    );
-  }
-
   return (
     <div
-      className="flex items-center gap-2.5 py-2.5 pr-4"
+      className="group flex items-center pr-2 hover:bg-slate-50 transition-colors"
       style={{ paddingLeft }}
     >
-      {content}
+      {expandable ? (
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-expanded={expanded}
+          className="flex flex-1 min-w-0 items-center gap-2.5 py-2.5 pr-2 text-left"
+        >
+          {inner}
+        </button>
+      ) : (
+        <div className="flex flex-1 min-w-0 items-center gap-2.5 py-2.5 pr-2">
+          {inner}
+        </div>
+      )}
+      <OrganizacionActions id={id} type={type} name={label} />
     </div>
   );
 }
 
 function SubprojectRow({ sub, depth }: { sub: SubproyectoNode; depth: number }) {
-  return <NodeRow label={sub.nombre} type="subproject" depth={depth} />;
+  return <NodeRow id={sub.id} label={sub.nombre} type="subproject" depth={depth} />;
 }
 
 function ProjectRow({ project, depth }: { project: ProyectoNode; depth: number }) {
@@ -113,7 +125,9 @@ function ProjectRow({ project, depth }: { project: ProyectoNode; depth: number }
   const hasChildren = project.subproyectos.length > 0;
   return (
     <>
+
       <NodeRow
+        id={project.id}
         label={project.nombre}
         type="project"
         depth={depth}
@@ -122,6 +136,7 @@ function ProjectRow({ project, depth }: { project: ProyectoNode; depth: number }
         onToggle={() => setOpen((v) => !v)}
         count={project.subproyectos.length || undefined}
       />
+
       {hasChildren && open ? (
         <div className="animate-in fade-in slide-in-from-top-1 duration-200">
           {project.subproyectos.map((s) => (
@@ -139,6 +154,7 @@ function AreaRow({ area }: { area: AreaNode }) {
   return (
     <div>
       <NodeRow
+        id={area.id}
         label={area.nombre}
         type="area"
         depth={0}
@@ -147,6 +163,7 @@ function AreaRow({ area }: { area: AreaNode }) {
         onToggle={() => setOpen((v) => !v)}
         count={area.proyectos.length || undefined}
       />
+
       {hasChildren && open ? (
         <div className="animate-in fade-in slide-in-from-top-1 duration-200">
           {area.proyectos.map((p) => (
