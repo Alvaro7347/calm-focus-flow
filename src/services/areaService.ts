@@ -85,10 +85,16 @@ export async function fetchAreas(includeArchived = false): Promise<AreaRow[]> {
 export async function fetchAreasWithCounts(): Promise<Area[]> {
   const rows = await fetchAreas(false);
 
+  // Contamos tareas activas cuya cadena Subproyecto → Proyecto → Área no
+  // esté archivada. Con `!inner` + `.is("<rel>.archived_at", null)` PostgREST
+  // descarta las tareas colgadas de ramas archivadas.
   const { data: taskRows, error } = await supabase
     .from("tasks")
-    .select("subprojects!inner(projects!inner(area_id))")
-    .is("archived_at", null);
+    .select("subprojects!inner(archived_at, projects!inner(area_id, archived_at, areas!inner(archived_at)))")
+    .is("archived_at", null)
+    .is("subprojects.archived_at", null)
+    .is("subprojects.projects.archived_at", null)
+    .is("subprojects.projects.areas.archived_at", null);
   if (error) throw error;
 
   const counts = new Map<string, number>();
@@ -139,9 +145,13 @@ export async function updateArea(id: string, patch: AreaUpdate): Promise<AreaRow
 
 /**
  * Marca un Área como archivada. NO elimina físicamente.
- * NOTA: la propagación del archivado a Proyectos y Subproyectos
- * hijos NO se realiza aquí — está prevista para una capa de
- * aplicación posterior (ver DECISIONS.md).
+ *
+ * La propagación a Proyectos, Subproyectos y Tareas no requiere una
+ * mutación en cascada: `tableroService.fetchAreaTree`, `fetchFocusTasks`,
+ * `fetchScheduledTasks` y `fetchAreasWithCounts` filtran por
+ * `archived_at IS NULL` en cada nivel de la jerarquía, así que al
+ * archivar el Área todo su subárbol y sus tareas dejan de aparecer
+ * automáticamente en Sidebar, FOCO, Calendario y Tablero.
  */
 export async function archiveArea(id: string): Promise<AreaRow> {
   return updateArea(id, { archived_at: new Date().toISOString() });

@@ -271,12 +271,19 @@ function toTarea(row: JoinedTaskRow, categoria: CategoriaFoco): Tarea {
  *                   que no encajen en HOY o ESTA SEMANA.
  */
 export async function fetchFocusTasks(): Promise<FocusTasks> {
+  // El `!inner` en cada nivel + `.is("<rel>.archived_at", null)` hace que
+  // PostgREST excluya del resultado cualquier tarea cuyo Subproyecto,
+  // Proyecto o Área esté archivado. Así, archivar un nodo organizacional
+  // oculta automáticamente sus tareas en FOCO sin necesidad de tocarlas.
   const { data, error } = await supabase
     .from("tasks")
     .select(
-      "*, subprojects!inner(name, projects!inner(name, areas!inner(name)))",
+      "*, subprojects!inner(name, archived_at, projects!inner(name, archived_at, areas!inner(name, archived_at)))",
     )
     .is("archived_at", null)
+    .is("subprojects.archived_at", null)
+    .is("subprojects.projects.archived_at", null)
+    .is("subprojects.projects.areas.archived_at", null)
     .neq("status", "completed")
     .order("starts_at", { ascending: true, nullsFirst: false });
 
@@ -391,12 +398,18 @@ function rowToScheduledTarea(row: JoinedTaskRow): Tarea {
  *   que es quien conoce la vista visible.
  */
 export async function fetchScheduledTasks(): Promise<Tarea[]> {
+  // Ver `fetchFocusTasks`: los `!inner` + filtros `.is(..., null)` en cada
+  // nivel garantizan que las tareas cuyo Subproyecto/Proyecto/Área esté
+  // archivado dejen de aparecer automáticamente en Calendar.
   const { data, error } = await supabase
     .from("tasks")
     .select(
-      "*, subprojects!inner(name, projects!inner(name, areas!inner(name)))",
+      "*, subprojects!inner(name, archived_at, projects!inner(name, archived_at, areas!inner(name, archived_at)))",
     )
     .is("archived_at", null)
+    .is("subprojects.archived_at", null)
+    .is("subprojects.projects.archived_at", null)
+    .is("subprojects.projects.areas.archived_at", null)
     .not("starts_at", "is", null)
     .order("starts_at", { ascending: true });
 

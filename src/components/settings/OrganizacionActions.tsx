@@ -54,6 +54,7 @@ import {
   updateSubproject,
   archiveSubproject,
 } from "@/services/subprojectService";
+import { TASK_INVALIDATION_KEYS } from "@/services/taskService";
 
 export type OrgNodeType = "area" | "project" | "subproject";
 
@@ -93,10 +94,17 @@ export function OrganizacionActions({ id, type, name, triggerClassName }: Props)
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [draft, setDraft] = useState(name);
 
+  // Editar o archivar un nodo organizacional puede cambiar qué tareas
+  // se muestran en cada vista activa. Invalidamos:
+  //  - ["organizacion"]: este propio árbol de Ajustes.
+  //  - TASK_INVALIDATION_KEYS: ["focus"], ["calendar"], ["tablero"] y
+  //    ["areas","nav"] (Sidebar/Drawer), que son las vistas que arman
+  //    su contenido a partir de la jerarquía + tareas activas.
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["organizacion"] });
-    qc.invalidateQueries({ queryKey: ["areas", "nav"] });
-    qc.invalidateQueries({ queryKey: ["tablero"] });
+    for (const key of TASK_INVALIDATION_KEYS) {
+      qc.invalidateQueries({ queryKey: [...key] });
+    }
   };
 
   const rename = useMutation({
