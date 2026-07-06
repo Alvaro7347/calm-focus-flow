@@ -159,9 +159,9 @@ export async function fetchAreaTree(): Promise<AreaNode[]> {
   const { data, error } = await supabase
     .from("areas")
     .select(
-      `id, name, display_order, archived_at,
+      `id, name, display_order, archived_at, color,
        projects (
-         id, name, display_order, archived_at, color,
+         id, name, display_order, archived_at,
          subprojects (
            id, name, display_order, archived_at,
            tasks (
@@ -179,6 +179,10 @@ export async function fetchAreaTree(): Promise<AreaNode[]> {
   const rows = (data ?? []) as unknown as RawArea[];
 
   return rows.map((a) => {
+    // El color se define en el Área; Proyectos, Subproyectos y Tareas
+    // lo heredan visualmente (se propaga hacia abajo para que los
+    // consumidores actuales sigan leyendo `proyecto.color` sin cambios).
+    const areaColor = a.color;
     const proyectos: ProyectoNode[] = (a.projects ?? [])
       .filter((p) => p.archived_at === null)
       .sort((x, y) => x.display_order - y.display_order)
@@ -189,7 +193,7 @@ export async function fetchAreaTree(): Promise<AreaNode[]> {
           .map((s) => {
             const tareas = (s.tasks ?? [])
               .filter((t) => t.archived_at === null)
-              .map((t) => mapTask(t, a.name, p.name, p.color, s.name));
+              .map((t) => mapTask(t, a.name, p.name, areaColor, s.name));
             return {
               id: s.id,
               nombre: s.name,
@@ -202,7 +206,7 @@ export async function fetchAreaTree(): Promise<AreaNode[]> {
           id: p.id,
           nombre: p.name,
           slug: slugify(p.name),
-          color: p.color,
+          color: areaColor,
           subproyectos,
           totalTareas,
         };
@@ -212,6 +216,7 @@ export async function fetchAreaTree(): Promise<AreaNode[]> {
       id: a.id,
       nombre: a.name,
       slug: slugify(a.name),
+      color: areaColor,
       proyectos,
       totalTareas,
     };
