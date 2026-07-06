@@ -108,13 +108,12 @@ export function MonthView({ anchor, events, onSelectEvent }: Props) {
 }
 
 function MiniEvent({ event }: { event: CalendarEvent }) {
-  const c = areaColor(event.area);
   const pc = getProjectColor(event.proyectoColor);
   const done = event.completada;
   return (
     <div
       className={`flex items-center gap-1 truncate rounded px-1 text-[10px] leading-tight ${
-        done ? "text-slate-400 line-through" : c.text
+        done ? "text-slate-400 line-through" : pc.text
       }`}
     >
       <span
