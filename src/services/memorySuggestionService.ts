@@ -455,10 +455,22 @@ export async function duplicateStructure(
   if (!trimmed) throw new Error("El nombre es obligatorio.");
 
   if (match.kind === "area") {
-    const created = await createArea({ name: trimmed });
+    // Identidad visual: la nueva Área hereda el `color` (slug de paleta
+    // CalmApp) del Área de origen. Es la ÚNICA fuente de verdad visual
+    // en la jerarquía Área → Proyecto → Subproyecto → Tarea.
+    const { data: sourceArea, error: areaErr } = await supabase
+      .from("areas")
+      .select("color")
+      .eq("id", match.sourceId)
+      .maybeSingle();
+    if (areaErr) throw areaErr;
+    const created = await createArea({
+      name: trimmed,
+      color: sourceArea?.color ?? null,
+    });
     const { data: projs, error } = await supabase
       .from("projects")
-      .select("id, name, description, color, display_order")
+      .select("id, name, description, display_order")
       .eq("area_id", match.sourceId)
       .is("archived_at", null)
       .order("display_order", { ascending: true });
@@ -466,11 +478,12 @@ export async function duplicateStructure(
     let subprojects = 0;
     let tasks = 0;
     for (const p of projs ?? []) {
+      // `projects.color` es legacy: la interfaz obtiene el color desde
+      // `areas.color`, así que no se copia aquí.
       const newProject = await createProject({
         name: p.name,
         area_id: created.id,
         description: p.description,
-        color: p.color,
         display_order: p.display_order,
       });
       const r = await duplicateProjectContents(p.id, newProject.id, userId);
@@ -488,15 +501,16 @@ export async function duplicateStructure(
     if (!target.areaId) throw new Error("Falta el área destino.");
     const { data: source, error } = await supabase
       .from("projects")
-      .select("description, color, display_order")
+      .select("description, display_order")
       .eq("id", match.sourceId)
       .maybeSingle();
     if (error) throw error;
+    // `projects.color` es legacy: el nuevo proyecto hereda su
+    // identidad visual desde `areas.color` del área destino.
     const newProject = await createProject({
       name: trimmed,
       area_id: target.areaId,
       description: source?.description ?? null,
-      color: source?.color ?? null,
       display_order: source?.display_order ?? undefined,
     });
     const r = await duplicateProjectContents(match.sourceId, newProject.id, userId);
