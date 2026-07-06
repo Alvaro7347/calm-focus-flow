@@ -131,7 +131,11 @@ function CalendarioPage() {
             No pudimos cargar tu calendario. {error instanceof Error ? error.message : ""}
           </div>
         ) : view === "semana" ? (
-          <WeekView anchor={anchor} events={events} onSelectEvent={setSelected} />
+          isMobile ? (
+            <DayView anchor={anchor} events={events} onSelectEvent={setSelected} />
+          ) : (
+            <WeekView anchor={anchor} events={events} onSelectEvent={setSelected} />
+          )
         ) : (
           <MonthView anchor={anchor} events={events} onSelectEvent={setSelected} />
         )}
