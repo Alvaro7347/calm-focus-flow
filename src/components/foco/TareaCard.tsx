@@ -35,8 +35,10 @@ function Breadcrumb({ tarea }: Props) {
 
 export function TareaCard({ tarea }: Props) {
   const [open, setOpen] = useState(false);
-  const base =
-    "w-full text-left rounded-xl border border-slate-200 bg-white p-4 transition-shadow hover:shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300";
+  const areaSwatch = getProjectColor(tarea.proyectoColor);
+  // Barra lateral con el color heredado del Área: hace visible en FOCO
+  // a qué Área pertenece cada tarea sin añadir carga visual.
+  const base = `w-full text-left rounded-xl border border-slate-200 border-l-4 ${areaSwatch.border} bg-white p-4 transition-shadow hover:shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300`;
 
   const inner = (() => {
     if (tarea.categoriaFoco === "hoy") {
@@ -76,7 +78,13 @@ export function TareaCard({ tarea }: Props) {
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
           <div className="text-sm font-semibold text-slate-900 leading-snug">{tarea.titulo}</div>
-          <div className="text-xs text-slate-500 mt-1">{tarea.area}</div>
+          <div className="text-xs text-slate-500 mt-1 flex items-center gap-1.5">
+            <span
+              aria-hidden
+              className={`h-1.5 w-1.5 rounded-full shrink-0 ${areaSwatch.dot}`}
+            />
+            <span className="truncate">{tarea.area}</span>
+          </div>
         </div>
         <div className="text-right text-xs text-slate-400 leading-tight shrink-0">
           <div>Sin actividad</div>
