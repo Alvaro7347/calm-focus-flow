@@ -85,10 +85,16 @@ export async function fetchAreas(includeArchived = false): Promise<AreaRow[]> {
 export async function fetchAreasWithCounts(): Promise<Area[]> {
   const rows = await fetchAreas(false);
 
+  // Contamos tareas activas cuya cadena Subproyecto → Proyecto → Área no
+  // esté archivada. Con `!inner` + `.is("<rel>.archived_at", null)` PostgREST
+  // descarta las tareas colgadas de ramas archivadas.
   const { data: taskRows, error } = await supabase
     .from("tasks")
-    .select("subprojects!inner(projects!inner(area_id))")
-    .is("archived_at", null);
+    .select("subprojects!inner(archived_at, projects!inner(area_id, archived_at, areas!inner(archived_at)))")
+    .is("archived_at", null)
+    .is("subprojects.archived_at", null)
+    .is("subprojects.projects.archived_at", null)
+    .is("subprojects.projects.areas.archived_at", null);
   if (error) throw error;
 
   const counts = new Map<string, number>();
