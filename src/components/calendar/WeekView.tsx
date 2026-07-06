@@ -372,50 +372,47 @@ export function WeekView({ anchor, events, onSelectEvent }: Props) {
   );
 }
 
+interface Placement {
+  top: number;
+  height: number;
+  leftPct: number;
+  widthPct: number;
+  twoLines: boolean;
+}
+
 function EventBlock({
   event,
-  lane,
-  lanes,
-  minToPx,
+  placement,
   onClick,
 }: {
   event: CalendarEvent;
-  lane: number;
-  lanes: number;
-  minToPx: (min: number) => number;
+  placement: Placement;
   onClick: () => void;
 }) {
   const pc = getProjectColor(event.proyectoColor);
   const startMin = event.start.getHours() * 60 + event.start.getMinutes();
-  const endMin = event.end.getHours() * 60 + event.end.getMinutes();
   const outOfRange = startMin < START_HOUR * 60 || startMin >= END_HOUR * 60;
   if (outOfRange) return null;
-
-  const top = minToPx(startMin);
-  const bottom = minToPx(endMin);
-  const height = Math.max(24, bottom - top - 2);
-
-  // Reparto horizontal en carriles. Se dejan 4 px de margen a
-  // cada lado del contenedor y 2 px de separación entre carriles.
-  const gapPct = lanes > 1 ? 1.5 : 0;
-  const widthPct = (100 - gapPct * (lanes - 1)) / lanes;
-  const leftPct = lane * (widthPct + gapPct);
 
   const done = event.completada;
   return (
     <button
       onClick={onClick}
       style={{
-        top,
-        height,
-        left: `${leftPct}%`,
-        width: `${widthPct}%`,
+        top: placement.top,
+        height: placement.height,
+        left: `${placement.leftPct}%`,
+        width: `${placement.widthPct}%`,
       }}
       className={`pointer-events-auto absolute rounded-md border-l-2 px-2 py-1 text-left text-[11px] leading-tight overflow-hidden transition-shadow hover:shadow-sm ${
         done ? "bg-slate-50 border-l-slate-300 text-slate-400 line-through" : `${pc.soft} ${pc.border} ${pc.text}`
       }`}
     >
-      <div className="font-medium truncate">{event.titulo}</div>
+      <div
+        className={`font-medium ${placement.twoLines ? "line-clamp-2" : "truncate"}`}
+      >
+        {event.titulo}
+      </div>
     </button>
   );
 }
