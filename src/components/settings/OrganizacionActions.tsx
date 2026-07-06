@@ -223,8 +223,8 @@ export function OrganizacionActions({
           <DialogHeader>
             <DialogTitle>Editar {LABELS[type].singular}</DialogTitle>
             <DialogDescription>
-              {type === "project"
-                ? "Cambia el nombre o el color. No afecta al historial de tareas."
+              {type === "area"
+                ? "Cambia el nombre o el color. Proyectos, subproyectos y tareas heredarán el nuevo color."
                 : "Cambia el nombre. No afecta al historial de tareas."}
             </DialogDescription>
           </DialogHeader>
@@ -254,15 +254,15 @@ export function OrganizacionActions({
               ) : null}
             </div>
 
-            {type === "project" ? (
+            {type === "area" ? (
               <div className="space-y-2">
-                <p className="text-xs font-medium text-slate-600">Color del proyecto</p>
+                <p className="text-xs font-medium text-slate-600">Color del área</p>
                 <p className="text-xs text-slate-400">
-                  Ayuda a reconocer el proyecto en Tablero, Calendario y FOCO.
+                  Sus proyectos, subproyectos y tareas heredan este color en Tablero, Calendario y FOCO.
                 </p>
                 <div
                   role="radiogroup"
-                  aria-label="Color del proyecto"
+                  aria-label="Color del área"
                   className="flex flex-wrap gap-2 pt-1"
                 >
                   {PROJECT_COLORS.map((c) => {
