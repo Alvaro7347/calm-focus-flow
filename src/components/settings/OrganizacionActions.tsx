@@ -5,22 +5,26 @@
  *
  * Acciones implementadas:
  *  - Editar nombre (Dialog con input precargado y validación no-vacío).
+ *  - Editar color (SOLO Proyectos, paleta CalmApp de 12 colores).
  *  - Archivar (AlertDialog de confirmación, soft-delete vía `archived_at`).
  *
- * Fuera de alcance (preparado, no implementado):
- *  - Eliminar definitivamente / colores / compartir / reordenar.
+ * Identidad visual de Proyectos:
+ *  - Sólo los Proyectos tienen color (paleta cerrada, `projectIdentity.ts`).
+ *  - El picker sólo se muestra cuando `type === "project"`.
+ *  - La arquitectura queda preparada para agregar en el futuro icono,
+ *    emoji o imagen: se sumarán nuevas secciones al Dialog y nuevos
+ *    campos al `updateProject` sin cambiar los consumidores actuales.
  *
  * Invalidaciones:
  *  Al editar o archivar cualquier nodo se invalidan las queryKeys que
- *  alimentan las vistas activas: ["organizacion"] (este árbol),
- *  ["areas","nav"] (Sidebar/Drawer) y ["tablero"] (Tablero + FOCO/Calendar
- *  que arman su vista sobre el mismo árbol). Los tres servicios
- *  (area/project/subproject) filtran `archived_at IS NULL` por defecto,
- *  así que el elemento archivado desaparece de las vistas sin recargar.
+ *  alimentan las vistas activas: ["organizacion"] (este árbol) y
+ *  TASK_INVALIDATION_KEYS (["focus"], ["calendar"], ["tablero"],
+ *  ["areas","nav"]). Los servicios filtran `archived_at IS NULL` en
+ *  cadena, así que el elemento archivado desaparece sin recargar.
  */
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { MoreHorizontal, Pencil, Archive } from "lucide-react";
+import { MoreHorizontal, Pencil, Archive, Check } from "lucide-react";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -55,6 +59,11 @@ import {
   archiveSubproject,
 } from "@/services/subprojectService";
 import { TASK_INVALIDATION_KEYS } from "@/services/taskService";
+import {
+  PROJECT_COLORS,
+  DEFAULT_PROJECT_COLOR,
+  type ProjectColorSlug,
+} from "@/lib/projectIdentity";
 
 export type OrgNodeType = "area" | "project" | "subproject";
 
@@ -64,10 +73,16 @@ const LABELS: Record<OrgNodeType, { singular: string; article: string }> = {
   subproject: { singular: "subproyecto", article: "este" },
 };
 
-async function renameNode(type: OrgNodeType, id: string, name: string) {
-  if (type === "area") return updateArea(id, { name });
-  if (type === "project") return updateProject(id, { name });
-  return updateSubproject(id, { name });
+interface RenamePatch {
+  name?: string;
+  color?: ProjectColorSlug;
+}
+
+async function updateNode(type: OrgNodeType, id: string, patch: RenamePatch) {
+  if (type === "area") return updateArea(id, { name: patch.name });
+  if (type === "project")
+    return updateProject(id, { name: patch.name, color: patch.color });
+  return updateSubproject(id, { name: patch.name });
 }
 
 async function archiveNode(type: OrgNodeType, id: string) {
@@ -81,25 +96,37 @@ interface Props {
   type: OrgNodeType;
   name: string;
   /**
-   * Slot opcional para elementos que quieran envolver el trigger
-   * (por defecto es un botón ghost redondeado alineado a la fila).
+   * Sólo para proyectos: slug de color actual (paleta CalmApp).
+   * Los otros tipos lo ignoran.
    */
+  color?: string | null;
   triggerClassName?: string;
   children?: ReactNode;
 }
 
-export function OrganizacionActions({ id, type, name, triggerClassName }: Props) {
+export function OrganizacionActions({
+  id,
+  type,
+  name,
+  color,
+  triggerClassName,
+}: Props) {
   const qc = useQueryClient();
   const [editOpen, setEditOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [draft, setDraft] = useState(name);
+  const initialColor = (color as ProjectColorSlug | null | undefined) ?? DEFAULT_PROJECT_COLOR;
+  const [colorDraft, setColorDraft] = useState<ProjectColorSlug>(initialColor);
 
-  // Editar o archivar un nodo organizacional puede cambiar qué tareas
-  // se muestran en cada vista activa. Invalidamos:
-  //  - ["organizacion"]: este propio árbol de Ajustes.
-  //  - TASK_INVALIDATION_KEYS: ["focus"], ["calendar"], ["tablero"] y
-  //    ["areas","nav"] (Sidebar/Drawer), que son las vistas que arman
-  //    su contenido a partir de la jerarquía + tareas activas.
+  // Resetear los borradores cada vez que se abre el diálogo, para que
+  // reflejen el estado actual del nodo (por si otra pestaña lo cambió).
+  useEffect(() => {
+    if (editOpen) {
+      setDraft(name);
+      setColorDraft(initialColor);
+    }
+  }, [editOpen, name, initialColor]);
+
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["organizacion"] });
     for (const key of TASK_INVALIDATION_KEYS) {
@@ -107,11 +134,11 @@ export function OrganizacionActions({ id, type, name, triggerClassName }: Props)
     }
   };
 
-  const rename = useMutation({
-    mutationFn: async (nextName: string) => renameNode(type, id, nextName),
+  const save = useMutation({
+    mutationFn: async (patch: RenamePatch) => updateNode(type, id, patch),
     onSuccess: () => {
       invalidate();
-      toast.success("Nombre actualizado");
+      toast.success("Cambios guardados");
       setEditOpen(false);
     },
     onError: (e: unknown) => {
@@ -124,7 +151,9 @@ export function OrganizacionActions({ id, type, name, triggerClassName }: Props)
     mutationFn: async () => archiveNode(type, id),
     onSuccess: () => {
       invalidate();
-      toast.success(`${LABELS[type].singular[0].toUpperCase()}${LABELS[type].singular.slice(1)} archivado`);
+      toast.success(
+        `${LABELS[type].singular[0].toUpperCase()}${LABELS[type].singular.slice(1)} archivado`,
+      );
       setConfirmOpen(false);
     },
     onError: (e: unknown) => {
@@ -134,7 +163,17 @@ export function OrganizacionActions({ id, type, name, triggerClassName }: Props)
   });
 
   const trimmed = draft.trim();
-  const canSave = trimmed.length > 0 && trimmed !== name && !rename.isPending;
+  const nameChanged = trimmed.length > 0 && trimmed !== name;
+  const colorChanged = type === "project" && colorDraft !== initialColor;
+  const canSave = (nameChanged || colorChanged) && trimmed.length > 0 && !save.isPending;
+
+  function handleSubmit() {
+    if (!canSave) return;
+    const patch: RenamePatch = {};
+    if (nameChanged) patch.name = trimmed;
+    if (colorChanged) patch.color = colorDraft;
+    save.mutate(patch);
+  }
 
   return (
     <>
@@ -156,12 +195,11 @@ export function OrganizacionActions({ id, type, name, triggerClassName }: Props)
           <DropdownMenuItem
             onSelect={(e) => {
               e.preventDefault();
-              setDraft(name);
               setEditOpen(true);
             }}
           >
             <Pencil className="h-4 w-4 mr-2" aria-hidden />
-            Editar nombre
+            Editar
           </DropdownMenuItem>
           <DropdownMenuItem
             onSelect={(e) => {
@@ -184,40 +222,87 @@ export function OrganizacionActions({ id, type, name, triggerClassName }: Props)
           <DialogHeader>
             <DialogTitle>Editar {LABELS[type].singular}</DialogTitle>
             <DialogDescription>
-              Cambia el nombre. No afecta al historial de tareas.
+              {type === "project"
+                ? "Cambia el nombre o el color. No afecta al historial de tareas."
+                : "Cambia el nombre. No afecta al historial de tareas."}
             </DialogDescription>
           </DialogHeader>
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              if (canSave) rename.mutate(trimmed);
+              handleSubmit();
             }}
-            className="space-y-3"
+            className="space-y-5"
           >
-            <Input
-              autoFocus
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              maxLength={80}
-              placeholder="Nombre"
-              aria-label="Nombre"
-            />
-            {trimmed.length === 0 ? (
-              <p className="text-xs text-rose-600">
-                El nombre no puede estar vacío.
-              </p>
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-slate-600" htmlFor="org-name">
+                Nombre
+              </label>
+              <Input
+                id="org-name"
+                autoFocus
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                maxLength={80}
+                placeholder="Nombre"
+              />
+              {trimmed.length === 0 ? (
+                <p className="text-xs text-rose-600">
+                  El nombre no puede estar vacío.
+                </p>
+              ) : null}
+            </div>
+
+            {type === "project" ? (
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-slate-600">Color del proyecto</p>
+                <p className="text-xs text-slate-400">
+                  Ayuda a reconocer el proyecto en Tablero, Calendario y FOCO.
+                </p>
+                <div
+                  role="radiogroup"
+                  aria-label="Color del proyecto"
+                  className="flex flex-wrap gap-2 pt-1"
+                >
+                  {PROJECT_COLORS.map((c) => {
+                    const selected = colorDraft === c.slug;
+                    return (
+                      <button
+                        key={c.slug}
+                        type="button"
+                        role="radio"
+                        aria-checked={selected}
+                        aria-label={c.label}
+                        title={c.label}
+                        onClick={() => setColorDraft(c.slug)}
+                        className={`relative h-8 w-8 rounded-full ${c.dot} transition-transform hover:scale-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${c.ring} ${
+                          selected ? "ring-2 ring-offset-2 " + c.ring : ""
+                        }`}
+                      >
+                        {selected ? (
+                          <Check
+                            className="absolute inset-0 m-auto h-4 w-4 text-white drop-shadow-sm"
+                            aria-hidden
+                          />
+                        ) : null}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             ) : null}
+
             <DialogFooter>
               <Button
                 type="button"
                 variant="ghost"
                 onClick={() => setEditOpen(false)}
-                disabled={rename.isPending}
+                disabled={save.isPending}
               >
                 Cancelar
               </Button>
               <Button type="submit" disabled={!canSave}>
-                {rename.isPending ? "Guardando…" : "Guardar"}
+                {save.isPending ? "Guardando…" : "Guardar"}
               </Button>
             </DialogFooter>
           </form>
