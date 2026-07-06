@@ -156,7 +156,7 @@ export async function fetchAreaTree(): Promise<AreaNode[]> {
     .select(
       `id, name, display_order, archived_at,
        projects (
-         id, name, display_order, archived_at,
+         id, name, display_order, archived_at, color,
          subprojects (
            id, name, display_order, archived_at,
            tasks (
@@ -184,7 +184,7 @@ export async function fetchAreaTree(): Promise<AreaNode[]> {
           .map((s) => {
             const tareas = (s.tasks ?? [])
               .filter((t) => t.archived_at === null)
-              .map((t) => mapTask(t, a.name, p.name, s.name));
+              .map((t) => mapTask(t, a.name, p.name, p.color, s.name));
             return {
               id: s.id,
               nombre: s.name,
@@ -197,6 +197,7 @@ export async function fetchAreaTree(): Promise<AreaNode[]> {
           id: p.id,
           nombre: p.name,
           slug: slugify(p.name),
+          color: p.color,
           subproyectos,
           totalTareas,
         };
