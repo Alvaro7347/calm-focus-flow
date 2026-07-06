@@ -97,8 +97,8 @@ interface Props {
   type: OrgNodeType;
   name: string;
   /**
-   * Sólo para proyectos: slug de color actual (paleta CalmApp).
-   * Los otros tipos lo ignoran.
+   * Sólo para áreas: slug de color actual (paleta CalmApp).
+   * Los otros tipos lo ignoran (heredan visualmente el color del Área).
    */
   color?: string | null;
   triggerClassName?: string;
