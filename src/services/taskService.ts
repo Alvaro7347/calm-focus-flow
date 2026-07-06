@@ -410,7 +410,7 @@ export async function fetchScheduledTasks(): Promise<Tarea[]> {
   const { data, error } = await supabase
     .from("tasks")
     .select(
-      "*, subprojects!inner(name, archived_at, projects!inner(name, archived_at, areas!inner(name, archived_at)))",
+      "*, subprojects!inner(name, archived_at, projects!inner(name, color, archived_at, areas!inner(name, archived_at)))",
     )
     .is("archived_at", null)
     .is("subprojects.archived_at", null)
