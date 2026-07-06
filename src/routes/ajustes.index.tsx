@@ -32,12 +32,20 @@ function AjustesIndex() {
 
       <section className="rounded-xl border border-slate-200 bg-white overflow-hidden divide-y divide-slate-100">
         <SettingsRow
+          to="/ajustes/organizacion"
+          icon={FolderTree}
+          title="Organización"
+          description="Áreas, Proyectos y Subproyectos"
+          iconColor="text-indigo-600"
+          iconBg="bg-indigo-50"
+        />
+        <SettingsRow
           to="/ajustes/apariencia"
           icon={Palette}
           title="Apariencia"
           description="Tema claro, oscuro o del sistema"
-          iconColor="text-indigo-600"
-          iconBg="bg-indigo-50"
+          iconColor="text-slate-600"
+          iconBg="bg-slate-100"
         />
         <SettingsRow
           to="/ajustes/calendario"
