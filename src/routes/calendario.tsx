@@ -64,6 +64,7 @@ function CalendarioPage() {
   const [view, setView] = useCalendarView("semana");
   const [anchor, setAnchor] = useState<Date>(new Date());
   const [selected, setSelected] = useState<CalendarEvent | null>(null);
+  const isMobile = useIsMobile();
 
   // Rango visible según la vista actual. calendarService devuelve
   // sólo los eventos que solapan con este rango.
