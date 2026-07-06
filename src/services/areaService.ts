@@ -122,7 +122,7 @@ export async function fetchAreasWithCounts(): Promise<Area[]> {
 
   return rows.map((r) => ({
     nombre: r.name,
-    color: colorFor(r.name),
+    color: areaDotClass(r),
     count: counts.get(r.id) ?? 0,
   }));
 }
