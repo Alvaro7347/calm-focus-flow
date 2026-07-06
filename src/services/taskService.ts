@@ -246,7 +246,7 @@ function toTarea(row: JoinedTaskRow, categoria: CategoriaFoco): Tarea {
     titulo: row.title,
     area: areaName,
     proyecto: projectName,
-    proyectoColor: proj?.color ?? null,
+    proyectoColor: proj?.areas?.color ?? null,
     subproyecto: subName,
     fechaProgramada,
     horaInicio,
