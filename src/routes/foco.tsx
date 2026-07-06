@@ -12,14 +12,30 @@
  * - Al crear/editar/completar una tarea, invalidar esa key
  *   con `queryClient.invalidateQueries({ queryKey: ["focus"] })`.
  *   FOCO se refresca automáticamente sin necesidad de recargar.
+ *
+ * "Tu Día":
+ * - La pantalla de bienvenida se muestra una sola vez por día
+ *   (estado en `localStorage`). El brief se cachea también por
+ *   día, así que la acción "Tu Día" del header lo reabre sin
+ *   volver a llamar a la IA.
  * ========================================================
  */
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Clock, Calendar, Hourglass, TrendingUp, Target } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Clock, Calendar, Hourglass, TrendingUp, Target, Sun } from "lucide-react";
 
 import { FocoColumna } from "@/components/foco/FocoColumna";
 import { getFocusTasks } from "@/services/focusService";
+import { TuDiaScreen } from "@/components/tuDia/TuDiaScreen";
+import {
+  getOrLoadTodayBrief,
+  hasShownTuDiaToday,
+  markTuDiaShownToday,
+  readCachedBrief,
+} from "@/services/dailyBriefCache";
+import { getCurrentProfile } from "@/services/profileService";
+import type { DailyBrief } from "@/services/dailyAiBriefService";
 
 export const Route = createFileRoute("/foco")({
   head: () => ({
@@ -43,6 +59,71 @@ function FocoPage() {
     staleTime: 15_000,
   });
 
+  const { data: profile } = useQuery({
+    queryKey: ["profile", "me"],
+    queryFn: getCurrentProfile,
+    staleTime: 5 * 60_000,
+  });
+
+  // ---------- Tu Día ----------
+  const [tuDiaOpen, setTuDiaOpen] = useState(false);
+  const [tuDiaLoading, setTuDiaLoading] = useState(false);
+  const [tuDiaBrief, setTuDiaBrief] = useState<DailyBrief | null>(null);
+  const [tuDiaError, setTuDiaError] = useState<string | null>(null);
+  const autoTriggered = useRef(false);
+
+  const openAutoIfNeeded = () => {
+    if (autoTriggered.current) return;
+    autoTriggered.current = true;
+    if (hasShownTuDiaToday()) return;
+    setTuDiaOpen(true);
+    setTuDiaLoading(true);
+    setTuDiaError(null);
+    getOrLoadTodayBrief()
+      .then((result) => {
+        if (result.ok) {
+          setTuDiaBrief(result.brief);
+        } else {
+          setTuDiaError(result.error);
+        }
+      })
+      .catch((e) => setTuDiaError(e instanceof Error ? e.message : String(e)))
+      .finally(() => setTuDiaLoading(false));
+  };
+
+  useEffect(() => {
+    openAutoIfNeeded();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleCloseTuDia = () => {
+    markTuDiaShownToday();
+    setTuDiaOpen(false);
+  };
+
+  const handleReopenTuDia = () => {
+    // Reabrir: reutiliza el brief ya cacheado. No llama a la IA.
+    const cached = readCachedBrief();
+    if (cached) {
+      setTuDiaBrief(cached);
+      setTuDiaError(null);
+      setTuDiaLoading(false);
+      setTuDiaOpen(true);
+      return;
+    }
+    // Si no hay caché (raro), intentar cargar sin forzar.
+    setTuDiaOpen(true);
+    setTuDiaLoading(true);
+    setTuDiaError(null);
+    getOrLoadTodayBrief()
+      .then((result) => {
+        if (result.ok) setTuDiaBrief(result.brief);
+        else setTuDiaError(result.error);
+      })
+      .catch((e) => setTuDiaError(e instanceof Error ? e.message : String(e)))
+      .finally(() => setTuDiaLoading(false));
+  };
+
   const hoy = data?.hoy ?? [];
   const semana = data?.estaSemana ?? [];
   const esperando = data?.esperando ?? [];
@@ -63,6 +144,16 @@ function FocoPage() {
             Lo que necesita tu foco total. Suelta lo que te pesa y avanza en lo importante.
           </p>
         </div>
+        <button
+          type="button"
+          onClick={handleReopenTuDia}
+          className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition"
+          aria-label="Volver a ver el resumen de hoy"
+          title="Tu Día"
+        >
+          <Sun className="h-3.5 w-3.5" aria-hidden />
+          <span>Tu Día</span>
+        </button>
       </div>
 
       {isLoading ? (
@@ -119,6 +210,15 @@ function FocoPage() {
         <p className="mt-3 text-sm font-semibold text-slate-700">Menos ruido, más claridad.</p>
         <p className="text-sm text-slate-500">Enfócate en lo que realmente impulsa tu día.</p>
       </div>
+
+      <TuDiaScreen
+        open={tuDiaOpen}
+        loading={tuDiaLoading}
+        brief={tuDiaBrief}
+        error={tuDiaError}
+        userName={profile?.nombre ?? null}
+        onClose={handleCloseTuDia}
+      />
     </div>
   );
 }
