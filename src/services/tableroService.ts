@@ -93,6 +93,7 @@ type RawProject = {
   name: string;
   display_order: number;
   archived_at: string | null;
+  color: string | null;
   subprojects: RawSubproject[] | null;
 };
 
