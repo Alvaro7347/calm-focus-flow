@@ -245,7 +245,7 @@ export function OrganizacionTree() {
       </section>
 
       <p className="text-xs text-slate-400 px-1">
-        Próximamente: editar, archivar y colores por Área.
+        Archivar oculta un elemento y sus tareas de FOCO, Calendario y Tablero, sin borrar historial.
       </p>
     </div>
   );
