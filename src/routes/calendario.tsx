@@ -36,8 +36,10 @@ import { getCalendarEvents, type CalendarEvent } from "@/services/calendarServic
 import { useCalendarView } from "@/hooks/useCalendarView";
 import { CalendarHeader } from "@/components/calendar/CalendarHeader";
 import { WeekView } from "@/components/calendar/WeekView";
+import { DayView } from "@/components/calendar/DayView";
 import { MonthView } from "@/components/calendar/MonthView";
 import { EventDetail } from "@/components/calendar/EventDetail";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { TaskDetailSheet } from "@/components/TaskDetail";
 
 export const Route = createFileRoute("/calendario")({
@@ -62,6 +64,7 @@ function CalendarioPage() {
   const [view, setView] = useCalendarView("semana");
   const [anchor, setAnchor] = useState<Date>(new Date());
   const [selected, setSelected] = useState<CalendarEvent | null>(null);
+  const isMobile = useIsMobile();
 
   // Rango visible según la vista actual. calendarService devuelve
   // sólo los eventos que solapan con este rango.
@@ -128,7 +131,11 @@ function CalendarioPage() {
             No pudimos cargar tu calendario. {error instanceof Error ? error.message : ""}
           </div>
         ) : view === "semana" ? (
-          <WeekView anchor={anchor} events={events} onSelectEvent={setSelected} />
+          isMobile ? (
+            <DayView anchor={anchor} events={events} onSelectEvent={setSelected} />
+          ) : (
+            <WeekView anchor={anchor} events={events} onSelectEvent={setSelected} />
+          )
         ) : (
           <MonthView anchor={anchor} events={events} onSelectEvent={setSelected} />
         )}
