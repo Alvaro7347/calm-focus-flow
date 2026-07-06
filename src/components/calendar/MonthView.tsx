@@ -13,6 +13,7 @@ import { es } from "date-fns/locale";
 import { X } from "lucide-react";
 import type { CalendarEvent } from "@/services/calendarService";
 import { areaColor } from "./areaColors";
+import { getProjectColor } from "@/lib/projectIdentity";
 
 interface Props {
   anchor: Date;
