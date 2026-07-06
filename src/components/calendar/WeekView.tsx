@@ -351,14 +351,13 @@ export function WeekView({ anchor, events, onSelectEvent }: Props) {
                 ))}
                 <div className="absolute inset-x-1 inset-y-0 pointer-events-none">
                   {timed.map((e) => {
-                    const info = layout?.get(e.id);
+                    const placement = placementsPorDia.get(d.toDateString())?.get(e.id);
+                    if (!placement) return null;
                     return (
                       <EventBlock
                         key={e.id}
                         event={e}
-                        lane={info?.lane ?? 0}
-                        lanes={info?.lanes ?? 1}
-                        minToPx={minToPx}
+                        placement={placement}
                         onClick={() => onSelectEvent(e)}
                       />
                     );
