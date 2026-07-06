@@ -497,7 +497,7 @@ export async function duplicateStructure(
       area_id: target.areaId,
       description: source?.description ?? null,
       color: source?.color ?? null,
-      display_order: source?.display_order ?? null,
+      display_order: source?.display_order ?? undefined,
     });
     const r = await duplicateProjectContents(match.sourceId, newProject.id, userId);
     return {
