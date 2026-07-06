@@ -45,6 +45,8 @@ interface RowProps {
   expanded?: boolean;
   onToggle?: () => void;
   count?: number;
+  /** Sólo aplica a `type === "project"`: slug de la paleta CalmApp. */
+  color?: string | null;
 }
 
 function NodeRow({
@@ -56,14 +58,19 @@ function NodeRow({
   expanded,
   onToggle,
   count,
+  color,
 }: RowProps) {
+  // Para proyectos, el icono se reemplaza por un punto de color
+  // que representa la identidad visual del proyecto.
   const Icon = type === "subproject" ? Hash : expanded ? FolderOpen : Folder;
   const iconColor =
     type === "area"
       ? "text-indigo-600"
       : type === "project"
-        ? "text-sky-600"
+        ? "text-slate-400"
         : "text-slate-400";
+
+  const projectColor = type === "project" ? getProjectColor(color) : null;
 
   const paddingLeft = 16 + depth * 20;
 
@@ -81,7 +88,15 @@ function NodeRow({
           />
         ) : null}
       </span>
-      <Icon className={`h-4 w-4 shrink-0 ${iconColor}`} aria-hidden />
+      {projectColor ? (
+        <span
+          aria-hidden
+          className={`h-2.5 w-2.5 rounded-full shrink-0 ${projectColor.dot}`}
+          title={`Color: ${projectColor.label}`}
+        />
+      ) : (
+        <Icon className={`h-4 w-4 shrink-0 ${iconColor}`} aria-hidden />
+      )}
       <span className="min-w-0 flex-1 truncate text-sm text-slate-900">
         {label}
       </span>
@@ -112,7 +127,7 @@ function NodeRow({
           {inner}
         </div>
       )}
-      <OrganizacionActions id={id} type={type} name={label} />
+      <OrganizacionActions id={id} type={type} name={label} color={color} />
     </div>
   );
 }
@@ -126,7 +141,6 @@ function ProjectRow({ project, depth }: { project: ProyectoNode; depth: number }
   const hasChildren = project.subproyectos.length > 0;
   return (
     <>
-
       <NodeRow
         id={project.id}
         label={project.nombre}
@@ -136,6 +150,7 @@ function ProjectRow({ project, depth }: { project: ProyectoNode; depth: number }
         expanded={open}
         onToggle={() => setOpen((v) => !v)}
         count={project.subproyectos.length || undefined}
+        color={project.color}
       />
 
       {hasChildren && open ? (
