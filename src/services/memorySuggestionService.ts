@@ -517,7 +517,7 @@ export async function duplicateStructure(
   const newSub = await createSubproject({
     name: trimmed,
     project_id: target.projectId,
-    display_order: source?.display_order ?? null,
+    display_order: source?.display_order ?? undefined,
   });
   const r = await duplicateSubprojectContents(match.sourceId, newSub.id, userId);
   return {
