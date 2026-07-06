@@ -24,9 +24,14 @@
  */
 import { supabase } from "@/integrations/supabase/client";
 import type { Area, AreaRow, AreaInsert, AreaUpdate } from "@/types/tarea";
+import { getProjectColor } from "@/lib/projectIdentity";
 
 /**
- * Colores estables para las Áreas conocidas del proyecto.
+ * Colores estables de respaldo para las Áreas conocidas del proyecto.
+ * Se aplican SÓLO cuando el Área todavía no tiene `color` (slug de la
+ * paleta CalmApp) asignado desde el Centro de Gestión de Organización.
+ * Una vez que el usuario elige color desde Ajustes → Organización,
+ * ese valor manda y este mapa deja de aplicar para esa Área.
  */
 const AREA_COLORS: Record<string, string> = {
   Soundkeleles: "bg-violet-500",
@@ -49,11 +54,22 @@ const FALLBACK_PALETTE = [
   "bg-lime-500",
 ];
 
-function colorFor(nombre: string): string {
+function fallbackColorFor(nombre: string): string {
   if (AREA_COLORS[nombre]) return AREA_COLORS[nombre];
   let hash = 0;
   for (let i = 0; i < nombre.length; i++) hash = (hash * 31 + nombre.charCodeAt(i)) >>> 0;
   return FALLBACK_PALETTE[hash % FALLBACK_PALETTE.length];
+}
+
+/**
+ * Devuelve la clase Tailwind del punto de color visible en Sidebar/AreasDrawer.
+ * Prioridad:
+ *  1) `row.color` (slug elegido por el usuario en Ajustes → Organización).
+ *  2) Color estable por nombre conocido o hash del nombre.
+ */
+function areaDotClass(row: AreaRow): string {
+  if (row.color) return getProjectColor(row.color).dot;
+  return fallbackColorFor(row.name);
 }
 
 // ============================================================
