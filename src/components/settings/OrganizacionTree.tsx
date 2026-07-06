@@ -1,27 +1,27 @@
 /**
  * OrganizacionTree
  * ---------------------------------------------------------------------------
- * Vista jerárquica de sólo lectura de la estructura organizacional del
- * usuario: Área → Proyecto → Subproyecto.
+ * Vista jerárquica de la estructura organizacional del usuario:
+ * Área → Proyecto → Subproyecto.
  *
- * Alcance de esta iteración:
+ * Alcance actual:
  *  - Mostrar la jerarquía completa cargada desde Supabase.
  *  - Expandir / contraer nodos con animación suave.
- *  - Estilo iOS / Ajustes: filas limpias, chevrons, mucho espacio en blanco.
+ *  - Renombrar y archivar cualquier nodo desde `OrganizacionActions` (⋯).
+ *    Archivar es un soft-delete: el nodo y sus tareas asociadas se
+ *    ocultan automáticamente de Sidebar, FOCO, Calendario y Tablero
+ *    gracias al filtrado por `archived_at` en cadena que hacen
+ *    `taskService` y `tableroService`.
  *
  * Fuera de alcance (preparado, no implementado):
- *  - Editar / archivar / eliminar / colores.
- *  - Drag & drop / reorganización.
- *  - Proyectos compartidos / IA de organización.
+ *  - Eliminar definitivamente / colores / compartir / reordenar / IA.
  *
- * Notas de arquitectura para futuras iteraciones:
- *  - Cada fila (`NodeRow`) recibe `id` + `type` (`area|project|subproject`).
- *    En una próxima iteración, el `onSelect` opcional abrirá un panel de
- *    detalle/edición sin cambiar la estructura del árbol.
- *  - El árbol se reconstruye a partir de `fetchAreaTree` (Supabase, RLS).
- *    Al invalidar la queryKey ["organizacion"] la vista se refresca; las
- *    mutaciones futuras (crear/archivar/renombrar) deberán invalidar esta
- *    misma clave.
+ * Reactividad:
+ *  - El árbol se reconstruye a partir de `fetchAreaTree` (Supabase, RLS)
+ *    bajo la queryKey ["organizacion"]. `OrganizacionActions` invalida
+ *    esa clave más `TASK_INVALIDATION_KEYS` (["focus"], ["calendar"],
+ *    ["tablero"], ["areas","nav"]) tras cada mutación para mantener la
+ *    consistencia entre pantallas sin recargar.
  */
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
