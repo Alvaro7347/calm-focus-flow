@@ -24,6 +24,7 @@ import { addDays, format, isSameDay, startOfWeek } from "date-fns";
 import { es } from "date-fns/locale";
 import type { CalendarEvent } from "@/services/calendarService";
 import { areaColor } from "./areaColors";
+import { getProjectColor } from "@/lib/projectIdentity";
 
 interface Props {
   anchor: Date;
