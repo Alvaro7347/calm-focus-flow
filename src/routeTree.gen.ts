@@ -24,6 +24,7 @@ import { Route as LegalTerminosRouteImport } from './routes/legal.terminos'
 import { Route as LegalPrivacidadRouteImport } from './routes/legal.privacidad'
 import { Route as LegalLicenciasRouteImport } from './routes/legal.licencias'
 import { Route as AjustesProductividadRouteImport } from './routes/ajustes.productividad'
+import { Route as AjustesOrganizacionRouteImport } from './routes/ajustes.organizacion'
 import { Route as AjustesNotificacionesRouteImport } from './routes/ajustes.notificaciones'
 import { Route as AjustesIaRouteImport } from './routes/ajustes.ia'
 import { Route as AjustesCalendarioRouteImport } from './routes/ajustes.calendario'
@@ -105,6 +106,11 @@ const AjustesProductividadRoute = AjustesProductividadRouteImport.update({
   path: '/productividad',
   getParentRoute: () => AjustesRoute,
 } as any)
+const AjustesOrganizacionRoute = AjustesOrganizacionRouteImport.update({
+  id: '/organizacion',
+  path: '/organizacion',
+  getParentRoute: () => AjustesRoute,
+} as any)
 const AjustesNotificacionesRoute = AjustesNotificacionesRouteImport.update({
   id: '/notificaciones',
   path: '/notificaciones',
@@ -146,6 +152,7 @@ export interface FileRoutesByFullPath {
   '/ajustes/calendario': typeof AjustesCalendarioRoute
   '/ajustes/ia': typeof AjustesIaRoute
   '/ajustes/notificaciones': typeof AjustesNotificacionesRoute
+  '/ajustes/organizacion': typeof AjustesOrganizacionRoute
   '/ajustes/productividad': typeof AjustesProductividadRoute
   '/legal/licencias': typeof LegalLicenciasRoute
   '/legal/privacidad': typeof LegalPrivacidadRoute
@@ -166,6 +173,7 @@ export interface FileRoutesByTo {
   '/ajustes/calendario': typeof AjustesCalendarioRoute
   '/ajustes/ia': typeof AjustesIaRoute
   '/ajustes/notificaciones': typeof AjustesNotificacionesRoute
+  '/ajustes/organizacion': typeof AjustesOrganizacionRoute
   '/ajustes/productividad': typeof AjustesProductividadRoute
   '/legal/licencias': typeof LegalLicenciasRoute
   '/legal/privacidad': typeof LegalPrivacidadRoute
@@ -189,6 +197,7 @@ export interface FileRoutesById {
   '/ajustes/calendario': typeof AjustesCalendarioRoute
   '/ajustes/ia': typeof AjustesIaRoute
   '/ajustes/notificaciones': typeof AjustesNotificacionesRoute
+  '/ajustes/organizacion': typeof AjustesOrganizacionRoute
   '/ajustes/productividad': typeof AjustesProductividadRoute
   '/legal/licencias': typeof LegalLicenciasRoute
   '/legal/privacidad': typeof LegalPrivacidadRoute
@@ -213,6 +222,7 @@ export interface FileRouteTypes {
     | '/ajustes/calendario'
     | '/ajustes/ia'
     | '/ajustes/notificaciones'
+    | '/ajustes/organizacion'
     | '/ajustes/productividad'
     | '/legal/licencias'
     | '/legal/privacidad'
@@ -233,6 +243,7 @@ export interface FileRouteTypes {
     | '/ajustes/calendario'
     | '/ajustes/ia'
     | '/ajustes/notificaciones'
+    | '/ajustes/organizacion'
     | '/ajustes/productividad'
     | '/legal/licencias'
     | '/legal/privacidad'
@@ -255,6 +266,7 @@ export interface FileRouteTypes {
     | '/ajustes/calendario'
     | '/ajustes/ia'
     | '/ajustes/notificaciones'
+    | '/ajustes/organizacion'
     | '/ajustes/productividad'
     | '/legal/licencias'
     | '/legal/privacidad'
@@ -382,6 +394,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AjustesProductividadRouteImport
       parentRoute: typeof AjustesRoute
     }
+    '/ajustes/organizacion': {
+      id: '/ajustes/organizacion'
+      path: '/organizacion'
+      fullPath: '/ajustes/organizacion'
+      preLoaderRoute: typeof AjustesOrganizacionRouteImport
+      parentRoute: typeof AjustesRoute
+    }
     '/ajustes/notificaciones': {
       id: '/ajustes/notificaciones'
       path: '/notificaciones'
@@ -426,6 +445,7 @@ interface AjustesRouteChildren {
   AjustesCalendarioRoute: typeof AjustesCalendarioRoute
   AjustesIaRoute: typeof AjustesIaRoute
   AjustesNotificacionesRoute: typeof AjustesNotificacionesRoute
+  AjustesOrganizacionRoute: typeof AjustesOrganizacionRoute
   AjustesProductividadRoute: typeof AjustesProductividadRoute
   AjustesIndexRoute: typeof AjustesIndexRoute
 }
@@ -436,6 +456,7 @@ const AjustesRouteChildren: AjustesRouteChildren = {
   AjustesCalendarioRoute: AjustesCalendarioRoute,
   AjustesIaRoute: AjustesIaRoute,
   AjustesNotificacionesRoute: AjustesNotificacionesRoute,
+  AjustesOrganizacionRoute: AjustesOrganizacionRoute,
   AjustesProductividadRoute: AjustesProductividadRoute,
   AjustesIndexRoute: AjustesIndexRoute,
 }
