@@ -19,6 +19,7 @@
 import { Link } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
 import type { ProyectoNode } from "@/services/tableroService";
+import { getProjectColor } from "@/lib/projectIdentity";
 import { SubproyectoAccordion } from "./SubproyectoAccordion";
 
 interface Props {
@@ -29,6 +30,7 @@ interface Props {
 }
 
 export function ProyectoAccordion({ areaSlug, proyecto, open, openSubproyectoSlug }: Props) {
+  const color = getProjectColor(proyecto.color);
   return (
     <section>
       <Link
@@ -45,6 +47,12 @@ export function ProyectoAccordion({ areaSlug, proyecto, open, openSubproyectoSlu
       >
         <ChevronRight
           className={`h-4 w-4 text-slate-500 transition-transform ${open ? "rotate-90" : ""}`}
+        />
+        {/* Identidad visual del proyecto: punto discreto de color. */}
+        <span
+          aria-hidden
+          className={`h-2 w-2 rounded-full shrink-0 ${color.dot}`}
+          title={`Color del proyecto: ${color.label}`}
         />
         <h3 className="text-[15px] font-semibold text-slate-800 flex-1 truncate">
           {proyecto.nombre}

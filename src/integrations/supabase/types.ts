@@ -209,6 +209,7 @@ export type Database = {
         Row: {
           archived_at: string | null
           area_id: string
+          color: string | null
           created_at: string
           description: string | null
           display_order: number
@@ -219,6 +220,7 @@ export type Database = {
         Insert: {
           archived_at?: string | null
           area_id: string
+          color?: string | null
           created_at?: string
           description?: string | null
           display_order?: number
@@ -229,6 +231,7 @@ export type Database = {
         Update: {
           archived_at?: string | null
           area_id?: string
+          color?: string | null
           created_at?: string
           description?: string | null
           display_order?: number

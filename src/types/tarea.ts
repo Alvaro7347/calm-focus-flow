@@ -25,6 +25,12 @@ export interface Tarea {
   area: string;
   proyecto?: string;
   subproyecto?: string;
+  /**
+   * Slug de identidad visual del Proyecto padre (paleta CalmApp).
+   * Puede ser `null`/`undefined`; los consumidores deben resolverlo
+   * con `getProjectColor` para caer al color por defecto.
+   */
+  proyectoColor?: string | null;
   /** ISO date (YYYY-MM-DD). Si existe, la tarea aparece en Calendar. */
   fechaProgramada?: string;
   /** HH:mm. Si no existe pero hay fecha, la tarea es "Todo el día". */

@@ -51,6 +51,8 @@ export interface ProyectoNode {
   id: string;
   nombre: string;
   slug: string;
+  /** Slug de la paleta CalmApp. Puede ser `null` (usa color por defecto). */
+  color: string | null;
   subproyectos: SubproyectoNode[];
   totalTareas: number;
 }
@@ -91,6 +93,7 @@ type RawProject = {
   name: string;
   display_order: number;
   archived_at: string | null;
+  color: string | null;
   subprojects: RawSubproject[] | null;
 };
 
@@ -107,7 +110,13 @@ function isoDate(iso: string): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-function mapTask(row: RawTask, areaName: string, projectName: string, subName: string): Tarea {
+function mapTask(
+  row: RawTask,
+  areaName: string,
+  projectName: string,
+  projectColor: string | null,
+  subName: string,
+): Tarea {
   const starts = row.starts_at ? new Date(row.starts_at) : null;
   const hasTime = !!starts && (starts.getHours() !== 0 || starts.getMinutes() !== 0);
   const horaInicio =
@@ -120,6 +129,7 @@ function mapTask(row: RawTask, areaName: string, projectName: string, subName: s
     titulo: row.title,
     area: areaName,
     proyecto: projectName,
+    proyectoColor: projectColor,
     subproyecto: subName,
     fechaProgramada: row.starts_at ? isoDate(row.starts_at) : undefined,
     horaInicio,
@@ -146,7 +156,7 @@ export async function fetchAreaTree(): Promise<AreaNode[]> {
     .select(
       `id, name, display_order, archived_at,
        projects (
-         id, name, display_order, archived_at,
+         id, name, display_order, archived_at, color,
          subprojects (
            id, name, display_order, archived_at,
            tasks (
@@ -174,7 +184,7 @@ export async function fetchAreaTree(): Promise<AreaNode[]> {
           .map((s) => {
             const tareas = (s.tasks ?? [])
               .filter((t) => t.archived_at === null)
-              .map((t) => mapTask(t, a.name, p.name, s.name));
+              .map((t) => mapTask(t, a.name, p.name, p.color, s.name));
             return {
               id: s.id,
               nombre: s.name,
@@ -187,6 +197,7 @@ export async function fetchAreaTree(): Promise<AreaNode[]> {
           id: p.id,
           nombre: p.name,
           slug: slugify(p.name),
+          color: p.color,
           subproyectos,
           totalTareas,
         };

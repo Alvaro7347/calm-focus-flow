@@ -182,7 +182,11 @@ type JoinedTaskRow = TaskRow & {
   subprojects:
     | {
         name: string;
-        projects: { name: string; areas: { name: string } | null } | null;
+        projects: {
+          name: string;
+          color: string | null;
+          areas: { name: string } | null;
+        } | null;
       }
     | null;
 };
@@ -243,6 +247,7 @@ function toTarea(row: JoinedTaskRow, categoria: CategoriaFoco): Tarea {
     titulo: row.title,
     area: areaName,
     proyecto: projectName,
+    proyectoColor: proj?.color ?? null,
     subproyecto: subName,
     fechaProgramada,
     horaInicio,
@@ -278,7 +283,7 @@ export async function fetchFocusTasks(): Promise<FocusTasks> {
   const { data, error } = await supabase
     .from("tasks")
     .select(
-      "*, subprojects!inner(name, archived_at, projects!inner(name, archived_at, areas!inner(name, archived_at)))",
+      "*, subprojects!inner(name, archived_at, projects!inner(name, color, archived_at, areas!inner(name, archived_at)))",
     )
     .is("archived_at", null)
     .is("subprojects.archived_at", null)
@@ -372,6 +377,7 @@ function rowToScheduledTarea(row: JoinedTaskRow): Tarea {
     titulo: row.title,
     area: proj?.areas?.name ?? "",
     proyecto: proj?.name ?? undefined,
+    proyectoColor: proj?.color ?? null,
     subproyecto: sub?.name ?? undefined,
     fechaProgramada,
     horaInicio,
@@ -404,7 +410,7 @@ export async function fetchScheduledTasks(): Promise<Tarea[]> {
   const { data, error } = await supabase
     .from("tasks")
     .select(
-      "*, subprojects!inner(name, archived_at, projects!inner(name, archived_at, areas!inner(name, archived_at)))",
+      "*, subprojects!inner(name, archived_at, projects!inner(name, color, archived_at, areas!inner(name, archived_at)))",
     )
     .is("archived_at", null)
     .is("subprojects.archived_at", null)

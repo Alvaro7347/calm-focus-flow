@@ -13,6 +13,7 @@ import { es } from "date-fns/locale";
 import { X } from "lucide-react";
 import type { CalendarEvent } from "@/services/calendarService";
 import { areaColor } from "./areaColors";
+import { getProjectColor } from "@/lib/projectIdentity";
 
 interface Props {
   anchor: Date;
@@ -108,6 +109,7 @@ export function MonthView({ anchor, events, onSelectEvent }: Props) {
 
 function MiniEvent({ event }: { event: CalendarEvent }) {
   const c = areaColor(event.area);
+  const pc = getProjectColor(event.proyectoColor);
   const done = event.completada;
   return (
     <div
@@ -115,7 +117,10 @@ function MiniEvent({ event }: { event: CalendarEvent }) {
         done ? "text-slate-400 line-through" : c.text
       }`}
     >
-      <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${done ? "bg-slate-300" : c.dot}`} aria-hidden />
+      <span
+        className={`h-1.5 w-1.5 rounded-full shrink-0 ${done ? "bg-slate-300" : pc.dot}`}
+        aria-hidden
+      />
       <span className="truncate">{event.titulo}</span>
     </div>
   );
@@ -173,11 +178,12 @@ function DayDetailSheet({
               )}
               {events.map((e) => {
                 const c = areaColor(e.area);
+                const pc = getProjectColor(e.proyectoColor);
                 return (
                   <li key={e.id}>
                     <button
                       onClick={() => onSelectEvent(e)}
-                      className={`w-full rounded-lg border border-slate-100 p-3 text-left hover:bg-slate-50 ${e.completada ? "opacity-70" : ""}`}
+                      className={`w-full rounded-lg border border-slate-100 border-l-2 ${pc.border} p-3 text-left hover:bg-slate-50 ${e.completada ? "opacity-70" : ""}`}
                     >
                       <div className="flex items-center gap-2 text-[11px] text-slate-500">
                         <span className={`h-1.5 w-1.5 rounded-full ${c.dot}`} aria-hidden />
