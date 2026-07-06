@@ -11,6 +11,7 @@
 import { useState } from "react";
 import type { Tarea } from "@/types/tarea";
 import { TaskDetailSheet } from "@/components/TaskDetail";
+import { getProjectColor } from "@/lib/projectIdentity";
 
 interface Props {
   tarea: Tarea;
@@ -18,7 +19,18 @@ interface Props {
 
 function Breadcrumb({ tarea }: Props) {
   const parts = [tarea.area, tarea.proyecto, tarea.subproyecto].filter(Boolean);
-  return <div className="text-xs text-slate-500 mt-1">{parts.join(" / ")}</div>;
+  const color = getProjectColor(tarea.proyectoColor);
+  return (
+    <div className="text-xs text-slate-500 mt-1 flex items-center gap-1.5">
+      {tarea.proyecto ? (
+        <span
+          aria-hidden
+          className={`h-1.5 w-1.5 rounded-full shrink-0 ${color.dot}`}
+        />
+      ) : null}
+      <span className="truncate">{parts.join(" / ")}</span>
+    </div>
+  );
 }
 
 export function TareaCard({ tarea }: Props) {
