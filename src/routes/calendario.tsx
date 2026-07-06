@@ -36,8 +36,10 @@ import { getCalendarEvents, type CalendarEvent } from "@/services/calendarServic
 import { useCalendarView } from "@/hooks/useCalendarView";
 import { CalendarHeader } from "@/components/calendar/CalendarHeader";
 import { WeekView } from "@/components/calendar/WeekView";
+import { DayView } from "@/components/calendar/DayView";
 import { MonthView } from "@/components/calendar/MonthView";
 import { EventDetail } from "@/components/calendar/EventDetail";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { TaskDetailSheet } from "@/components/TaskDetail";
 
 export const Route = createFileRoute("/calendario")({
