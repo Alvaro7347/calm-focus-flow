@@ -32,6 +32,7 @@ import {
   OrganizacionActions,
   type OrgNodeType,
 } from "@/components/settings/OrganizacionActions";
+import { getProjectColor } from "@/lib/projectIdentity";
 
 export const ORGANIZACION_QUERY_KEY = ["organizacion"] as const;
 
