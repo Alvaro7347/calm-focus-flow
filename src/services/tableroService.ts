@@ -51,6 +51,8 @@ export interface ProyectoNode {
   id: string;
   nombre: string;
   slug: string;
+  /** Slug de la paleta CalmApp. Puede ser `null` (usa color por defecto). */
+  color: string | null;
   subproyectos: SubproyectoNode[];
   totalTareas: number;
 }
