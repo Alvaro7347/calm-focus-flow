@@ -109,6 +109,7 @@ export function MonthView({ anchor, events, onSelectEvent }: Props) {
 
 function MiniEvent({ event }: { event: CalendarEvent }) {
   const c = areaColor(event.area);
+  const pc = getProjectColor(event.proyectoColor);
   const done = event.completada;
   return (
     <div
@@ -116,7 +117,10 @@ function MiniEvent({ event }: { event: CalendarEvent }) {
         done ? "text-slate-400 line-through" : c.text
       }`}
     >
-      <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${done ? "bg-slate-300" : c.dot}`} aria-hidden />
+      <span
+        className={`h-1.5 w-1.5 rounded-full shrink-0 ${done ? "bg-slate-300" : pc.dot}`}
+        aria-hidden
+      />
       <span className="truncate">{event.titulo}</span>
     </div>
   );
