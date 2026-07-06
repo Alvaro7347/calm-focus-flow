@@ -111,6 +111,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:title", content: `${BRAND.name} — ${BRAND.tagline}` },
       { name: "twitter:description", content: BRAND.slogan },
       { name: "twitter:image", content: "/og-image.jpg" },
+      { title: "Lovable App" },
+      { property: "og:title", content: "Lovable App" },
+      { name: "twitter:title", content: "Lovable App" },
+      { name: "description", content: "Calm Focus Flow helps reduce mental load by organizing tasks into focused views." },
+      { property: "og:description", content: "Calm Focus Flow helps reduce mental load by organizing tasks into focused views." },
+      { name: "twitter:description", content: "Calm Focus Flow helps reduce mental load by organizing tasks into focused views." },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
