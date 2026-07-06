@@ -151,7 +151,6 @@ function ProjectRow({ project, depth }: { project: ProyectoNode; depth: number }
         expanded={open}
         onToggle={() => setOpen((v) => !v)}
         count={project.subproyectos.length || undefined}
-        color={project.color}
       />
 
       {hasChildren && open ? (
@@ -179,6 +178,7 @@ function AreaRow({ area }: { area: AreaNode }) {
         expanded={open}
         onToggle={() => setOpen((v) => !v)}
         count={area.proyectos.length || undefined}
+        color={area.color}
       />
 
       {hasChildren && open ? (
