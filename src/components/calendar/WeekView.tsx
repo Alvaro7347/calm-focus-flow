@@ -267,10 +267,10 @@ function EventBlock({
       style={{
         top,
         height,
-        left: `calc(4px + ${leftPct}% * (100% - 8px) / 100%)`,
-        width: `calc(${widthPct}% * (100% - 8px) / 100%)`,
+        left: `${leftPct}%`,
+        width: `${widthPct}%`,
       }}
-      className={`absolute rounded-md border-l-2 px-2 py-1 text-left text-[11px] leading-tight overflow-hidden transition-shadow hover:shadow-sm ${
+      className={`pointer-events-auto absolute rounded-md border-l-2 px-2 py-1 text-left text-[11px] leading-tight overflow-hidden transition-shadow hover:shadow-sm ${
         done ? "bg-slate-50 border-l-slate-300 text-slate-400 line-through" : `${pc.soft} ${pc.border} ${pc.text}`
       }`}
     >
