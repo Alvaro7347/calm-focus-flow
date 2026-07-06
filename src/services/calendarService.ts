@@ -36,6 +36,8 @@ export interface CalendarEvent {
   titulo: string;
   area: string;
   proyecto?: string;
+  /** Slug de la paleta CalmApp del proyecto (identidad visual). */
+  proyectoColor?: string | null;
   subproyecto?: string;
   start: Date;
   end: Date;
@@ -74,6 +76,7 @@ function tareaToEvent(t: Tarea): CalendarEvent | null {
     titulo: t.titulo,
     area: t.area,
     proyecto: t.proyecto,
+    proyectoColor: t.proyectoColor ?? null,
     subproyecto: t.subproyecto,
     start,
     end,
