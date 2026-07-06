@@ -45,7 +45,7 @@ interface RowProps {
   expanded?: boolean;
   onToggle?: () => void;
   count?: number;
-  /** Sólo aplica a `type === "project"`: slug de la paleta CalmApp. */
+  /** Sólo aplica a `type === "area"`: slug de la paleta CalmApp. */
   color?: string | null;
 }
 
@@ -60,8 +60,9 @@ function NodeRow({
   count,
   color,
 }: RowProps) {
-  // Para proyectos, el icono se reemplaza por un punto de color
-  // que representa la identidad visual del proyecto.
+  // Para áreas, el icono se reemplaza por un punto de color
+  // que representa la identidad visual del Área (heredada por sus
+  // proyectos, subproyectos y tareas en el resto de la app).
   const Icon = type === "subproject" ? Hash : expanded ? FolderOpen : Folder;
   const iconColor =
     type === "area"
@@ -70,7 +71,7 @@ function NodeRow({
         ? "text-slate-400"
         : "text-slate-400";
 
-  const projectColor = type === "project" ? getProjectColor(color) : null;
+  const areaSwatch = type === "area" ? getProjectColor(color) : null;
 
   const paddingLeft = 16 + depth * 20;
 
@@ -88,11 +89,11 @@ function NodeRow({
           />
         ) : null}
       </span>
-      {projectColor ? (
+      {areaSwatch ? (
         <span
           aria-hidden
-          className={`h-2.5 w-2.5 rounded-full shrink-0 ${projectColor.dot}`}
-          title={`Color: ${projectColor.label}`}
+          className={`h-2.5 w-2.5 rounded-full shrink-0 ${areaSwatch.dot}`}
+          title={`Color del área: ${areaSwatch.label}`}
         />
       ) : (
         <Icon className={`h-4 w-4 shrink-0 ${iconColor}`} aria-hidden />
@@ -150,7 +151,6 @@ function ProjectRow({ project, depth }: { project: ProyectoNode; depth: number }
         expanded={open}
         onToggle={() => setOpen((v) => !v)}
         count={project.subproyectos.length || undefined}
-        color={project.color}
       />
 
       {hasChildren && open ? (
@@ -178,6 +178,7 @@ function AreaRow({ area }: { area: AreaNode }) {
         expanded={open}
         onToggle={() => setOpen((v) => !v)}
         count={area.proyectos.length || undefined}
+        color={area.color}
       />
 
       {hasChildren && open ? (
