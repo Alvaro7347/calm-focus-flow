@@ -441,7 +441,13 @@ export function TaskDetailForm({
                     <SelectContent>
                       {areas.map((a) => (
                         <SelectItem key={a.id} value={a.id}>
-                          {a.name}
+                          <span className="inline-flex items-center gap-2">
+                            <span
+                              aria-hidden
+                              className={`h-2 w-2 rounded-full shrink-0 ${getProjectColor(a.color).dot}`}
+                            />
+                            {a.name}
+                          </span>
                         </SelectItem>
                       ))}
                     </SelectContent>
