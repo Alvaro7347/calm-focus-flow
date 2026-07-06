@@ -145,9 +145,13 @@ export async function updateArea(id: string, patch: AreaUpdate): Promise<AreaRow
 
 /**
  * Marca un Área como archivada. NO elimina físicamente.
- * NOTA: la propagación del archivado a Proyectos y Subproyectos
- * hijos NO se realiza aquí — está prevista para una capa de
- * aplicación posterior (ver DECISIONS.md).
+ *
+ * La propagación a Proyectos, Subproyectos y Tareas no requiere una
+ * mutación en cascada: `tableroService.fetchAreaTree`, `fetchFocusTasks`,
+ * `fetchScheduledTasks` y `fetchAreasWithCounts` filtran por
+ * `archived_at IS NULL` en cada nivel de la jerarquía, así que al
+ * archivar el Área todo su subárbol y sus tareas dejan de aparecer
+ * automáticamente en Sidebar, FOCO, Calendario y Tablero.
  */
 export async function archiveArea(id: string): Promise<AreaRow> {
   return updateArea(id, { archived_at: new Date().toISOString() });
