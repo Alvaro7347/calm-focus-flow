@@ -125,6 +125,7 @@ export function WeekView({ anchor, events, onSelectEvent }: Props) {
 
 function EventBlock({ event, onClick }: { event: CalendarEvent; onClick: () => void }) {
   const c = areaColor(event.area);
+  const pc = getProjectColor(event.proyectoColor);
   const startMin = event.start.getHours() * 60 + event.start.getMinutes();
   const endMin = event.end.getHours() * 60 + event.end.getMinutes();
   const top = ((startMin - START_HOUR * 60) / 60) * HOUR_PX;
@@ -138,7 +139,7 @@ function EventBlock({ event, onClick }: { event: CalendarEvent; onClick: () => v
       onClick={onClick}
       style={{ top, height }}
       className={`absolute left-1 right-1 rounded-md border-l-2 px-2 py-1 text-left text-[11px] leading-tight overflow-hidden transition-shadow hover:shadow-sm ${
-        done ? "bg-slate-50 border-l-slate-300 text-slate-400 line-through" : `${c.bg} ${c.border} ${c.text}`
+        done ? "bg-slate-50 border-l-slate-300 text-slate-400 line-through" : `${c.bg} ${pc.border} ${c.text}`
       }`}
     >
       <div className="font-medium truncate">{event.titulo}</div>
