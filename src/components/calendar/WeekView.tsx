@@ -199,7 +199,7 @@ export function WeekView({ anchor, events, onSelectEvent }: Props) {
               )}
 
               {/* Cuerpo horario */}
-              <div className="relative" style={{ height: totalHeight }}>
+              <div className="relative px-1" style={{ height: totalHeight }}>
                 {Array.from({ length: TOTAL_HOURS }, (_, i) => (
                   <div
                     key={i}
@@ -207,19 +207,21 @@ export function WeekView({ anchor, events, onSelectEvent }: Props) {
                     className="border-b border-slate-100"
                   />
                 ))}
-                {timed.map((e) => {
-                  const info = layout?.get(e.id);
-                  return (
-                    <EventBlock
-                      key={e.id}
-                      event={e}
-                      lane={info?.lane ?? 0}
-                      lanes={info?.lanes ?? 1}
-                      minToPx={minToPx}
-                      onClick={() => onSelectEvent(e)}
-                    />
-                  );
-                })}
+                <div className="absolute inset-x-1 inset-y-0 pointer-events-none">
+                  {timed.map((e) => {
+                    const info = layout?.get(e.id);
+                    return (
+                      <EventBlock
+                        key={e.id}
+                        event={e}
+                        lane={info?.lane ?? 0}
+                        lanes={info?.lanes ?? 1}
+                        minToPx={minToPx}
+                        onClick={() => onSelectEvent(e)}
+                      />
+                    );
+                  })}
+                </div>
               </div>
             </div>
           );
