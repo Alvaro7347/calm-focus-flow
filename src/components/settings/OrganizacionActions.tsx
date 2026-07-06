@@ -5,15 +5,17 @@
  *
  * Acciones implementadas:
  *  - Editar nombre (Dialog con input precargado y validación no-vacío).
- *  - Editar color (SOLO Proyectos, paleta CalmApp de 12 colores).
+ *  - Editar color (SOLO Áreas, paleta CalmApp de 12 colores).
  *  - Archivar (AlertDialog de confirmación, soft-delete vía `archived_at`).
  *
- * Identidad visual de Proyectos:
- *  - Sólo los Proyectos tienen color (paleta cerrada, `projectIdentity.ts`).
- *  - El picker sólo se muestra cuando `type === "project"`.
+ * Identidad visual heredada del Área:
+ *  - El color se define a nivel de Área. Proyectos, Subproyectos y Tareas
+ *    heredan visualmente ese color en todas las vistas (Tablero, FOCO,
+ *    Calendario, Organización, selector de "Crear tarea").
+ *  - El picker sólo se muestra cuando `type === "area"`.
  *  - La arquitectura queda preparada para agregar en el futuro icono,
- *    emoji o imagen: se sumarán nuevas secciones al Dialog y nuevos
- *    campos al `updateProject` sin cambiar los consumidores actuales.
+ *    emoji o imagen en el Área: se sumarán nuevas secciones al Dialog
+ *    y nuevos campos al `updateArea` sin cambiar los consumidores.
  *
  * Invalidaciones:
  *  Al editar o archivar cualquier nodo se invalidan las queryKeys que
@@ -79,9 +81,8 @@ interface RenamePatch {
 }
 
 async function updateNode(type: OrgNodeType, id: string, patch: RenamePatch) {
-  if (type === "area") return updateArea(id, { name: patch.name });
-  if (type === "project")
-    return updateProject(id, { name: patch.name, color: patch.color });
+  if (type === "area") return updateArea(id, { name: patch.name, color: patch.color });
+  if (type === "project") return updateProject(id, { name: patch.name });
   return updateSubproject(id, { name: patch.name });
 }
 
