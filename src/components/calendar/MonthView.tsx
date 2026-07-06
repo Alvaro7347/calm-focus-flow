@@ -176,7 +176,6 @@ function DayDetailSheet({
                 <li className="text-sm text-slate-400">Sin tareas para este día.</li>
               )}
               {events.map((e) => {
-                const c = areaColor(e.area);
                 const pc = getProjectColor(e.proyectoColor);
                 return (
                   <li key={e.id}>
@@ -185,7 +184,7 @@ function DayDetailSheet({
                       className={`w-full rounded-lg border border-slate-100 border-l-2 ${pc.border} p-3 text-left hover:bg-slate-50 ${e.completada ? "opacity-70" : ""}`}
                     >
                       <div className="flex items-center gap-2 text-[11px] text-slate-500">
-                        <span className={`h-1.5 w-1.5 rounded-full ${c.dot}`} aria-hidden />
+                        <span className={`h-1.5 w-1.5 rounded-full ${pc.dot}`} aria-hidden />
                         {e.area}
                         <span className="ml-auto">
                           {e.allDay ? "Todo el día" : format(e.start, "HH:mm")}
