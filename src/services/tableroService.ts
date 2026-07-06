@@ -110,7 +110,13 @@ function isoDate(iso: string): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-function mapTask(row: RawTask, areaName: string, projectName: string, subName: string): Tarea {
+function mapTask(
+  row: RawTask,
+  areaName: string,
+  projectName: string,
+  projectColor: string | null,
+  subName: string,
+): Tarea {
   const starts = row.starts_at ? new Date(row.starts_at) : null;
   const hasTime = !!starts && (starts.getHours() !== 0 || starts.getMinutes() !== 0);
   const horaInicio =
@@ -123,6 +129,7 @@ function mapTask(row: RawTask, areaName: string, projectName: string, subName: s
     titulo: row.title,
     area: areaName,
     proyecto: projectName,
+    proyectoColor: projectColor,
     subproyecto: subName,
     fechaProgramada: row.starts_at ? isoDate(row.starts_at) : undefined,
     horaInicio,
