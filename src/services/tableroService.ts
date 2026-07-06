@@ -51,7 +51,10 @@ export interface ProyectoNode {
   id: string;
   nombre: string;
   slug: string;
-  /** Slug de la paleta CalmApp. Puede ser `null` (usa color por defecto). */
+  /**
+   * Slug de la paleta CalmApp heredado del Área. Puede ser `null`
+   * cuando el Área aún no tiene color (usa color por defecto).
+   */
   color: string | null;
   subproyectos: SubproyectoNode[];
   totalTareas: number;
@@ -61,6 +64,8 @@ export interface AreaNode {
   id: string;
   nombre: string;
   slug: string;
+  /** Slug de la paleta CalmApp. Puede ser `null` (usa color por defecto). */
+  color: string | null;
   proyectos: ProyectoNode[];
   totalTareas: number;
 }
@@ -93,7 +98,6 @@ type RawProject = {
   name: string;
   display_order: number;
   archived_at: string | null;
-  color: string | null;
   subprojects: RawSubproject[] | null;
 };
 
@@ -102,6 +106,7 @@ type RawArea = {
   name: string;
   display_order: number;
   archived_at: string | null;
+  color: string | null;
   projects: RawProject[] | null;
 };
 
