@@ -48,7 +48,7 @@ import type { Database } from "@/integrations/supabase/types";
 // Tipos públicos
 // ============================================================
 
-export type PatternKind = "project" | "subproject" | "task";
+export type PatternKind = "area" | "project" | "subproject" | "task";
 export type Cadence =
   | "daily"
   | "weekly"
