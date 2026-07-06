@@ -173,6 +173,15 @@ export function TaskDetailForm({
   const [inlineSaving, setInlineSaving] = useState(false);
   const [inlineError, setInlineError] = useState<string | null>(null);
 
+  // ---------- Sugerencia de reutilización (Memoria Inteligente) ----------
+  // `rejectedSuggestions` guarda claves de sugerencias ya rechazadas en esta
+  // sesión de creación para no volver a insistir con el mismo nombre y scope.
+  const [suggestion, setSuggestion] = useState<StructureMatch | null>(null);
+  const [suggestionBusy, setSuggestionBusy] = useState(false);
+  const [rejectedSuggestions, setRejectedSuggestions] = useState<Set<string>>(
+    () => new Set(),
+  );
+
   // ---- Áreas: carga inicial
   useEffect(() => {
     let cancelled = false;
