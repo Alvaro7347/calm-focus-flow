@@ -12,7 +12,6 @@ import {
 import { es } from "date-fns/locale";
 import { X } from "lucide-react";
 import type { CalendarEvent } from "@/services/calendarService";
-import { areaColor } from "./areaColors";
 import { getProjectColor } from "@/lib/projectIdentity";
 
 interface Props {
@@ -108,13 +107,12 @@ export function MonthView({ anchor, events, onSelectEvent }: Props) {
 }
 
 function MiniEvent({ event }: { event: CalendarEvent }) {
-  const c = areaColor(event.area);
   const pc = getProjectColor(event.proyectoColor);
   const done = event.completada;
   return (
     <div
       className={`flex items-center gap-1 truncate rounded px-1 text-[10px] leading-tight ${
-        done ? "text-slate-400 line-through" : c.text
+        done ? "text-slate-400 line-through" : pc.text
       }`}
     >
       <span
@@ -177,7 +175,6 @@ function DayDetailSheet({
                 <li className="text-sm text-slate-400">Sin tareas para este día.</li>
               )}
               {events.map((e) => {
-                const c = areaColor(e.area);
                 const pc = getProjectColor(e.proyectoColor);
                 return (
                   <li key={e.id}>
@@ -186,7 +183,7 @@ function DayDetailSheet({
                       className={`w-full rounded-lg border border-slate-100 border-l-2 ${pc.border} p-3 text-left hover:bg-slate-50 ${e.completada ? "opacity-70" : ""}`}
                     >
                       <div className="flex items-center gap-2 text-[11px] text-slate-500">
-                        <span className={`h-1.5 w-1.5 rounded-full ${c.dot}`} aria-hidden />
+                        <span className={`h-1.5 w-1.5 rounded-full ${pc.dot}`} aria-hidden />
                         {e.area}
                         <span className="ml-auto">
                           {e.allDay ? "Todo el día" : format(e.start, "HH:mm")}
