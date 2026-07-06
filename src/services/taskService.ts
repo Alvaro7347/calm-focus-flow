@@ -184,8 +184,7 @@ type JoinedTaskRow = TaskRow & {
         name: string;
         projects: {
           name: string;
-          color: string | null;
-          areas: { name: string } | null;
+          areas: { name: string; color: string | null } | null;
         } | null;
       }
     | null;
