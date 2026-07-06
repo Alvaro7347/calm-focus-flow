@@ -182,7 +182,11 @@ type JoinedTaskRow = TaskRow & {
   subprojects:
     | {
         name: string;
-        projects: { name: string; areas: { name: string } | null } | null;
+        projects: {
+          name: string;
+          color: string | null;
+          areas: { name: string } | null;
+        } | null;
       }
     | null;
 };
