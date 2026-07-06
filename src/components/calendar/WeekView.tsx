@@ -61,19 +61,32 @@ const DAY_COL_MIN = 128; // px — dentro del rango 120–140 solicitado
  * Función de escalado de la altura de una franja horaria a
  * partir de la concurrencia máxima observada en ella.
  *
- *   concurrencia ≤ 2 → altura base (HOUR_PX)
- *   concurrencia = 3-4 → 2× la altura base
- *   concurrencia = 5-6 → 3× la altura base
- *   …y así sucesivamente
+ * Iteración de legibilidad ("nunca ocultar información"):
  *
- * Regla: cada "par" adicional de eventos simultáneos añade una
- * fila de HOUR_PX. Así garantizamos que cada bloque mantenga
- * al menos ~28 px verticales, suficiente para leer el título.
+ *   concurrencia ≤ 2 → altura base (HOUR_PX)
+ *                       — se reparte en 2 carriles horizontales.
+ *   concurrencia ≥ 3 → la franja crece linealmente en altura y
+ *                       la UI reorganiza el clúster en una
+ *                       cuadrícula de 2 columnas × N filas.
+ *                       Preferimos aumentar la altura antes que
+ *                       seguir estrechando el ancho de cada
+ *                       bloque, para que los títulos sigan
+ *                       siendo legibles (idealmente 2 líneas).
+ *
+ * Con concurrencia 3 → 1.5×, 4 → 2×, 5 → 2.5×, 6 → 3×, etc.
+ * Es decir, cada evento simultáneo adicional (por encima de 2)
+ * aporta media fila (HOUR_PX / 2 ≈ 28 px), suficiente para que
+ * al partir el clúster en 2 columnas cada slot mantenga
+ * ~36-40 px verticales.
  */
 function rowHeightForConcurrency(concurrency: number): number {
-  const factor = Math.max(1, Math.ceil(concurrency / 2));
-  return HOUR_PX * factor;
+  if (concurrency <= 2) return HOUR_PX;
+  const extra = concurrency - 2;
+  return HOUR_PX + extra * (HOUR_PX / 2);
 }
+
+/** Ancho mínimo aceptable por bloque cuando repartimos en carriles. */
+const MAX_HORIZONTAL_LANES = 2;
 
 export function WeekView({ anchor, events, onSelectEvent }: Props) {
   const inicio = useMemo(() => startOfWeek(anchor, { weekStartsOn: 1 }), [anchor]);
@@ -91,8 +104,9 @@ export function WeekView({ anchor, events, onSelectEvent }: Props) {
    * Y en paralelo, la concurrencia máxima por hora agregada de
    * los 7 días, que determina la altura dinámica compartida.
    */
-  const { layoutsPorDia, rowHeights, rowOffsets, totalHeight } = useMemo(() => {
+  const { layoutsPorDia, inputsById, rowHeights, rowOffsets, totalHeight } = useMemo(() => {
     const layoutsPorDia = new Map<string, Map<string, LayoutResult>>();
+    const inputsById = new Map<string, LayoutInput>();
     const inputsPorDia: LayoutInput[][] = [];
 
     for (const d of dias) {
@@ -103,6 +117,7 @@ export function WeekView({ anchor, events, onSelectEvent }: Props) {
         startMin: e.start.getHours() * 60 + e.start.getMinutes(),
         endMin: e.end.getHours() * 60 + e.end.getMinutes(),
       }));
+      inputs.forEach((it) => inputsById.set(it.id, it));
       inputsPorDia.push(inputs);
       layoutsPorDia.set(key, layoutDayEvents(inputs));
     }
@@ -122,7 +137,7 @@ export function WeekView({ anchor, events, onSelectEvent }: Props) {
       rowOffsets[i] = rowOffsets[i - 1] + rowHeights[i - 1];
     }
     const totalHeight = rowOffsets[TOTAL_HOURS - 1] + (rowHeights[TOTAL_HOURS - 1] ?? 0);
-    return { layoutsPorDia, rowHeights, rowOffsets, totalHeight };
+    return { layoutsPorDia, inputsById, rowHeights, rowOffsets, totalHeight };
   }, [dias, events]);
 
   /**
@@ -138,6 +153,133 @@ export function WeekView({ anchor, events, onSelectEvent }: Props) {
     const inHour = relMin - hourIdx * 60;
     return rowOffsets[hourIdx] + (inHour / 60) * rowHeights[hourIdx];
   };
+
+  /**
+   * Placements finales por día.
+   *
+   * Regla de reorganización (iteración de legibilidad):
+   *   • Clúster con `lanes` ≤ 2  → mantenemos el reparto en
+   *     carriles horizontales del algoritmo actual, cada evento
+   *     ocupa exactamente su intervalo temporal.
+   *   • Clúster con `lanes` ≥ 3  → en lugar de seguir dividiendo
+   *     el ancho de la columna del día en 3+ carriles (títulos
+   *     ilegibles), reorganizamos el clúster en una cuadrícula
+   *     de 2 columnas × ⌈N/2⌉ filas dentro del rango temporal
+   *     del clúster. Como `rowHeightForConcurrency` crece
+   *     linealmente con la concurrencia (ver arriba), la franja
+   *     dispone de altura suficiente para que cada slot tenga
+   *     ~36-40 px y admita 2 líneas de título.
+   *
+   * Todo esto vive únicamente en la capa de presentación: no se
+   * duplica ni se altera `calendarLayout.ts`, que sigue siendo
+   * la fuente única de la lógica de colisiones.
+   */
+  interface Placement {
+    top: number;
+    height: number;
+    leftPct: number;
+    widthPct: number;
+    /** true cuando el bloque tiene altura suficiente para dos líneas. */
+    twoLines: boolean;
+  }
+
+  const placementsPorDia = useMemo(() => {
+    const out = new Map<string, Map<string, Placement>>();
+
+    for (const d of dias) {
+      const key = d.toDateString();
+      const layout = layoutsPorDia.get(key);
+      const dayIds = events
+        .filter((e) => !e.allDay && isSameDay(e.start, d))
+        .map((e) => e.id);
+      const placements = new Map<string, Placement>();
+      if (!layout || dayIds.length === 0) {
+        out.set(key, placements);
+        continue;
+      }
+
+      // Agrupamos por clúster: eventos que comparten el mismo
+      // total de carriles y solapan transitivamente. Usamos el
+      // mismo criterio de agrupación que calendarLayout (sweep
+      // por start ascendente) para mantener consistencia.
+      const dayInputs = dayIds
+        .map((id) => inputsById.get(id))
+        .filter((x): x is LayoutInput => !!x)
+        .sort((a, b) => a.startMin - b.startMin);
+
+      let clusterEnd = -Infinity;
+      let cluster: LayoutInput[] = [];
+
+      const flushCluster = () => {
+        if (cluster.length === 0) return;
+        const lanes = layout.get(cluster[0].id)?.lanes ?? 1;
+        if (lanes <= MAX_HORIZONTAL_LANES) {
+          // Modo carriles horizontales (comportamiento actual).
+          const gapPct = lanes > 1 ? 1.5 : 0;
+          const widthPct = (100 - gapPct * (lanes - 1)) / lanes;
+          for (const ev of cluster) {
+            const info = layout.get(ev.id);
+            const lane = info?.lane ?? 0;
+            const top = minToPx(ev.startMin);
+            const bottom = minToPx(ev.endMin);
+            const height = Math.max(24, bottom - top - 2);
+            placements.set(ev.id, {
+              top,
+              height,
+              leftPct: lane * (widthPct + gapPct),
+              widthPct,
+              twoLines: height >= 40,
+            });
+          }
+        } else {
+          // Modo cuadrícula: 2 columnas × ⌈N/2⌉ filas sobre el
+          // rango temporal completo del clúster. Rellenamos
+          // por orden de inicio (row-major).
+          const clusterStart = cluster[0].startMin;
+          const clusterFin = cluster.reduce((m, x) => Math.max(m, x.endMin), 0);
+          const topPx = minToPx(clusterStart);
+          const bottomPx = minToPx(clusterFin);
+          const totalH = Math.max(24, bottomPx - topPx - 2);
+          const cols = MAX_HORIZONTAL_LANES;
+          const rows = Math.ceil(cluster.length / cols);
+          const gapPx = 2;
+          const slotH = (totalH - gapPx * (rows - 1)) / rows;
+          const gapPct = 1.5;
+          const widthPct = (100 - gapPct * (cols - 1)) / cols;
+          cluster.forEach((ev, idx) => {
+            const row = Math.floor(idx / cols);
+            const col = idx % cols;
+            placements.set(ev.id, {
+              top: topPx + row * (slotH + gapPx),
+              height: slotH,
+              leftPct: col * (widthPct + gapPct),
+              widthPct,
+              twoLines: slotH >= 40,
+            });
+          });
+        }
+        cluster = [];
+      };
+
+      for (const ev of dayInputs) {
+        if (ev.startMin >= clusterEnd) {
+          flushCluster();
+          clusterEnd = ev.endMin;
+        } else {
+          clusterEnd = Math.max(clusterEnd, ev.endMin);
+        }
+        cluster.push(ev);
+      }
+      flushCluster();
+
+      out.set(key, placements);
+    }
+    return out;
+    // rowHeights/rowOffsets ya son dependencia indirecta vía minToPx,
+    // pero los incluimos explícitamente para que useMemo reaccione.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dias, events, layoutsPorDia, inputsById, rowHeights, rowOffsets]);
+
 
   return (
     // overflow-x-auto habilita el scroll horizontal SÓLO dentro del calendario.
@@ -164,7 +306,7 @@ export function WeekView({ anchor, events, onSelectEvent }: Props) {
           const activo = isSameDay(d, hoy);
           const allDay = allDayPorDia(d);
           const timed = timedPorDia(d);
-          const layout = layoutsPorDia.get(d.toDateString());
+          
           return (
             <div
               key={d.toISOString()}
@@ -209,14 +351,13 @@ export function WeekView({ anchor, events, onSelectEvent }: Props) {
                 ))}
                 <div className="absolute inset-x-1 inset-y-0 pointer-events-none">
                   {timed.map((e) => {
-                    const info = layout?.get(e.id);
+                    const placement = placementsPorDia.get(d.toDateString())?.get(e.id);
+                    if (!placement) return null;
                     return (
                       <EventBlock
                         key={e.id}
                         event={e}
-                        lane={info?.lane ?? 0}
-                        lanes={info?.lanes ?? 1}
-                        minToPx={minToPx}
+                        placement={placement}
                         onClick={() => onSelectEvent(e)}
                       />
                     );
@@ -231,50 +372,47 @@ export function WeekView({ anchor, events, onSelectEvent }: Props) {
   );
 }
 
+interface Placement {
+  top: number;
+  height: number;
+  leftPct: number;
+  widthPct: number;
+  twoLines: boolean;
+}
+
 function EventBlock({
   event,
-  lane,
-  lanes,
-  minToPx,
+  placement,
   onClick,
 }: {
   event: CalendarEvent;
-  lane: number;
-  lanes: number;
-  minToPx: (min: number) => number;
+  placement: Placement;
   onClick: () => void;
 }) {
   const pc = getProjectColor(event.proyectoColor);
   const startMin = event.start.getHours() * 60 + event.start.getMinutes();
-  const endMin = event.end.getHours() * 60 + event.end.getMinutes();
   const outOfRange = startMin < START_HOUR * 60 || startMin >= END_HOUR * 60;
   if (outOfRange) return null;
-
-  const top = minToPx(startMin);
-  const bottom = minToPx(endMin);
-  const height = Math.max(24, bottom - top - 2);
-
-  // Reparto horizontal en carriles. Se dejan 4 px de margen a
-  // cada lado del contenedor y 2 px de separación entre carriles.
-  const gapPct = lanes > 1 ? 1.5 : 0;
-  const widthPct = (100 - gapPct * (lanes - 1)) / lanes;
-  const leftPct = lane * (widthPct + gapPct);
 
   const done = event.completada;
   return (
     <button
       onClick={onClick}
       style={{
-        top,
-        height,
-        left: `${leftPct}%`,
-        width: `${widthPct}%`,
+        top: placement.top,
+        height: placement.height,
+        left: `${placement.leftPct}%`,
+        width: `${placement.widthPct}%`,
       }}
       className={`pointer-events-auto absolute rounded-md border-l-2 px-2 py-1 text-left text-[11px] leading-tight overflow-hidden transition-shadow hover:shadow-sm ${
         done ? "bg-slate-50 border-l-slate-300 text-slate-400 line-through" : `${pc.soft} ${pc.border} ${pc.text}`
       }`}
     >
-      <div className="font-medium truncate">{event.titulo}</div>
+      <div
+        className={`font-medium ${placement.twoLines ? "line-clamp-2" : "truncate"}`}
+      >
+        {event.titulo}
+      </div>
     </button>
   );
 }
