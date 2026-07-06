@@ -377,6 +377,7 @@ function rowToScheduledTarea(row: JoinedTaskRow): Tarea {
     titulo: row.title,
     area: proj?.areas?.name ?? "",
     proyecto: proj?.name ?? undefined,
+    proyectoColor: proj?.color ?? null,
     subproyecto: sub?.name ?? undefined,
     fechaProgramada,
     horaInicio,
