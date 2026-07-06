@@ -165,7 +165,7 @@ export function OrganizacionActions({
 
   const trimmed = draft.trim();
   const nameChanged = trimmed.length > 0 && trimmed !== name;
-  const colorChanged = type === "project" && colorDraft !== initialColor;
+  const colorChanged = type === "area" && colorDraft !== initialColor;
   const canSave = (nameChanged || colorChanged) && trimmed.length > 0 && !save.isPending;
 
   function handleSubmit() {
