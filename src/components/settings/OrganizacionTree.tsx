@@ -127,6 +127,7 @@ function ProjectRow({ project, depth }: { project: ProyectoNode; depth: number }
     <>
 
       <NodeRow
+        id={project.id}
         label={project.nombre}
         type="project"
         depth={depth}
@@ -135,6 +136,7 @@ function ProjectRow({ project, depth }: { project: ProyectoNode; depth: number }
         onToggle={() => setOpen((v) => !v)}
         count={project.subproyectos.length || undefined}
       />
+
       {hasChildren && open ? (
         <div className="animate-in fade-in slide-in-from-top-1 duration-200">
           {project.subproyectos.map((s) => (
