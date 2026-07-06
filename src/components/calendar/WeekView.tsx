@@ -306,7 +306,7 @@ export function WeekView({ anchor, events, onSelectEvent }: Props) {
           const activo = isSameDay(d, hoy);
           const allDay = allDayPorDia(d);
           const timed = timedPorDia(d);
-          const layout = layoutsPorDia.get(d.toDateString());
+          
           return (
             <div
               key={d.toISOString()}
