@@ -113,6 +113,10 @@ export async function ensureCurrentProfile(): Promise<Profile> {
       email: user.email ?? null,
       nombre,
       avatar_url,
+      timezone: "America/Santiago",
+      locale: "es",
+      week_starts_on: 1,
+      date_format: "DD/MM/YYYY",
     })
     .select("*")
     .single();
