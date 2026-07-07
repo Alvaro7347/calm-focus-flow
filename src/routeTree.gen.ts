@@ -10,8 +10,12 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TableroRouteImport } from './routes/tablero'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as RegistroRouteImport } from './routes/registro'
+import { Route as RecuperarContrasenaRouteImport } from './routes/recuperar-contrasena'
 import { Route as NuevaTareaRouteImport } from './routes/nueva-tarea'
 import { Route as MiCuentaRouteImport } from './routes/mi-cuenta'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as LegalRouteImport } from './routes/legal'
 import { Route as FocoRouteImport } from './routes/foco'
 import { Route as CrearTareaRouteImport } from './routes/crear-tarea'
@@ -36,6 +40,21 @@ const TableroRoute = TableroRouteImport.update({
   path: '/tablero',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RegistroRoute = RegistroRouteImport.update({
+  id: '/registro',
+  path: '/registro',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RecuperarContrasenaRoute = RecuperarContrasenaRouteImport.update({
+  id: '/recuperar-contrasena',
+  path: '/recuperar-contrasena',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const NuevaTareaRoute = NuevaTareaRouteImport.update({
   id: '/nueva-tarea',
   path: '/nueva-tarea',
@@ -44,6 +63,11 @@ const NuevaTareaRoute = NuevaTareaRouteImport.update({
 const MiCuentaRoute = MiCuentaRouteImport.update({
   id: '/mi-cuenta',
   path: '/mi-cuenta',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LegalRoute = LegalRouteImport.update({
@@ -144,8 +168,12 @@ export interface FileRoutesByFullPath {
   '/crear-tarea': typeof CrearTareaRoute
   '/foco': typeof FocoRoute
   '/legal': typeof LegalRouteWithChildren
+  '/login': typeof LoginRoute
   '/mi-cuenta': typeof MiCuentaRoute
   '/nueva-tarea': typeof NuevaTareaRoute
+  '/recuperar-contrasena': typeof RecuperarContrasenaRoute
+  '/registro': typeof RegistroRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/tablero': typeof TableroRoute
   '/ajustes/acerca-de': typeof AjustesAcercaDeRoute
   '/ajustes/apariencia': typeof AjustesAparienciaRoute
@@ -165,8 +193,12 @@ export interface FileRoutesByTo {
   '/calendario': typeof CalendarioRoute
   '/crear-tarea': typeof CrearTareaRoute
   '/foco': typeof FocoRoute
+  '/login': typeof LoginRoute
   '/mi-cuenta': typeof MiCuentaRoute
   '/nueva-tarea': typeof NuevaTareaRoute
+  '/recuperar-contrasena': typeof RecuperarContrasenaRoute
+  '/registro': typeof RegistroRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/tablero': typeof TableroRoute
   '/ajustes/acerca-de': typeof AjustesAcercaDeRoute
   '/ajustes/apariencia': typeof AjustesAparienciaRoute
@@ -189,8 +221,12 @@ export interface FileRoutesById {
   '/crear-tarea': typeof CrearTareaRoute
   '/foco': typeof FocoRoute
   '/legal': typeof LegalRouteWithChildren
+  '/login': typeof LoginRoute
   '/mi-cuenta': typeof MiCuentaRoute
   '/nueva-tarea': typeof NuevaTareaRoute
+  '/recuperar-contrasena': typeof RecuperarContrasenaRoute
+  '/registro': typeof RegistroRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/tablero': typeof TableroRoute
   '/ajustes/acerca-de': typeof AjustesAcercaDeRoute
   '/ajustes/apariencia': typeof AjustesAparienciaRoute
@@ -214,8 +250,12 @@ export interface FileRouteTypes {
     | '/crear-tarea'
     | '/foco'
     | '/legal'
+    | '/login'
     | '/mi-cuenta'
     | '/nueva-tarea'
+    | '/recuperar-contrasena'
+    | '/registro'
+    | '/reset-password'
     | '/tablero'
     | '/ajustes/acerca-de'
     | '/ajustes/apariencia'
@@ -235,8 +275,12 @@ export interface FileRouteTypes {
     | '/calendario'
     | '/crear-tarea'
     | '/foco'
+    | '/login'
     | '/mi-cuenta'
     | '/nueva-tarea'
+    | '/recuperar-contrasena'
+    | '/registro'
+    | '/reset-password'
     | '/tablero'
     | '/ajustes/acerca-de'
     | '/ajustes/apariencia'
@@ -258,8 +302,12 @@ export interface FileRouteTypes {
     | '/crear-tarea'
     | '/foco'
     | '/legal'
+    | '/login'
     | '/mi-cuenta'
     | '/nueva-tarea'
+    | '/recuperar-contrasena'
+    | '/registro'
+    | '/reset-password'
     | '/tablero'
     | '/ajustes/acerca-de'
     | '/ajustes/apariencia'
@@ -282,8 +330,12 @@ export interface RootRouteChildren {
   CrearTareaRoute: typeof CrearTareaRoute
   FocoRoute: typeof FocoRoute
   LegalRoute: typeof LegalRouteWithChildren
+  LoginRoute: typeof LoginRoute
   MiCuentaRoute: typeof MiCuentaRoute
   NuevaTareaRoute: typeof NuevaTareaRoute
+  RecuperarContrasenaRoute: typeof RecuperarContrasenaRoute
+  RegistroRoute: typeof RegistroRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   TableroRoute: typeof TableroRoute
 }
 
@@ -294,6 +346,27 @@ declare module '@tanstack/react-router' {
       path: '/tablero'
       fullPath: '/tablero'
       preLoaderRoute: typeof TableroRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/registro': {
+      id: '/registro'
+      path: '/registro'
+      fullPath: '/registro'
+      preLoaderRoute: typeof RegistroRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/recuperar-contrasena': {
+      id: '/recuperar-contrasena'
+      path: '/recuperar-contrasena'
+      fullPath: '/recuperar-contrasena'
+      preLoaderRoute: typeof RecuperarContrasenaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/nueva-tarea': {
@@ -308,6 +381,13 @@ declare module '@tanstack/react-router' {
       path: '/mi-cuenta'
       fullPath: '/mi-cuenta'
       preLoaderRoute: typeof MiCuentaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/legal': {
@@ -487,8 +567,12 @@ const rootRouteChildren: RootRouteChildren = {
   CrearTareaRoute: CrearTareaRoute,
   FocoRoute: FocoRoute,
   LegalRoute: LegalRouteWithChildren,
+  LoginRoute: LoginRoute,
   MiCuentaRoute: MiCuentaRoute,
   NuevaTareaRoute: NuevaTareaRoute,
+  RecuperarContrasenaRoute: RecuperarContrasenaRoute,
+  RegistroRoute: RegistroRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   TableroRoute: TableroRoute,
 }
 export const routeTree = rootRouteImport

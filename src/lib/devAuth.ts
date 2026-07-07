@@ -30,6 +30,11 @@ export const DEV_EMAIL = "dev@calmapp.local";
 export const DEV_PASSWORD = "calmapp-dev-2026";
 
 export async function ensureDevSession(): Promise<void> {
+  // Doble candado: solo permitido en build de desarrollo con flag explícito.
+  // Cualquier build de producción o preview publicado ignora esta función.
+  if (!import.meta.env.DEV || import.meta.env.VITE_ENABLE_DEV_SESSION !== "1") {
+    return;
+  }
   const { data: sessionData } = await supabase.auth.getSession();
   if (sessionData.session) return;
 

@@ -57,6 +57,11 @@ function buildStartsAt(fecha?: string, hora?: string): string | null {
 }
 
 export async function seedIfEmpty(): Promise<void> {
+  // Sembrar datos mock solo bajo modo desarrollo explícito.
+  // Los usuarios beta reales deben partir con estado vacío.
+  if (!import.meta.env.DEV || import.meta.env.VITE_ENABLE_DEV_SESSION !== "1") {
+    return;
+  }
   const { count, error: countError } = await supabase
     .from("areas")
     .select("id", { count: "exact", head: true });
