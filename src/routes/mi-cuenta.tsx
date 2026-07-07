@@ -51,6 +51,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { MicroSurveyPrompt } from "@/components/research/MicroSurveyPrompt";
 
 export const Route = createFileRoute("/mi-cuenta")({
   head: () => ({
