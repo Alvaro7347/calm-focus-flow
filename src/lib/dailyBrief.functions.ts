@@ -175,7 +175,7 @@ async function callGateway(apiKey: string, userPrompt: string): Promise<string> 
         { role: "user", content: userPrompt },
       ],
       response_format: { type: "json_object" },
-      temperature: 0.4,
+      temperature: 0.5,
     }),
   });
 
