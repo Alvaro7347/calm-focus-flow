@@ -22,7 +22,7 @@
  * ========================================================
  */
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { Loader2, Save, Camera, LogOut } from "lucide-react";
@@ -34,6 +34,11 @@ import {
   type Profile,
   type ProfilePatch,
 } from "@/services/profileService";
+import {
+  uploadCurrentUserAvatar,
+  resolveAvatarUrl,
+  AvatarUploadError,
+} from "@/services/avatarService";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
