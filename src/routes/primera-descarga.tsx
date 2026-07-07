@@ -59,9 +59,25 @@ function PrimeraDescargaPage() {
   const queryClient = useQueryClient();
 
   const [userId, setUserId] = useState<string | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
+    let alive = true;
+    supabase.auth.getUser().then(({ data }) => {
+      if (!alive) return;
+      setUserId(data.user?.id ?? null);
+      setAuthLoading(false);
+    });
+    return () => {
+      alive = false;
+    };
   }, []);
+
+  // Si no hay sesión, redirigir a login (solo cuando ya terminó la verificación).
+  useEffect(() => {
+    if (!authLoading && !userId) {
+      navigate({ to: "/login" });
+    }
+  }, [authLoading, userId, navigate]);
 
   const [step, setStep] = useState<Step>("intro");
   const [submitting, setSubmitting] = useState(false);
@@ -110,13 +126,19 @@ function PrimeraDescargaPage() {
   // -------- Handlers --------
 
   const handleStart = async () => {
+    if (authLoading || !userId) return;
     setSubmitting(true);
-    const id = await startActivationCycle();
+    const { id, alreadyCompleted } = await startActivationCycle();
+    setSubmitting(false);
+    if (alreadyCompleted) {
+      markFirstAhaCompleted(userId);
+      navigate({ to: "/foco" });
+      return;
+    }
     setCycleId(id);
     cycleIdRef.current = id;
     startedRef.current = true;
     trackEvent(ANALYTICS_EVENTS.AHA_FLOW_STARTED, { source: "aha_flow" });
-    setSubmitting(false);
     setStep("before");
   };
 
@@ -179,6 +201,7 @@ function PrimeraDescargaPage() {
   };
 
   const handleConfirmNextSteps = async () => {
+    if (!userId) return;
     if (tasksCreatedRef.current || confirmInProgressRef.current) return;
     confirmInProgressRef.current = true;
     setSubmitting(true);
@@ -226,6 +249,7 @@ function PrimeraDescargaPage() {
   };
 
   const handleAfterAnswer = async (value: number) => {
+    if (!userId) return;
     setMentalAfter(value);
     await recordInAppSurveyResponse({
       surveyKey: IN_APP_SURVEY_KEYS.MENTAL_LOAD_AFTER,
@@ -277,6 +301,23 @@ function PrimeraDescargaPage() {
     }),
     [items.length, createdTasksCount, nextSteps, mentalBefore, mentalAfter],
   );
+
+  if (authLoading) {
+    return (
+      <div className="mx-auto w-full max-w-2xl px-4 sm:px-6 py-10">
+        <p className="text-sm text-slate-500">Cargando tu sesión…</p>
+      </div>
+    );
+  }
+  if (!userId) {
+    return (
+      <div className="mx-auto w-full max-w-2xl px-4 sm:px-6 py-10">
+        <p className="text-sm text-slate-600">
+          Necesitas iniciar sesión para guardar tu descarga mental.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 sm:px-6 py-10 pb-32 md:pb-16">

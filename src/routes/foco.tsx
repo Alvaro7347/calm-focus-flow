@@ -37,7 +37,7 @@ import {
 import { getCurrentProfile } from "@/services/profileService";
 import type { DailyBrief } from "@/services/dailyAiBriefService";
 import { MicroSurveyPrompt } from "@/components/research/MicroSurveyPrompt";
-import { hasCompletedFirstAha } from "@/services/ahaService";
+import { hasCompletedFirstAha, hasCompletedFirstAhaRemote } from "@/services/ahaService";
 
 export const Route = createFileRoute("/foco")({
   head: () => ({
@@ -130,12 +130,38 @@ function FocoPage() {
   const esperando = data?.esperando ?? [];
   const sinMov = data?.sinMovimiento ?? [];
 
+  const [ahaCompletedRemote, setAhaCompletedRemote] = useState<boolean | null>(null);
+  useEffect(() => {
+    if (!userId) {
+      setAhaCompletedRemote(null);
+      return;
+    }
+    if (hasCompletedFirstAha(userId)) {
+      setAhaCompletedRemote(true);
+      return;
+    }
+    let alive = true;
+    hasCompletedFirstAhaRemote()
+      .then((done) => {
+        if (alive) setAhaCompletedRemote(done);
+      })
+      .catch(() => {
+        if (alive) setAhaCompletedRemote(false);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [userId]);
+
   const showAhaEntry = useMemo(() => {
     if (!userId) return false;
     if (isLoading || isError) return false;
     if (tuDiaOpen) return false;
-    return !hasCompletedFirstAha(userId);
-  }, [userId, isLoading, isError, tuDiaOpen]);
+    if (hasCompletedFirstAha(userId)) return false;
+    // Espera la respuesta remota para no parpadear.
+    if (ahaCompletedRemote === null) return false;
+    return ahaCompletedRemote === false;
+  }, [userId, isLoading, isError, tuDiaOpen, ahaCompletedRemote]);
 
 
   return (
