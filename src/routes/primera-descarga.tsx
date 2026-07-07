@@ -249,6 +249,7 @@ function PrimeraDescargaPage() {
   };
 
   const handleAfterAnswer = async (value: number) => {
+    if (!userId) return;
     setMentalAfter(value);
     await recordInAppSurveyResponse({
       surveyKey: IN_APP_SURVEY_KEYS.MENTAL_LOAD_AFTER,
