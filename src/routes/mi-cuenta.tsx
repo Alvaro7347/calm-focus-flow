@@ -281,6 +281,8 @@ function MiCuentaPage() {
           Tu información personal y tus preferencias.
         </p>
       </header>
+      {/* Micro-pregunta discreta (sólo aparece si el gate lo permite) */}
+      <MicroSurveyPrompt placement="mi_cuenta" />
 
       {/* 1. Foto de perfil */}
       <Section title="Foto de perfil">
