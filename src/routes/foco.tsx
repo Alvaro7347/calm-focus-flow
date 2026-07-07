@@ -91,9 +91,13 @@ function FocoPage() {
       .finally(() => setTuDiaLoading(false));
   }, [userId]);
 
+  // Marcador: el usuario cerró Tu Día en esta sesión → habilita prompt de utilidad.
+  const [tuDiaJustClosed, setTuDiaJustClosed] = useState(false);
+
   const handleCloseTuDia = () => {
     markTuDiaShownToday(userId);
     setTuDiaOpen(false);
+    setTuDiaJustClosed(true);
   };
 
   const handleReopenTuDia = () => {
