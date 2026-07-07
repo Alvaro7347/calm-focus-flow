@@ -113,6 +113,8 @@ function PrimeraDescargaPage() {
     setSubmitting(true);
     const id = await startActivationCycle();
     setCycleId(id);
+    cycleIdRef.current = id;
+    startedRef.current = true;
     trackEvent(ANALYTICS_EVENTS.AHA_FLOW_STARTED, { source: "aha_flow" });
     setSubmitting(false);
     setStep("before");
