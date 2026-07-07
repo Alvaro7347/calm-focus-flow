@@ -55,7 +55,7 @@ function RecuperarPage() {
   if (sent) {
     return (
       <AuthLayout
-        title="Revisá tu correo"
+        title="Revisa tu correo"
         subtitle="Si el correo existe, te enviamos un enlace para restablecer tu contraseña."
         footer={
           <Link to="/login" className="text-indigo-600 font-medium hover:underline">
@@ -68,7 +68,7 @@ function RecuperarPage() {
           <p className="text-sm text-slate-700">
             Enviamos un correo a <span className="font-medium">{email}</span>.
           </p>
-          <p className="text-xs text-slate-500">Revisá también spam o correo no deseado.</p>
+          <p className="text-xs text-slate-500">Revisa también spam o correo no deseado.</p>
         </div>
       </AuthLayout>
     );
@@ -77,7 +77,7 @@ function RecuperarPage() {
   return (
     <AuthLayout
       title="Recuperar contraseña"
-      subtitle="Ingresá tu correo y te enviaremos un enlace para restablecerla."
+      subtitle="Ingresa tu correo y te enviaremos un enlace para restablecerla."
       footer={
         <Link to="/login" className="text-indigo-600 font-medium hover:underline">
           Volver a iniciar sesión

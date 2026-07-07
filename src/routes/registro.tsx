@@ -14,7 +14,7 @@ export const Route = createFileRoute("/registro")({
   head: () => ({
     meta: [
       { title: "Crear cuenta — CalmApp" },
-      { name: "description", content: "Creá tu cuenta en CalmApp." },
+      { name: "description", content: "Crea tu cuenta en CalmApp." },
       { name: "robots", content: "noindex" },
     ],
   }),
@@ -23,7 +23,7 @@ export const Route = createFileRoute("/registro")({
 
 const schema = z
   .object({
-    nombre: z.string().trim().min(1, "Ingresá tu nombre").max(80),
+    nombre: z.string().trim().min(1, "Ingresa tu nombre").max(80),
     email: z.string().trim().email("El correo no es válido").max(255),
     password: z.string().min(8, "Mínimo 8 caracteres").max(200),
     confirm: z.string(),
@@ -83,7 +83,7 @@ function RegistroPage() {
   if (sentConfirmation) {
     return (
       <AuthLayout
-        title="Revisá tu correo"
+        title="Revisa tu correo"
         subtitle="Te enviamos un enlace para confirmar tu cuenta."
         footer={
           <>
@@ -97,7 +97,7 @@ function RegistroPage() {
         <div className="flex flex-col items-center text-center gap-3 py-2">
           <CheckCircle2 className="h-10 w-10 text-emerald-500" />
           <p className="text-sm text-slate-700">
-            Enviamos un correo a <span className="font-medium">{email}</span>. Seguí las
+            Enviamos un correo a <span className="font-medium">{email}</span>. Sigue las
             instrucciones para activar tu cuenta.
           </p>
           <p className="text-xs text-slate-500">
@@ -110,11 +110,11 @@ function RegistroPage() {
 
   return (
     <AuthLayout
-      title="Creá tu cuenta"
-      subtitle="Empezá a organizar tu día con calma."
+      title="Crea tu cuenta"
+      subtitle="Empieza a organizar tu día con calma."
       footer={
         <>
-          ¿Ya tenés cuenta?{" "}
+          ¿Ya tienes cuenta?{" "}
           <Link to="/login" className="text-indigo-600 font-medium hover:underline">
             Iniciar sesión
           </Link>
@@ -171,7 +171,7 @@ function RegistroPage() {
             autoComplete="new-password"
             value={confirm}
             onChange={(e) => setConfirm(e.target.value)}
-            placeholder="Repetí la contraseña"
+            placeholder="Repite la contraseña"
             disabled={loading}
           />
           {errors.confirm ? <p className="text-xs text-red-600">{errors.confirm}</p> : null}

@@ -23,7 +23,7 @@ export const Route = createFileRoute("/login")({
 
 const schema = z.object({
   email: z.string().trim().email("El correo no es válido").max(255),
-  password: z.string().min(1, "Ingresá tu contraseña").max(200),
+  password: z.string().min(1, "Ingresa tu contraseña").max(200),
 });
 
 function LoginPage() {
@@ -58,11 +58,11 @@ function LoginPage() {
 
   return (
     <AuthLayout
-      title="Bienvenido de vuelta"
-      subtitle="Iniciá sesión para continuar organizando tu día con calma."
+      title="Bienvenido otra vez"
+      subtitle="Inicia sesión para continuar organizando tu día con calma."
       footer={
         <>
-          ¿Aún no tenés cuenta?{" "}
+          ¿Aún no tienes cuenta?{" "}
           <Link to="/registro" className="text-indigo-600 font-medium hover:underline">
             Crear cuenta
           </Link>
