@@ -49,6 +49,9 @@ function sessionShownKey(userId: string) {
 function sessionSkipKey(userId: string, s: string, q: string) {
   return `calmapp.survey.session.${userId}.skipped.${s}.${q}`;
 }
+function sessionShownSpecificKey(userId: string, s: string, q: string) {
+  return `calmapp.survey.session.${userId}.shown.${s}.${q}`;
+}
 function weekLogKey(userId: string) {
   return `calmapp.survey.weekLog.${userId}`;
 }
@@ -150,6 +153,10 @@ export function useMicroSurveyGate(placement: MicroSurveyPlacement): MicroSurvey
   const markShown = useCallback(() => {
     if (!userId || !question) return;
     const ss = safeSession();
+    const specificKey = sessionShownSpecificKey(userId, question.surveyKey, question.questionKey);
+    // Idempotente: si ya se registró en esta sesión, no vuelve a contar.
+    if (ss?.getItem(specificKey)) return;
+    ss?.setItem(specificKey, "1");
     ss?.setItem(sessionShownKey(userId), "1");
     pushWeekLog(userId);
     trackEvent(ANALYTICS_EVENTS.MICRO_SURVEY_SHOWN, {
