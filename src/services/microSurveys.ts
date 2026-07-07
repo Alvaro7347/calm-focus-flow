@@ -133,6 +133,3 @@ export const MICRO_SURVEY_PLACEMENTS: Record<MicroSurveyPlacement, MicroQuestion
   after_tu_dia_close: [DAILY_BRIEF],
   after_focus_review: [CLARITY],
 };
-
-// Evita warnings de import de tipos no usados en algunos setups.
-export type _IconType = IconType;
