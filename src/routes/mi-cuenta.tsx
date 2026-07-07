@@ -446,5 +446,37 @@ function formatDate(iso: string) {
     });
   } catch {
     return iso;
+}
+
+function SignOutButton() {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [loading, setLoading] = useState(false);
+
+  async function handleSignOut() {
+    setLoading(true);
+    await queryClient.cancelQueries();
+    await supabase.auth.signOut();
+    queryClient.clear();
+    navigate({ to: "/login", replace: true });
   }
+
+  return (
+    <div className="flex items-center justify-between gap-4 flex-wrap">
+      <p className="text-sm text-slate-600">
+        Al cerrar sesión volverás a la pantalla de inicio.
+      </p>
+      <Button
+        type="button"
+        variant="outline"
+        onClick={handleSignOut}
+        disabled={loading}
+        className="gap-2 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+      >
+        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}
+        Cerrar sesión
+      </Button>
+    </div>
+  );
+}
 }
