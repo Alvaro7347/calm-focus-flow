@@ -13,6 +13,7 @@ import { Route as TableroRouteImport } from './routes/tablero'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as RegistroRouteImport } from './routes/registro'
 import { Route as RecuperarContrasenaRouteImport } from './routes/recuperar-contrasena'
+import { Route as PrimeraDescargaRouteImport } from './routes/primera-descarga'
 import { Route as NuevaTareaRouteImport } from './routes/nueva-tarea'
 import { Route as MiCuentaRouteImport } from './routes/mi-cuenta'
 import { Route as LoginRouteImport } from './routes/login'
@@ -53,6 +54,11 @@ const RegistroRoute = RegistroRouteImport.update({
 const RecuperarContrasenaRoute = RecuperarContrasenaRouteImport.update({
   id: '/recuperar-contrasena',
   path: '/recuperar-contrasena',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrimeraDescargaRoute = PrimeraDescargaRouteImport.update({
+  id: '/primera-descarga',
+  path: '/primera-descarga',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NuevaTareaRoute = NuevaTareaRouteImport.update({
@@ -171,6 +177,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/mi-cuenta': typeof MiCuentaRoute
   '/nueva-tarea': typeof NuevaTareaRoute
+  '/primera-descarga': typeof PrimeraDescargaRoute
   '/recuperar-contrasena': typeof RecuperarContrasenaRoute
   '/registro': typeof RegistroRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -196,6 +203,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/mi-cuenta': typeof MiCuentaRoute
   '/nueva-tarea': typeof NuevaTareaRoute
+  '/primera-descarga': typeof PrimeraDescargaRoute
   '/recuperar-contrasena': typeof RecuperarContrasenaRoute
   '/registro': typeof RegistroRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -224,6 +232,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/mi-cuenta': typeof MiCuentaRoute
   '/nueva-tarea': typeof NuevaTareaRoute
+  '/primera-descarga': typeof PrimeraDescargaRoute
   '/recuperar-contrasena': typeof RecuperarContrasenaRoute
   '/registro': typeof RegistroRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -253,6 +262,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/mi-cuenta'
     | '/nueva-tarea'
+    | '/primera-descarga'
     | '/recuperar-contrasena'
     | '/registro'
     | '/reset-password'
@@ -278,6 +288,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/mi-cuenta'
     | '/nueva-tarea'
+    | '/primera-descarga'
     | '/recuperar-contrasena'
     | '/registro'
     | '/reset-password'
@@ -305,6 +316,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/mi-cuenta'
     | '/nueva-tarea'
+    | '/primera-descarga'
     | '/recuperar-contrasena'
     | '/registro'
     | '/reset-password'
@@ -333,6 +345,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   MiCuentaRoute: typeof MiCuentaRoute
   NuevaTareaRoute: typeof NuevaTareaRoute
+  PrimeraDescargaRoute: typeof PrimeraDescargaRoute
   RecuperarContrasenaRoute: typeof RecuperarContrasenaRoute
   RegistroRoute: typeof RegistroRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
@@ -367,6 +380,13 @@ declare module '@tanstack/react-router' {
       path: '/recuperar-contrasena'
       fullPath: '/recuperar-contrasena'
       preLoaderRoute: typeof RecuperarContrasenaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/primera-descarga': {
+      id: '/primera-descarga'
+      path: '/primera-descarga'
+      fullPath: '/primera-descarga'
+      preLoaderRoute: typeof PrimeraDescargaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/nueva-tarea': {
@@ -570,6 +590,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   MiCuentaRoute: MiCuentaRoute,
   NuevaTareaRoute: NuevaTareaRoute,
+  PrimeraDescargaRoute: PrimeraDescargaRoute,
   RecuperarContrasenaRoute: RecuperarContrasenaRoute,
   RegistroRoute: RegistroRoute,
   ResetPasswordRoute: ResetPasswordRoute,
