@@ -21,11 +21,12 @@
  * el único cambio será dentro de profileService (origen del user_id).
  * ========================================================
  */
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
-import { Loader2, Save, Camera } from "lucide-react";
+import { Loader2, Save, Camera, LogOut } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 import {
   getCurrentProfile,
@@ -366,6 +367,12 @@ function MiCuentaPage() {
           <ReadOnlyRow label="Versión de CalmApp" value={CALMAPP_VERSION} />
         </dl>
       </Section>
+
+      {/* 5. Sesión */}
+      <Section title="Sesión">
+        <SignOutButton />
+      </Section>
+
 
       {/* Guardar */}
       <div className="sticky bottom-4 md:static flex justify-end">
