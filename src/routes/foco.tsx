@@ -37,7 +37,7 @@ import {
 import { getCurrentProfile } from "@/services/profileService";
 import type { DailyBrief } from "@/services/dailyAiBriefService";
 import { MicroSurveyPrompt } from "@/components/research/MicroSurveyPrompt";
-import { hasCompletedFirstAha } from "@/services/ahaService";
+import { hasCompletedFirstAha, hasCompletedFirstAhaRemote } from "@/services/ahaService";
 
 export const Route = createFileRoute("/foco")({
   head: () => ({
