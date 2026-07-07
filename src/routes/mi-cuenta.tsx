@@ -167,6 +167,52 @@ function MiCuentaPage() {
     },
   });
 
+  // ---- Avatar ----
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [avatarSrc, setAvatarSrc] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!profile?.avatar_url) {
+      setAvatarSrc(null);
+      return;
+    }
+    resolveAvatarUrl(profile.avatar_url).then((url) => {
+      if (!cancelled) setAvatarSrc(url);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [profile?.avatar_url]);
+
+  const avatarMutation = useMutation({
+    mutationFn: (file: File) => uploadCurrentUserAvatar(file),
+    onSuccess: (updated) => {
+      queryClient.setQueryData(["profile", "me"], updated);
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
+      toast.success("Foto actualizada");
+    },
+    onError: (err) => {
+      const message =
+        err instanceof AvatarUploadError
+          ? err.message
+          : "No pudimos subir la foto. Intenta nuevamente.";
+      toast.error(message);
+    },
+  });
+
+  function handlePickFile() {
+    fileInputRef.current?.click();
+  }
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    // Reset immediately so seleccionar el mismo archivo dos veces vuelva a disparar el evento.
+    e.target.value = "";
+    if (!file) return;
+    avatarMutation.mutate(file);
+  }
+
   const isDirty = useMemo(() => {
     if (!profile || !form) return false;
     const base = profileToForm(profile);
