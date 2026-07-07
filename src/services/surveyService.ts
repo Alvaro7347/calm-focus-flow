@@ -49,7 +49,7 @@ export async function recordInAppSurveyResponse(
       answer_value: input.answerValue ?? null,
       answer_number: input.answerNumber ?? null,
       answer_text: input.answerText ?? null,
-      context: input.context ?? {},
+      context: (input.context ?? {}) as never,
       route: input.route ?? getCurrentRoute(),
     });
     if (error) {
