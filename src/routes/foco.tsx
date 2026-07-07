@@ -130,6 +130,14 @@ function FocoPage() {
   const esperando = data?.esperando ?? [];
   const sinMov = data?.sinMovimiento ?? [];
 
+  const showAhaEntry = useMemo(() => {
+    if (!userId) return false;
+    if (isLoading || isError) return false;
+    if (tuDiaOpen) return false;
+    return !hasCompletedFirstAha(userId);
+  }, [userId, isLoading, isError, tuDiaOpen]);
+
+
   return (
     <div className="px-6 md:px-10 py-8 pb-32 md:pb-8">
       {/* Encabezado */}
