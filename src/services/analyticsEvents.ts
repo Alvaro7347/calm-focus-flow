@@ -70,6 +70,10 @@ export const IN_APP_SURVEY_KEYS = {
   AI_SUGGESTION_HELPFUL: "ai_suggestion_helpful",
   PAYMENT_INTEREST: "payment_interest",
   REFERRAL_INTENT: "referral_intent",
+  RESEARCH_PROFILE_SEGMENT: "research_profile_segment",
+  RESEARCH_PROFILE_CURRENT_TOOL: "research_profile_current_tool",
+  RESEARCH_PROFILE_MAIN_PAIN: "research_profile_main_pain",
+  CLARITY_AFTER_USE: "clarity_after_use",
 } as const;
 
 export type InAppSurveyKey =
