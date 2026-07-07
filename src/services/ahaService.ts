@@ -289,7 +289,7 @@ export async function completeActivationCycle(
   if (!cycleId) return;
   const delta =
     payload.mentalLoadBefore != null && payload.mentalLoadAfter != null
-      ? payload.mentalLoadAfter - payload.mentalLoadBefore
+      ? payload.mentalLoadBefore - payload.mentalLoadAfter
       : null;
   try {
     await supabase

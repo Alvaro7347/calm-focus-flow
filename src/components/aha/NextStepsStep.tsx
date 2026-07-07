@@ -24,13 +24,15 @@ export function NextStepsStep({ steps, onChange, onConfirm, onBack, submitting }
     <section className="space-y-6">
       <div className="space-y-2">
         <p className="text-[11px] font-medium uppercase tracking-widest text-slate-500">
-          Para bajar el ruido, partiría por esto
+          Para partir con calma
         </p>
         <h2 className="text-xl font-semibold text-slate-900">
-          Tres próximos pasos pequeños.
+          Tus primeros pasos.
         </h2>
         <p className="text-sm text-slate-500">
-          Puedes editar o descartar cualquiera. Nadie te obliga a hacer los tres.
+          Crearemos las tareas que confirmaste antes. Estos son los primeros pasos
+          sugeridos para partir con calma. Puedes editarlos o descartar los que no
+          quieras usar como punto de partida.
         </p>
       </div>
 
@@ -70,22 +72,29 @@ export function NextStepsStep({ steps, onChange, onConfirm, onBack, submitting }
         ) : null}
       </ol>
 
-      <div className="flex items-center justify-between">
-        <p className="text-xs text-slate-500">
-          {activeCount} paso{activeCount === 1 ? "" : "s"} activo{activeCount === 1 ? "" : "s"}
-        </p>
-        <div className="flex gap-2">
-          <Button variant="ghost" size="sm" onClick={onBack} disabled={submitting}>
-            Atrás
-          </Button>
-          <Button
-            size="sm"
-            onClick={onConfirm}
-            disabled={submitting}
-            className="bg-indigo-600 hover:bg-indigo-700"
-          >
-            Confirmar y crear tareas
-          </Button>
+      <div className="space-y-2">
+        {activeCount === 0 ? (
+          <p className="text-xs text-amber-700">
+            Deja al menos un próximo paso activo para continuar.
+          </p>
+        ) : null}
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-slate-500">
+            {activeCount} paso{activeCount === 1 ? "" : "s"} activo{activeCount === 1 ? "" : "s"}
+          </p>
+          <div className="flex gap-2">
+            <Button variant="ghost" size="sm" onClick={onBack} disabled={submitting}>
+              Atrás
+            </Button>
+            <Button
+              size="sm"
+              onClick={onConfirm}
+              disabled={submitting || activeCount === 0}
+              className="bg-indigo-600 hover:bg-indigo-700"
+            >
+              Crear tareas confirmadas
+            </Button>
+          </div>
         </div>
       </div>
     </section>

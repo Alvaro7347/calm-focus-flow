@@ -74,12 +74,26 @@ function PrimeraDescargaPage() {
   const [createdTasksCount, setCreatedTasksCount] = useState(0);
 
   const finished = useRef(false);
+  const startedRef = useRef(false);
+  const stepRef = useRef<Step>("intro");
+  const cycleIdRef = useRef<string | null>(null);
+  const tasksCreatedRef = useRef(false);
+  const confirmInProgressRef = useRef(false);
+
+  useEffect(() => {
+    stepRef.current = step;
+  }, [step]);
+  useEffect(() => {
+    cycleIdRef.current = cycleId;
+  }, [cycleId]);
 
   // Registro de abandono si el usuario sale a medio flujo.
   useEffect(() => {
     return () => {
       if (finished.current) return;
-      if (step === "intro" || step === "done") return;
+      if (!startedRef.current) return;
+      const cur = stepRef.current;
+      if (cur === "intro" || cur === "done") return;
       const s: Record<Step, string> = {
         intro: "intro",
         before: "before_survey",
@@ -89,9 +103,8 @@ function PrimeraDescargaPage() {
         after: "after_survey",
         done: "done",
       };
-      abandonActivationCycle(cycleId, s[step] ?? "unknown");
+      abandonActivationCycle(cycleIdRef.current, s[cur] ?? "unknown");
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // -------- Handlers --------
@@ -100,6 +113,8 @@ function PrimeraDescargaPage() {
     setSubmitting(true);
     const id = await startActivationCycle();
     setCycleId(id);
+    cycleIdRef.current = id;
+    startedRef.current = true;
     trackEvent(ANALYTICS_EVENTS.AHA_FLOW_STARTED, { source: "aha_flow" });
     setSubmitting(false);
     setStep("before");
@@ -164,41 +179,50 @@ function PrimeraDescargaPage() {
   };
 
   const handleConfirmNextSteps = async () => {
+    if (tasksCreatedRef.current || confirmInProgressRef.current) return;
+    confirmInProgressRef.current = true;
     setSubmitting(true);
-    const activeSteps = nextSteps.filter((s) => !s.discarded);
-    const editedCount = activeSteps.filter((s) => s.edited).length;
-    const discardedCount = nextSteps.length - activeSteps.length;
+    try {
+      const activeSteps = nextSteps.filter((s) => !s.discarded);
+      if (activeSteps.length === 0) {
+        setSubmitting(false);
+        confirmInProgressRef.current = false;
+        return;
+      }
+      const editedCount = activeSteps.filter((s) => s.edited).length;
+      const discardedCount = nextSteps.length - activeSteps.length;
 
-    trackEvent(ANALYTICS_EVENTS.NEXT_STEPS_CONFIRMED, {
-      confirmed_count: activeSteps.length,
-      edited_count: editedCount,
-      discarded_count: discardedCount,
-      source: "aha_flow",
-    });
-
-    // Ítems finales a crear: confirmados y no descartados en próximos pasos.
-    // Si el usuario editó el título de un próximo paso, se refleja en la tarea.
-    const activeStepBySource = new Map(activeSteps.map((s) => [s.sourceItemId, s]));
-    const finalItems = items
-      .filter((i) => i.confirmed)
-      .map((i) => {
-        const s = activeStepBySource.get(i.id);
-        if (s) return { ...i, title: s.title };
-        return i;
+      trackEvent(ANALYTICS_EVENTS.NEXT_STEPS_CONFIRMED, {
+        confirmed_count: activeSteps.length,
+        edited_count: editedCount,
+        discarded_count: discardedCount,
+        source: "aha_flow",
       });
 
-    const { createdCount } = await createTasksFromConfirmedItems(finalItems);
-    setCreatedTasksCount(createdCount);
-    trackEvent(ANALYTICS_EVENTS.AHA_TASKS_CREATED, {
-      created_count: createdCount,
-      source: "aha_flow",
-    });
-    // Invalida caches de FOCO/Calendar/Tablero.
-    for (const key of TASK_INVALIDATION_KEYS) {
-      queryClient.invalidateQueries({ queryKey: [...key] });
+      const activeStepBySource = new Map(activeSteps.map((s) => [s.sourceItemId, s]));
+      const finalItems = items
+        .filter((i) => i.confirmed)
+        .map((i) => {
+          const s = activeStepBySource.get(i.id);
+          if (s) return { ...i, title: s.title };
+          return i;
+        });
+
+      const { createdCount } = await createTasksFromConfirmedItems(finalItems);
+      tasksCreatedRef.current = true;
+      setCreatedTasksCount(createdCount);
+      trackEvent(ANALYTICS_EVENTS.AHA_TASKS_CREATED, {
+        created_count: createdCount,
+        source: "aha_flow",
+      });
+      for (const key of TASK_INVALIDATION_KEYS) {
+        queryClient.invalidateQueries({ queryKey: [...key] });
+      }
+      setStep("after");
+    } finally {
+      setSubmitting(false);
+      confirmInProgressRef.current = false;
     }
-    setSubmitting(false);
-    setStep("after");
   };
 
   const handleAfterAnswer = async (value: number) => {
@@ -216,7 +240,7 @@ function PrimeraDescargaPage() {
     });
 
     const activeSteps = nextSteps.filter((s) => !s.discarded);
-    const delta = mentalBefore != null ? value - mentalBefore : null;
+    const delta = mentalBefore != null ? mentalBefore - value : null;
 
     await completeActivationCycle(cycleId, {
       dumpedItemsCount: items.length,
@@ -249,7 +273,7 @@ function PrimeraDescargaPage() {
       mentalLoadBefore: mentalBefore,
       mentalLoadAfter: mentalAfter,
       mentalLoadDelta:
-        mentalBefore != null && mentalAfter != null ? mentalAfter - mentalBefore : null,
+        mentalBefore != null && mentalAfter != null ? mentalBefore - mentalAfter : null,
     }),
     [items.length, createdTasksCount, nextSteps, mentalBefore, mentalAfter],
   );
