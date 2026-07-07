@@ -300,6 +300,23 @@ function PrimeraDescargaPage() {
     [items.length, createdTasksCount, nextSteps, mentalBefore, mentalAfter],
   );
 
+  if (authLoading) {
+    return (
+      <div className="mx-auto w-full max-w-2xl px-4 sm:px-6 py-10">
+        <p className="text-sm text-slate-500">Cargando tu sesión…</p>
+      </div>
+    );
+  }
+  if (!userId) {
+    return (
+      <div className="mx-auto w-full max-w-2xl px-4 sm:px-6 py-10">
+        <p className="text-sm text-slate-600">
+          Necesitas iniciar sesión para guardar tu descarga mental.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto w-full max-w-2xl px-4 sm:px-6 py-10 pb-32 md:pb-16">
       <header className="mb-8 space-y-1">
