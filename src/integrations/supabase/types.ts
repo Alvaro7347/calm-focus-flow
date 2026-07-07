@@ -14,6 +14,63 @@ export type Database = {
   }
   public: {
     Tables: {
+      activation_cycles: {
+        Row: {
+          completed_at: string | null
+          confirmed_next_steps_count: number | null
+          created_at: string
+          created_tasks_count: number | null
+          cycle_type: string
+          dumped_items_count: number | null
+          id: string
+          mental_load_after: number | null
+          mental_load_before: number | null
+          mental_load_delta: number | null
+          next_steps_count: number | null
+          reviewed_items_count: number | null
+          started_at: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          confirmed_next_steps_count?: number | null
+          created_at?: string
+          created_tasks_count?: number | null
+          cycle_type?: string
+          dumped_items_count?: number | null
+          id?: string
+          mental_load_after?: number | null
+          mental_load_before?: number | null
+          mental_load_delta?: number | null
+          next_steps_count?: number | null
+          reviewed_items_count?: number | null
+          started_at?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          confirmed_next_steps_count?: number | null
+          created_at?: string
+          created_tasks_count?: number | null
+          cycle_type?: string
+          dumped_items_count?: number | null
+          id?: string
+          mental_load_after?: number | null
+          mental_load_before?: number | null
+          mental_load_delta?: number | null
+          next_steps_count?: number | null
+          reviewed_items_count?: number | null
+          started_at?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       activity_log: {
         Row: {
           action: string
