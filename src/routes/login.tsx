@@ -49,11 +49,17 @@ function LoginPage() {
       email: parsed.data.email,
       password: parsed.data.password,
     });
-    setLoading(false);
     if (error) {
+      setLoading(false);
       setErrors({ form: humanizeAuthError(error) });
       return;
     }
+    try {
+      await ensureCurrentProfile();
+    } catch {
+      // No bloqueamos el login: Mi Cuenta reintentará y mostrará mensaje humano si falla.
+    }
+    setLoading(false);
     navigate({ to: "/foco", replace: true });
   }
 
