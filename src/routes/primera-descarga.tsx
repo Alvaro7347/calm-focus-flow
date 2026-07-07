@@ -273,7 +273,7 @@ function PrimeraDescargaPage() {
       mentalLoadBefore: mentalBefore,
       mentalLoadAfter: mentalAfter,
       mentalLoadDelta:
-        mentalBefore != null && mentalAfter != null ? mentalAfter - mentalBefore : null,
+        mentalBefore != null && mentalAfter != null ? mentalBefore - mentalAfter : null,
     }),
     [items.length, createdTasksCount, nextSteps, mentalBefore, mentalAfter],
   );
