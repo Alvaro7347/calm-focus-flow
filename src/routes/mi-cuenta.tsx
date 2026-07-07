@@ -51,6 +51,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { MicroSurveyPrompt } from "@/components/research/MicroSurveyPrompt";
 
 export const Route = createFileRoute("/mi-cuenta")({
   head: () => ({
@@ -280,6 +281,8 @@ function MiCuentaPage() {
           Tu información personal y tus preferencias.
         </p>
       </header>
+      {/* Micro-pregunta discreta (sólo aparece si el gate lo permite) */}
+      <MicroSurveyPrompt placement="mi_cuenta" />
 
       {/* 1. Foto de perfil */}
       <Section title="Foto de perfil">

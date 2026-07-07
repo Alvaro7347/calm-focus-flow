@@ -36,6 +36,7 @@ import {
 } from "@/services/dailyBriefCache";
 import { getCurrentProfile } from "@/services/profileService";
 import type { DailyBrief } from "@/services/dailyAiBriefService";
+import { MicroSurveyPrompt } from "@/components/research/MicroSurveyPrompt";
 
 export const Route = createFileRoute("/foco")({
   head: () => ({
@@ -90,9 +91,13 @@ function FocoPage() {
       .finally(() => setTuDiaLoading(false));
   }, [userId]);
 
+  // Marcador: el usuario cerró Tu Día en esta sesión → habilita prompt de utilidad.
+  const [tuDiaJustClosed, setTuDiaJustClosed] = useState(false);
+
   const handleCloseTuDia = () => {
     markTuDiaShownToday(userId);
     setTuDiaOpen(false);
+    setTuDiaJustClosed(true);
   };
 
   const handleReopenTuDia = () => {
@@ -193,6 +198,18 @@ function FocoPage() {
           />
         </div>
       )}
+
+      {/* Micro-preguntas: sólo aparecen si el gate lo permite y no hay loading crítico. */}
+      {!isLoading && !isError && !tuDiaOpen ? (
+        <div className="mt-10 mx-auto max-w-2xl space-y-4">
+          {tuDiaJustClosed ? (
+            <MicroSurveyPrompt placement="after_tu_dia_close" />
+          ) : null}
+          <MicroSurveyPrompt placement="after_focus_review" />
+        </div>
+      ) : null}
+
+
 
       {/* Pie */}
       <div className="mt-16 flex flex-col items-center text-center">
