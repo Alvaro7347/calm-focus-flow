@@ -8,7 +8,6 @@
  * `useMicroSurveyGate(placement)` decide cuál puede mostrarse en cada momento
  * según reglas anti-saturación.
  */
-import type { IconType } from "react";
 import { IN_APP_SURVEY_KEYS } from "./analyticsEvents";
 
 export type MicroSurveyPlacement =
