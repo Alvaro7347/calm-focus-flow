@@ -199,6 +199,18 @@ function FocoPage() {
         </div>
       )}
 
+      {/* Micro-preguntas: sólo aparecen si el gate lo permite y no hay loading crítico. */}
+      {!isLoading && !isError && !tuDiaOpen ? (
+        <div className="mt-10 mx-auto max-w-2xl space-y-4">
+          {tuDiaJustClosed ? (
+            <MicroSurveyPrompt placement="after_tu_dia_close" />
+          ) : null}
+          <MicroSurveyPrompt placement="after_focus_review" />
+        </div>
+      ) : null}
+
+
+
       {/* Pie */}
       <div className="mt-16 flex flex-col items-center text-center">
         <svg width="48" height="48" viewBox="0 0 48 48" fill="none" aria-hidden className="text-emerald-400/70">
