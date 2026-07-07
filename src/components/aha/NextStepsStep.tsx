@@ -72,22 +72,29 @@ export function NextStepsStep({ steps, onChange, onConfirm, onBack, submitting }
         ) : null}
       </ol>
 
-      <div className="flex items-center justify-between">
-        <p className="text-xs text-slate-500">
-          {activeCount} paso{activeCount === 1 ? "" : "s"} activo{activeCount === 1 ? "" : "s"}
-        </p>
-        <div className="flex gap-2">
-          <Button variant="ghost" size="sm" onClick={onBack} disabled={submitting}>
-            Atrás
-          </Button>
-          <Button
-            size="sm"
-            onClick={onConfirm}
-            disabled={submitting}
-            className="bg-indigo-600 hover:bg-indigo-700"
-          >
-            Confirmar y crear tareas
-          </Button>
+      <div className="space-y-2">
+        {activeCount === 0 ? (
+          <p className="text-xs text-amber-700">
+            Deja al menos un próximo paso activo para continuar.
+          </p>
+        ) : null}
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-slate-500">
+            {activeCount} paso{activeCount === 1 ? "" : "s"} activo{activeCount === 1 ? "" : "s"}
+          </p>
+          <div className="flex gap-2">
+            <Button variant="ghost" size="sm" onClick={onBack} disabled={submitting}>
+              Atrás
+            </Button>
+            <Button
+              size="sm"
+              onClick={onConfirm}
+              disabled={submitting || activeCount === 0}
+              className="bg-indigo-600 hover:bg-indigo-700"
+            >
+              Crear tareas confirmadas
+            </Button>
+          </div>
         </div>
       </div>
     </section>
