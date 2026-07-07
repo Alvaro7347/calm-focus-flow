@@ -201,6 +201,7 @@ function PrimeraDescargaPage() {
   };
 
   const handleConfirmNextSteps = async () => {
+    if (!userId) return;
     if (tasksCreatedRef.current || confirmInProgressRef.current) return;
     confirmInProgressRef.current = true;
     setSubmitting(true);
