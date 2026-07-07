@@ -66,44 +66,38 @@ function FocoPage() {
   });
 
   // ---------- Tu Día ----------
+  const userId = profile?.id ?? null;
   const [tuDiaOpen, setTuDiaOpen] = useState(false);
   const [tuDiaLoading, setTuDiaLoading] = useState(false);
   const [tuDiaBrief, setTuDiaBrief] = useState<DailyBrief | null>(null);
   const [tuDiaError, setTuDiaError] = useState<string | null>(null);
-  const autoTriggered = useRef(false);
+  const autoTriggeredFor = useRef<string | null>(null);
 
-  const openAutoIfNeeded = () => {
-    if (autoTriggered.current) return;
-    autoTriggered.current = true;
-    if (hasShownTuDiaToday()) return;
+  useEffect(() => {
+    if (!userId) return;
+    if (autoTriggeredFor.current === userId) return;
+    autoTriggeredFor.current = userId;
+    if (hasShownTuDiaToday(userId)) return;
     setTuDiaOpen(true);
     setTuDiaLoading(true);
     setTuDiaError(null);
-    getOrLoadTodayBrief()
+    getOrLoadTodayBrief({ userId })
       .then((result) => {
-        if (result.ok) {
-          setTuDiaBrief(result.brief);
-        } else {
-          setTuDiaError(result.error);
-        }
+        if (result.ok) setTuDiaBrief(result.brief);
+        else setTuDiaError(result.error);
       })
       .catch((e) => setTuDiaError(e instanceof Error ? e.message : String(e)))
       .finally(() => setTuDiaLoading(false));
-  };
-
-  useEffect(() => {
-    openAutoIfNeeded();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [userId]);
 
   const handleCloseTuDia = () => {
-    markTuDiaShownToday();
+    markTuDiaShownToday(userId);
     setTuDiaOpen(false);
   };
 
   const handleReopenTuDia = () => {
-    // Reabrir: reutiliza el brief ya cacheado. No llama a la IA.
-    const cached = readCachedBrief();
+    // Reabrir: reutiliza el brief ya cacheado del usuario. No llama a la IA.
+    const cached = readCachedBrief(userId);
     if (cached) {
       setTuDiaBrief(cached);
       setTuDiaError(null);
@@ -115,7 +109,7 @@ function FocoPage() {
     setTuDiaOpen(true);
     setTuDiaLoading(true);
     setTuDiaError(null);
-    getOrLoadTodayBrief()
+    getOrLoadTodayBrief({ userId })
       .then((result) => {
         if (result.ok) setTuDiaBrief(result.brief);
         else setTuDiaError(result.error);
@@ -123,6 +117,7 @@ function FocoPage() {
       .catch((e) => setTuDiaError(e instanceof Error ? e.message : String(e)))
       .finally(() => setTuDiaLoading(false));
   };
+
 
   const hoy = data?.hoy ?? [];
   const semana = data?.estaSemana ?? [];
