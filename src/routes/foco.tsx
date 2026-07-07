@@ -204,8 +204,9 @@ function FocoPage() {
         <div className="mt-10 mx-auto max-w-2xl space-y-4">
           {tuDiaJustClosed ? (
             <MicroSurveyPrompt placement="after_tu_dia_close" />
-          ) : null}
-          <MicroSurveyPrompt placement="after_focus_review" />
+          ) : (
+            <MicroSurveyPrompt placement="after_focus_review" />
+          )}
         </div>
       ) : null}
 
