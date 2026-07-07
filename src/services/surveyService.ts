@@ -1,10 +1,17 @@
 /**
  * surveyService — micro-preguntas dentro de la app.
  * No crea UI. Solo persiste respuestas asociadas a auth.uid().
+ *
+ * `context` se sanitiza con las mismas reglas que analytics:
+ * solo primitivos y sin claves sensibles. Para texto libre usar
+ * `answerText`, y NUNCA con contenido sensible (email, títulos,
+ * descripciones, notas privadas, datos clínicos, teléfonos,
+ * URLs privadas, contenido de calendario).
  */
 import { supabase } from "@/integrations/supabase/client";
 import type { InAppSurveyKey } from "./analyticsEvents";
 import type { InAppSurveyResponse } from "@/types/analytics";
+import { sanitizeProperties } from "./analyticsService";
 
 const IS_DEV = import.meta.env.DEV;
 
@@ -13,6 +20,9 @@ export interface RecordSurveyResponseInput {
   questionKey: string;
   answerValue?: string | null;
   answerNumber?: number | null;
+  /**
+   * Texto libre. Usar con moderación; nunca para contenido sensible.
+   */
   answerText?: string | null;
   context?: Record<string, unknown>;
   route?: string | null;
@@ -42,6 +52,8 @@ export async function recordInAppSurveyResponse(
     const userId = userData?.user?.id;
     if (!userId) return { ok: false, error: "no_auth" };
 
+    const safeContext = sanitizeProperties(input.context);
+
     const { error } = await supabase.from("in_app_survey_responses").insert({
       user_id: userId,
       survey_key: input.surveyKey,
@@ -49,7 +61,7 @@ export async function recordInAppSurveyResponse(
       answer_value: input.answerValue ?? null,
       answer_number: input.answerNumber ?? null,
       answer_text: input.answerText ?? null,
-      context: (input.context ?? {}) as never,
+      context: safeContext as never,
       route: input.route ?? getCurrentRoute(),
     });
     if (error) {

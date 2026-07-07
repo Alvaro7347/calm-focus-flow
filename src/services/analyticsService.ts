@@ -4,8 +4,9 @@
  *
  * Regla no negociable:
  * - Nunca romper la UI si esta capa falla.
- * - Nunca registrar datos sensibles (emails, títulos completos
- *   de tareas, teléfonos, tokens, URLs privadas).
+ * - Nunca registrar datos sensibles.
+ * - Solo primitivos (string/number/boolean/null). Objetos y
+ *   arreglos se descartan por completo.
  * - Si no hay usuario autenticado, no se registra nada.
  * ==========================================================
  */
@@ -15,45 +16,76 @@ import type { AnalyticsProperties } from "@/types/analytics";
 
 const IS_DEV = import.meta.env.DEV;
 
-// Claves prohibidas: si alguien intenta enviarlas por accidente,
-// se descartan silenciosamente. No es defensa completa contra abuso
-// intencional, es un cinturón de seguridad.
-const FORBIDDEN_PROPERTY_KEYS = new Set([
+// Fragmentos prohibidos: se rechaza cualquier key cuyo nombre
+// (normalizado) contenga alguno de estos fragmentos. Coincidencia
+// parcial, no exacta.
+const FORBIDDEN_KEY_FRAGMENTS = [
   "email",
   "phone",
-  "password",
   "token",
-  "access_token",
-  "refresh_token",
-  "task_title",
+  "password",
+  "secret",
   "title",
   "description",
-  "full_name",
   "name",
-]);
+  "content",
+  "note",
+  "calendar",
+  "url",
+  "address",
+  "medical",
+  "health",
+  "child",
+  "rut",
+  "dni",
+  "task",
+  "message",
+  "body",
+  "text",
+];
 
-function sanitizeProperties(input: Record<string, unknown> | undefined): AnalyticsProperties {
-  if (!input) return {};
+function isKeyForbidden(rawKey: string): boolean {
+  const key = rawKey.toLowerCase();
+  return FORBIDDEN_KEY_FRAGMENTS.some((fragment) => key.includes(fragment));
+}
+
+function isPrimitive(value: unknown): value is string | number | boolean | null {
+  return (
+    value === null ||
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean"
+  );
+}
+
+export function sanitizeProperties(
+  input: Record<string, unknown> | undefined,
+): AnalyticsProperties {
+  if (!input || typeof input !== "object") return {};
   const out: AnalyticsProperties = {};
   for (const [rawKey, value] of Object.entries(input)) {
     const key = rawKey.trim();
     if (!key) continue;
-    if (FORBIDDEN_PROPERTY_KEYS.has(key.toLowerCase())) {
+    if (isKeyForbidden(key)) {
       if (IS_DEV) console.warn(`[analytics] Propiedad ignorada por privacidad: "${key}"`);
       continue;
     }
     if (value === undefined) continue;
-    if (value === null || typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
-      out[key] = value;
-    } else {
-      // Objetos/arreglos: convertirlos a string acotado para no filtrar cosas raras.
-      try {
-        const asString = JSON.stringify(value);
-        if (asString.length <= 500) out[key] = asString;
-      } catch {
-        // ignore
+    if (!isPrimitive(value)) {
+      if (IS_DEV) {
+        console.warn(
+          `[analytics] Propiedad ignorada (no primitiva): "${key}". ` +
+            "Envía solo booleans/números/strings cortos; nunca objetos ni arrays.",
+        );
       }
+      continue;
     }
+    // Acotar strings para no filtrar contenido largo por accidente.
+    if (typeof value === "string" && value.length > 120) {
+      if (IS_DEV) console.warn(`[analytics] Propiedad ignorada (string > 120): "${key}"`);
+      continue;
+    }
+    out[key] = value;
   }
   return out;
 }
