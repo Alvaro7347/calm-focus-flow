@@ -240,7 +240,7 @@ function PrimeraDescargaPage() {
     });
 
     const activeSteps = nextSteps.filter((s) => !s.discarded);
-    const delta = mentalBefore != null ? value - mentalBefore : null;
+    const delta = mentalBefore != null ? mentalBefore - value : null;
 
     await completeActivationCycle(cycleId, {
       dumpedItemsCount: items.length,
