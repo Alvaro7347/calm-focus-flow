@@ -97,7 +97,7 @@ export async function upsertMyResearchProfile(
 
     const { data, error } = await supabase
       .from("user_research_profiles")
-      .update(patch)
+      .update(patch as never)
       .eq("user_id", userId)
       .select("*")
       .single();
