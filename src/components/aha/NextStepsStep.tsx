@@ -24,13 +24,15 @@ export function NextStepsStep({ steps, onChange, onConfirm, onBack, submitting }
     <section className="space-y-6">
       <div className="space-y-2">
         <p className="text-[11px] font-medium uppercase tracking-widest text-slate-500">
-          Para bajar el ruido, partiría por esto
+          Para partir con calma
         </p>
         <h2 className="text-xl font-semibold text-slate-900">
-          Tres próximos pasos pequeños.
+          Tus primeros pasos.
         </h2>
         <p className="text-sm text-slate-500">
-          Puedes editar o descartar cualquiera. Nadie te obliga a hacer los tres.
+          Crearemos las tareas que confirmaste antes. Estos son los primeros pasos
+          sugeridos para partir con calma. Puedes editarlos o descartar los que no
+          quieras usar como punto de partida.
         </p>
       </div>
 
