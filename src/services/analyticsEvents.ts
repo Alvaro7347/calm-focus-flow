@@ -56,6 +56,15 @@ export const ANALYTICS_EVENTS = {
   MICRO_SURVEY_ANSWERED: "micro_survey_answered",
   MICRO_SURVEY_SKIPPED: "micro_survey_skipped",
   RESEARCH_PROFILE_UPDATED: "research_profile_updated",
+
+  // Primera descarga mental (Aha Moment)
+  AHA_FLOW_STARTED: "aha_flow_started",
+  AHA_FLOW_SKIPPED: "aha_flow_skipped",
+  AHA_FLOW_COMPLETED: "aha_flow_completed",
+  AHA_FLOW_ABANDONED: "aha_flow_abandoned",
+  BRAIN_DUMP_SUBMITTED: "brain_dump_submitted",
+  CAPTURED_ITEMS_REVIEWED: "captured_items_reviewed",
+  AHA_TASKS_CREATED: "aha_tasks_created",
 } as const;
 
 export type AnalyticsEventName =
