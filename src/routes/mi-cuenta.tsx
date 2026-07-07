@@ -132,9 +132,10 @@ function initials(nombre: string | null | undefined, apellidos: string | null | 
 function MiCuentaPage() {
   const queryClient = useQueryClient();
 
-  const { data: profile, isLoading, error } = useQuery({
+  const { data: profile, isLoading, error } = useQuery<Profile>({
     queryKey: ["profile", "me"],
-    queryFn: getCurrentProfile,
+    queryFn: ensureCurrentProfile,
+    retry: 1,
   });
 
   const [form, setForm] = useState<FormState | null>(null);
