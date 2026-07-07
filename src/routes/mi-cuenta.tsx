@@ -446,6 +446,7 @@ function formatDate(iso: string) {
     });
   } catch {
     return iso;
+  }
 }
 
 function SignOutButton() {
@@ -479,4 +480,4 @@ function SignOutButton() {
     </div>
   );
 }
-}
+
