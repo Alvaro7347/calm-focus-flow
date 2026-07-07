@@ -74,12 +74,26 @@ function PrimeraDescargaPage() {
   const [createdTasksCount, setCreatedTasksCount] = useState(0);
 
   const finished = useRef(false);
+  const startedRef = useRef(false);
+  const stepRef = useRef<Step>("intro");
+  const cycleIdRef = useRef<string | null>(null);
+  const tasksCreatedRef = useRef(false);
+  const confirmInProgressRef = useRef(false);
+
+  useEffect(() => {
+    stepRef.current = step;
+  }, [step]);
+  useEffect(() => {
+    cycleIdRef.current = cycleId;
+  }, [cycleId]);
 
   // Registro de abandono si el usuario sale a medio flujo.
   useEffect(() => {
     return () => {
       if (finished.current) return;
-      if (step === "intro" || step === "done") return;
+      if (!startedRef.current) return;
+      const cur = stepRef.current;
+      if (cur === "intro" || cur === "done") return;
       const s: Record<Step, string> = {
         intro: "intro",
         before: "before_survey",
@@ -89,9 +103,8 @@ function PrimeraDescargaPage() {
         after: "after_survey",
         done: "done",
       };
-      abandonActivationCycle(cycleId, s[step] ?? "unknown");
+      abandonActivationCycle(cycleIdRef.current, s[cur] ?? "unknown");
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // -------- Handlers --------
