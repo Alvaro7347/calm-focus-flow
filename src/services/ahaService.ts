@@ -257,20 +257,62 @@ export async function createTasksFromConfirmedItems(
 
 // ---------- activation_cycles ----------
 
-export async function startActivationCycle(): Promise<string | null> {
+/**
+ * Consulta remota: ¿el usuario actual completó ya `aha_first_brain_dump`?
+ * Devuelve false si no hay sesión o si hay error. Sincroniza localStorage
+ * cuando confirma que sí completó, para acelerar próximas consultas.
+ */
+export async function hasCompletedFirstAhaRemote(): Promise<boolean> {
   try {
     const { data: userData } = await supabase.auth.getUser();
     const userId = userData?.user?.id;
-    if (!userId) return null;
+    if (!userId) return false;
+    const { data, error } = await supabase
+      .from("activation_cycles")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("cycle_type", "aha_first_brain_dump")
+      .eq("status", "completed")
+      .limit(1);
+    if (error) return false;
+    const completed = Array.isArray(data) && data.length > 0;
+    if (completed) markFirstAhaCompleted(userId);
+    return completed;
+  } catch {
+    return false;
+  }
+}
+
+export async function startActivationCycle(): Promise<
+  { id: string | null; alreadyCompleted: boolean }
+> {
+  try {
+    const { data: userData } = await supabase.auth.getUser();
+    const userId = userData?.user?.id;
+    if (!userId) return { id: null, alreadyCompleted: false };
+
+    // Evitar duplicar ciclos completed innecesarios.
+    const { data: existing } = await supabase
+      .from("activation_cycles")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("cycle_type", "aha_first_brain_dump")
+      .eq("status", "completed")
+      .limit(1);
+    if (Array.isArray(existing) && existing.length > 0) {
+      markFirstAhaCompleted(userId);
+      return { id: null, alreadyCompleted: true };
+    }
+
     const { data, error } = await supabase
       .from("activation_cycles")
       .insert({ user_id: userId, cycle_type: "aha_first_brain_dump", status: "started" })
       .select("id")
       .single();
-    if (error) return null;
-    return data?.id ?? null;
+    if (error) return { id: null, alreadyCompleted: false };
+    return { id: data?.id ?? null, alreadyCompleted: false };
   } catch {
-    return null;
+    return { id: null, alreadyCompleted: false };
   }
 }
 
