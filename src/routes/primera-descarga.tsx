@@ -59,9 +59,25 @@ function PrimeraDescargaPage() {
   const queryClient = useQueryClient();
 
   const [userId, setUserId] = useState<string | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
+    let alive = true;
+    supabase.auth.getUser().then(({ data }) => {
+      if (!alive) return;
+      setUserId(data.user?.id ?? null);
+      setAuthLoading(false);
+    });
+    return () => {
+      alive = false;
+    };
   }, []);
+
+  // Si no hay sesión, redirigir a login (solo cuando ya terminó la verificación).
+  useEffect(() => {
+    if (!authLoading && !userId) {
+      navigate({ to: "/login" });
+    }
+  }, [authLoading, userId, navigate]);
 
   const [step, setStep] = useState<Step>("intro");
   const [submitting, setSubmitting] = useState(false);
