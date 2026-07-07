@@ -101,7 +101,7 @@ function RegistroPage() {
             instrucciones para activar tu cuenta.
           </p>
           <p className="text-xs text-slate-500">
-            Si no lo ves, revisá spam o correo no deseado.
+            Si no lo ves, revisa spam o correo no deseado.
           </p>
         </div>
       </AuthLayout>
