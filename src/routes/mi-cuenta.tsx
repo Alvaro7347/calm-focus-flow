@@ -29,7 +29,7 @@ import { Loader2, Save, Camera, LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 import {
-  getCurrentProfile,
+  ensureCurrentProfile,
   updateCurrentProfile,
   type Profile,
   type ProfilePatch,
