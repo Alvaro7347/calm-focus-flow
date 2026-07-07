@@ -126,13 +126,19 @@ function PrimeraDescargaPage() {
   // -------- Handlers --------
 
   const handleStart = async () => {
+    if (authLoading || !userId) return;
     setSubmitting(true);
-    const id = await startActivationCycle();
+    const { id, alreadyCompleted } = await startActivationCycle();
+    setSubmitting(false);
+    if (alreadyCompleted) {
+      markFirstAhaCompleted(userId);
+      navigate({ to: "/foco" });
+      return;
+    }
     setCycleId(id);
     cycleIdRef.current = id;
     startedRef.current = true;
     trackEvent(ANALYTICS_EVENTS.AHA_FLOW_STARTED, { source: "aha_flow" });
-    setSubmitting(false);
     setStep("before");
   };
 
