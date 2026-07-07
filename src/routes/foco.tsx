@@ -36,6 +36,7 @@ import {
 } from "@/services/dailyBriefCache";
 import { getCurrentProfile } from "@/services/profileService";
 import type { DailyBrief } from "@/services/dailyAiBriefService";
+import { MicroSurveyPrompt } from "@/components/research/MicroSurveyPrompt";
 
 export const Route = createFileRoute("/foco")({
   head: () => ({
