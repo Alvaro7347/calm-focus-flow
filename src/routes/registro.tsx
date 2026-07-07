@@ -67,16 +67,23 @@ function RegistroPage() {
         data: { full_name: parsed.data.nombre },
       },
     });
-    setLoading(false);
     if (error) {
+      setLoading(false);
       setErrors({ form: humanizeAuthError(error) });
       return;
     }
     // Si Supabase Auth exige confirmación por email, session viene null.
     if (!data.session) {
+      setLoading(false);
       setSentConfirmation(true);
       return;
     }
+    try {
+      await ensureCurrentProfile();
+    } catch {
+      // El trigger normalmente crea el profile; ensureCurrentProfile en Mi Cuenta lo cubre si aún no está.
+    }
+    setLoading(false);
     navigate({ to: "/foco", replace: true });
   }
 
