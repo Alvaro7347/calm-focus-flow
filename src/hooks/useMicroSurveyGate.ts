@@ -153,6 +153,10 @@ export function useMicroSurveyGate(placement: MicroSurveyPlacement): MicroSurvey
   const markShown = useCallback(() => {
     if (!userId || !question) return;
     const ss = safeSession();
+    const specificKey = sessionShownSpecificKey(userId, question.surveyKey, question.questionKey);
+    // Idempotente: si ya se registró en esta sesión, no vuelve a contar.
+    if (ss?.getItem(specificKey)) return;
+    ss?.setItem(specificKey, "1");
     ss?.setItem(sessionShownKey(userId), "1");
     pushWeekLog(userId);
     trackEvent(ANALYTICS_EVENTS.MICRO_SURVEY_SHOWN, {
