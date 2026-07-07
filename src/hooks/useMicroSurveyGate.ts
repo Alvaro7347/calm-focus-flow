@@ -49,6 +49,9 @@ function sessionShownKey(userId: string) {
 function sessionSkipKey(userId: string, s: string, q: string) {
   return `calmapp.survey.session.${userId}.skipped.${s}.${q}`;
 }
+function sessionShownSpecificKey(userId: string, s: string, q: string) {
+  return `calmapp.survey.session.${userId}.shown.${s}.${q}`;
+}
 function weekLogKey(userId: string) {
   return `calmapp.survey.weekLog.${userId}`;
 }
