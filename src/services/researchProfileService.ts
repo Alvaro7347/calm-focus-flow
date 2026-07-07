@@ -1,6 +1,11 @@
 /**
  * researchProfileService — perfil de investigación/comercial del usuario.
  * NO reemplaza public.profiles (que es el perfil personal/visual).
+ *
+ * upsertMyResearchProfile hace merge parcial:
+ *  - undefined → NO se toca el valor previo.
+ *  - null      → limpia el valor (permitido explícitamente).
+ *  - string    → sobrescribe.
  */
 import { supabase } from "@/integrations/supabase/client";
 import type { UserResearchProfile } from "@/types/analytics";
@@ -16,6 +21,16 @@ export interface ResearchProfileUpsertInput {
   test_group?: string | null;
   notes?: string | null;
 }
+
+const MUTABLE_FIELDS = [
+  "persona_segment",
+  "current_tool",
+  "main_pain",
+  "acquisition_source",
+  "willingness_to_pay",
+  "test_group",
+  "notes",
+] as const;
 
 export async function getMyResearchProfile(): Promise<UserResearchProfile | null> {
   const { data: userData } = await supabase.auth.getUser();
@@ -42,25 +57,52 @@ export async function upsertMyResearchProfile(
     const userId = userData?.user?.id;
     if (!userId) return { ok: false, error: "no_auth" };
 
-    const row = {
-      user_id: userId,
-      persona_segment: payload.persona_segment ?? null,
-      current_tool: payload.current_tool ?? null,
-      main_pain: payload.main_pain ?? null,
-      acquisition_source: payload.acquisition_source ?? null,
-      willingness_to_pay: payload.willingness_to_pay ?? null,
-      test_group: payload.test_group ?? null,
-      notes: payload.notes ?? null,
-    };
+    // Solo incluir campos definidos (undefined => no tocar).
+    const patch: Record<string, string | null> = {};
+    for (const field of MUTABLE_FIELDS) {
+      const value = payload[field];
+      if (value !== undefined) patch[field] = value;
+    }
+
+    // ¿Existe fila previa?
+    const { data: existing, error: fetchError } = await supabase
+      .from("user_research_profiles")
+      .select("*")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (fetchError) {
+      if (IS_DEV) console.warn("[researchProfile] fetch previo falló:", fetchError.message);
+      return { ok: false, error: fetchError.message };
+    }
+
+    if (!existing) {
+      // Insert inicial con solo los campos provistos.
+      const { data, error } = await supabase
+        .from("user_research_profiles")
+        .insert({ user_id: userId, ...patch })
+        .select("*")
+        .single();
+      if (error) {
+        if (IS_DEV) console.warn("[researchProfile] insert falló:", error.message);
+        return { ok: false, error: error.message };
+      }
+      return { ok: true, profile: data as UserResearchProfile };
+    }
+
+    // Update parcial: si no hay campos para actualizar, devolver la fila actual.
+    if (Object.keys(patch).length === 0) {
+      return { ok: true, profile: existing as UserResearchProfile };
+    }
 
     const { data, error } = await supabase
       .from("user_research_profiles")
-      .upsert(row, { onConflict: "user_id" })
+      .update(patch)
+      .eq("user_id", userId)
       .select("*")
       .single();
-
     if (error) {
-      if (IS_DEV) console.warn("[researchProfile] upsert falló:", error.message);
+      if (IS_DEV) console.warn("[researchProfile] update falló:", error.message);
       return { ok: false, error: error.message };
     }
     return { ok: true, profile: data as UserResearchProfile };
