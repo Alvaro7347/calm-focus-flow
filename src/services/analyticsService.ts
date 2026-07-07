@@ -119,7 +119,7 @@ export async function trackEvent(
       const payload = {
         user_id: userId,
         event_name: eventName,
-        event_properties: sanitizeProperties(properties),
+        event_properties: sanitizeProperties(properties) as never,
         source: options?.source ?? "app",
         route: options?.route ?? getCurrentRoute(),
         session_id: getSessionId(),
