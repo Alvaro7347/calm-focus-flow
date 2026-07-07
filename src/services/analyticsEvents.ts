@@ -50,6 +50,12 @@ export const ANALYTICS_EVENTS = {
 
   // Integraciones (aún no instrumentadas)
   GOOGLE_CALENDAR_CONNECT_CLICKED: "google_calendar_connect_clicked",
+
+  // Micro-preguntas / investigación
+  MICRO_SURVEY_SHOWN: "micro_survey_shown",
+  MICRO_SURVEY_ANSWERED: "micro_survey_answered",
+  MICRO_SURVEY_SKIPPED: "micro_survey_skipped",
+  RESEARCH_PROFILE_UPDATED: "research_profile_updated",
 } as const;
 
 export type AnalyticsEventName =
