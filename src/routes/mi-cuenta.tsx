@@ -157,7 +157,7 @@ function MiCuentaPage() {
     },
     onError: (err) => {
       toast.error("No se pudo guardar", {
-        description: err instanceof Error ? err.message : "Intentalo nuevamente.",
+        description: err instanceof Error ? err.message : "Inténtalo nuevamente.",
       });
     },
   });
