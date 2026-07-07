@@ -20,10 +20,10 @@
  *   volver a llamar a la IA.
  * ========================================================
  */
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
-import { Clock, Calendar, Hourglass, TrendingUp, Target, Sun } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Clock, Calendar, Hourglass, TrendingUp, Target, Sun, Sparkles } from "lucide-react";
 
 import { FocoColumna } from "@/components/foco/FocoColumna";
 import { getFocusTasks } from "@/services/focusService";
