@@ -4,10 +4,12 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
+  useNavigate,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -20,9 +22,22 @@ import { AreasDrawer } from "../components/layout/AreasDrawer";
 import { LogoSymbol } from "../components/brand/LogoSymbol";
 import { SplashScreen } from "../components/brand/SplashScreen";
 import { BRAND } from "../brand/brand";
-import { useState } from "react";
 import { BootstrapProvider } from "../lib/bootstrapContext";
 import { AREAS_NAV_QUERY_KEY } from "../hooks/useAreasNav";
+import { supabase } from "../integrations/supabase/client";
+
+// Rutas visibles sin sesión (auth + legales).
+const PUBLIC_PREFIXES = [
+  "/login",
+  "/registro",
+  "/recuperar-contrasena",
+  "/reset-password",
+  "/legal",
+];
+
+function isPublicPath(pathname: string): boolean {
+  return PUBLIC_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + "/") || pathname === p);
+}
 
 function NotFoundComponent() {
   return (
@@ -111,12 +126,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:title", content: `${BRAND.name} — ${BRAND.tagline}` },
       { name: "twitter:description", content: BRAND.slogan },
       { name: "twitter:image", content: "/og-image.jpg" },
-      { title: "Lovable App" },
-      { property: "og:title", content: "Lovable App" },
-      { name: "twitter:title", content: "Lovable App" },
-      { name: "description", content: "Calm Focus Flow helps reduce mental load by organizing tasks into focused views." },
-      { property: "og:description", content: "Calm Focus Flow helps reduce mental load by organizing tasks into focused views." },
-      { name: "twitter:description", content: "Calm Focus Flow helps reduce mental load by organizing tasks into focused views." },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
@@ -154,67 +163,99 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+type AuthStatus = "loading" | "authenticated" | "anonymous";
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const navigate = useNavigate();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [bootstrapped, setBootstrapped] = useState(false);
-  const [bootstrapError, setBootstrapError] = useState<string | null>(null);
+  const [authStatus, setAuthStatus] = useState<AuthStatus>("loading");
 
+  // Hidratación inicial de sesión + suscripción a cambios.
   useEffect(() => {
     let cancelled = false;
+
     (async () => {
-      try {
-        // Modo de desarrollo MVP1: garantiza una sesión activa sin pantalla de Login.
-        // Ver src/lib/devAuth.ts para instrucciones de eliminación cuando exista Login real.
-        const { ensureDevSession } = await import("@/lib/devAuth");
-        const { seedIfEmpty } = await import("@/services/seedService");
-        await ensureDevSession();
-        await seedIfEmpty();
-        if (cancelled) return;
-        // Invalidar queries que pudieron haberse ejecutado sin sesión / sin datos.
+      // Modo desarrollo opcional: solo si VITE_ENABLE_DEV_SESSION=1.
+      // Nunca en producción. Ver src/lib/devAuth.ts.
+      if (import.meta.env.DEV && import.meta.env.VITE_ENABLE_DEV_SESSION === "1") {
+        try {
+          const { ensureDevSession } = await import("@/lib/devAuth");
+          await ensureDevSession();
+        } catch (err) {
+          console.warn("[devAuth] no se pudo iniciar sesión de dev:", err);
+        }
+      }
+
+      const { data } = await supabase.auth.getSession();
+      if (cancelled) return;
+      setAuthStatus(data.session ? "authenticated" : "anonymous");
+    })();
+
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED" && event !== "INITIAL_SESSION") return;
+      setAuthStatus(session ? "authenticated" : "anonymous");
+      if (event === "SIGNED_OUT") {
+        queryClient.clear();
+      } else if (event === "SIGNED_IN") {
         queryClient.invalidateQueries({ queryKey: AREAS_NAV_QUERY_KEY });
         queryClient.invalidateQueries({ queryKey: ["focus"] });
         queryClient.invalidateQueries({ queryKey: ["calendar"] });
         queryClient.invalidateQueries({ queryKey: ["tablero"] });
-        setBootstrapped(true);
-      } catch (err) {
-        console.error("[bootstrap] error", err);
-        if (!cancelled) {
-          setBootstrapError(err instanceof Error ? err.message : "Error al inicializar la sesión");
-          setBootstrapped(true);
-        }
+        queryClient.invalidateQueries({ queryKey: ["profile"] });
       }
-    })();
+    });
+
     return () => {
       cancelled = true;
+      sub.subscription.unsubscribe();
     };
   }, [queryClient]);
 
-  const ready = bootstrapped && !bootstrapError;
+  // Enforcement de rutas: si no hay sesión y la ruta no es pública → /login.
+  // Si hay sesión y está en una pantalla de auth → /foco.
+  useEffect(() => {
+    if (authStatus === "loading") return;
+    const publicRoute = isPublicPath(pathname);
+    if (authStatus === "anonymous" && !publicRoute) {
+      navigate({ to: "/login", replace: true });
+    } else if (authStatus === "authenticated" && (pathname === "/login" || pathname === "/registro" || pathname === "/recuperar-contrasena")) {
+      navigate({ to: "/foco", replace: true });
+    }
+  }, [authStatus, pathname, navigate]);
+
+  const publicRoute = isPublicPath(pathname);
+
+  // Pantallas públicas: layout limpio sin chrome de la app.
+  if (publicRoute) {
+    return (
+      <QueryClientProvider client={queryClient}>
+        <BootstrapProvider value={{ bootstrapped: true, bootstrapError: null }}>
+          <Outlet />
+        </BootstrapProvider>
+      </QueryClientProvider>
+    );
+  }
+
+  // Ruta protegida: mostramos splash hasta resolver sesión / redirect.
+  const ready = authStatus === "authenticated";
 
   return (
     <QueryClientProvider client={queryClient}>
-      <BootstrapProvider value={{ bootstrapped, bootstrapError }}>
+      <BootstrapProvider value={{ bootstrapped: ready, bootstrapError: null }}>
         <div className="flex min-h-screen bg-background font-sans text-foreground">
-          <Sidebar />
-          <AreasDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
+          {ready ? <Sidebar /> : null}
+          {ready ? <AreasDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} /> : null}
           <div className="flex-1 flex flex-col min-w-0">
-            <MobileHeader onOpenDrawer={() => setDrawerOpen(true)} />
-            <TopBar />
+            {ready ? <MobileHeader onOpenDrawer={() => setDrawerOpen(true)} /> : null}
+            {ready ? <TopBar /> : null}
             <main className="flex-1 pb-20 md:pb-0">
-              {!bootstrapped ? (
-                <SplashScreen />
-              ) : bootstrapError ? (
-                <div className="flex min-h-[60vh] items-center justify-center px-6 text-center text-sm text-destructive">
-                  {bootstrapError}
-                </div>
-              ) : (
-                <Outlet />
-              )}
+              {ready ? <Outlet /> : <SplashScreen />}
             </main>
           </div>
-          {ready && <MobileFab />}
-          <MobileTabBar />
+          {ready ? <MobileFab /> : null}
+          {ready ? <MobileTabBar /> : null}
         </div>
       </BootstrapProvider>
     </QueryClientProvider>

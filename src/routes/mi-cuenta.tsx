@@ -21,11 +21,12 @@
  * el único cambio será dentro de profileService (origen del user_id).
  * ========================================================
  */
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
-import { Loader2, Save, Camera } from "lucide-react";
+import { Loader2, Save, Camera, LogOut } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 import {
   getCurrentProfile,
@@ -367,6 +368,12 @@ function MiCuentaPage() {
         </dl>
       </Section>
 
+      {/* 5. Sesión */}
+      <Section title="Sesión">
+        <SignOutButton />
+      </Section>
+
+
       {/* Guardar */}
       <div className="sticky bottom-4 md:static flex justify-end">
         <Button
@@ -441,3 +448,36 @@ function formatDate(iso: string) {
     return iso;
   }
 }
+
+function SignOutButton() {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [loading, setLoading] = useState(false);
+
+  async function handleSignOut() {
+    setLoading(true);
+    await queryClient.cancelQueries();
+    await supabase.auth.signOut();
+    queryClient.clear();
+    navigate({ to: "/login", replace: true });
+  }
+
+  return (
+    <div className="flex items-center justify-between gap-4 flex-wrap">
+      <p className="text-sm text-slate-600">
+        Al cerrar sesión volverás a la pantalla de inicio.
+      </p>
+      <Button
+        type="button"
+        variant="outline"
+        onClick={handleSignOut}
+        disabled={loading}
+        className="gap-2 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+      >
+        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}
+        Cerrar sesión
+      </Button>
+    </div>
+  );
+}
+
