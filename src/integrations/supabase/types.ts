@@ -49,6 +49,48 @@ export type Database = {
           },
         ]
       }
+      analytics_events: {
+        Row: {
+          created_at: string
+          event_name: string
+          event_properties: Json
+          experiment_key: string | null
+          experiment_variant: string | null
+          id: string
+          persona_segment: string | null
+          route: string | null
+          session_id: string | null
+          source: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_name: string
+          event_properties?: Json
+          experiment_key?: string | null
+          experiment_variant?: string | null
+          id?: string
+          persona_segment?: string | null
+          route?: string | null
+          session_id?: string | null
+          source?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_name?: string
+          event_properties?: Json
+          experiment_key?: string | null
+          experiment_variant?: string | null
+          id?: string
+          persona_segment?: string | null
+          route?: string | null
+          session_id?: string | null
+          source?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       areas: {
         Row: {
           archived_at: string | null
@@ -162,6 +204,117 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      experiment_assignments: {
+        Row: {
+          assigned_at: string
+          experiment_key: string
+          id: string
+          user_id: string
+          variant: string
+        }
+        Insert: {
+          assigned_at?: string
+          experiment_key: string
+          id?: string
+          user_id: string
+          variant: string
+        }
+        Update: {
+          assigned_at?: string
+          experiment_key?: string
+          id?: string
+          user_id?: string
+          variant?: string
+        }
+        Relationships: []
+      }
+      external_research_notes: {
+        Row: {
+          answer_text: string | null
+          created_at: string
+          decision: string | null
+          evidence_type: string | null
+          hypothesis_area: string | null
+          id: string
+          notes: string | null
+          participant_label: string | null
+          participant_segment: string | null
+          question_key: string | null
+          research_method: string
+          researcher_user_id: string | null
+          signal_strength: string | null
+        }
+        Insert: {
+          answer_text?: string | null
+          created_at?: string
+          decision?: string | null
+          evidence_type?: string | null
+          hypothesis_area?: string | null
+          id?: string
+          notes?: string | null
+          participant_label?: string | null
+          participant_segment?: string | null
+          question_key?: string | null
+          research_method: string
+          researcher_user_id?: string | null
+          signal_strength?: string | null
+        }
+        Update: {
+          answer_text?: string | null
+          created_at?: string
+          decision?: string | null
+          evidence_type?: string | null
+          hypothesis_area?: string | null
+          id?: string
+          notes?: string | null
+          participant_label?: string | null
+          participant_segment?: string | null
+          question_key?: string | null
+          research_method?: string
+          researcher_user_id?: string | null
+          signal_strength?: string | null
+        }
+        Relationships: []
+      }
+      in_app_survey_responses: {
+        Row: {
+          answer_number: number | null
+          answer_text: string | null
+          answer_value: string | null
+          context: Json
+          created_at: string
+          id: string
+          question_key: string
+          route: string | null
+          survey_key: string
+          user_id: string
+        }
+        Insert: {
+          answer_number?: number | null
+          answer_text?: string | null
+          answer_value?: string | null
+          context?: Json
+          created_at?: string
+          id?: string
+          question_key: string
+          route?: string | null
+          survey_key: string
+          user_id: string
+        }
+        Update: {
+          answer_number?: number | null
+          answer_text?: string | null
+          answer_value?: string | null
+          context?: Json
+          created_at?: string
+          id?: string
+          question_key?: string
+          route?: string | null
+          survey_key?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -400,6 +553,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_research_profiles: {
+        Row: {
+          acquisition_source: string | null
+          created_at: string
+          current_tool: string | null
+          main_pain: string | null
+          notes: string | null
+          persona_segment: string | null
+          test_group: string | null
+          updated_at: string
+          user_id: string
+          willingness_to_pay: string | null
+        }
+        Insert: {
+          acquisition_source?: string | null
+          created_at?: string
+          current_tool?: string | null
+          main_pain?: string | null
+          notes?: string | null
+          persona_segment?: string | null
+          test_group?: string | null
+          updated_at?: string
+          user_id: string
+          willingness_to_pay?: string | null
+        }
+        Update: {
+          acquisition_source?: string | null
+          created_at?: string
+          current_tool?: string | null
+          main_pain?: string | null
+          notes?: string | null
+          persona_segment?: string | null
+          test_group?: string | null
+          updated_at?: string
+          user_id?: string
+          willingness_to_pay?: string | null
+        }
+        Relationships: []
       }
     }
     Views: {
