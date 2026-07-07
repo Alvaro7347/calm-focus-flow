@@ -165,6 +165,34 @@ function FocoPage() {
         </button>
       </div>
 
+      {/* Entrada discreta: Primera descarga mental (Aha Moment) */}
+      {showAhaEntry ? (
+        <div className="mb-8 rounded-xl border border-indigo-100 bg-indigo-50/40 p-4 sm:p-5">
+          <div className="flex items-start gap-4 sm:items-center">
+            <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-indigo-600 border border-indigo-100">
+              <Sparkles className="h-4 w-4" aria-hidden />
+            </span>
+            <div className="flex-1 space-y-1">
+              <p className="text-sm font-semibold text-slate-900">
+                Descarga mental rápida
+              </p>
+              <p className="text-xs text-slate-600">
+                Vacía lo que tienes en la cabeza y CalmApp te ayuda a convertirlo en 3
+                próximos pasos.
+              </p>
+            </div>
+            <Link
+              to="/primera-descarga"
+              className="inline-flex items-center rounded-full bg-indigo-600 px-3.5 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 transition"
+            >
+              Empezar descarga
+            </Link>
+          </div>
+        </div>
+      ) : null}
+
+
+
       {isLoading ? (
         <div className="text-sm text-slate-500">Cargando tus tareas…</div>
       ) : isError ? (
