@@ -29,7 +29,7 @@ import { Loader2, Save, Camera, LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 import {
-  getCurrentProfile,
+  ensureCurrentProfile,
   updateCurrentProfile,
   type Profile,
   type ProfilePatch,
@@ -132,9 +132,10 @@ function initials(nombre: string | null | undefined, apellidos: string | null | 
 function MiCuentaPage() {
   const queryClient = useQueryClient();
 
-  const { data: profile, isLoading, error } = useQuery({
+  const { data: profile, isLoading, error } = useQuery<Profile>({
     queryKey: ["profile", "me"],
-    queryFn: getCurrentProfile,
+    queryFn: ensureCurrentProfile,
+    retry: 1,
   });
 
   const [form, setForm] = useState<FormState | null>(null);
@@ -156,7 +157,7 @@ function MiCuentaPage() {
     },
     onError: (err) => {
       toast.error("No se pudo guardar", {
-        description: err instanceof Error ? err.message : "Intentalo nuevamente.",
+        description: err instanceof Error ? err.message : "Inténtalo nuevamente.",
       });
     },
   });
@@ -182,7 +183,7 @@ function MiCuentaPage() {
         if (!next[key]) next[key] = issue.message;
       }
       setErrors(next);
-      toast.error("Revisá los campos marcados");
+      toast.error("Revisa los campos marcados");
       return;
     }
     const patch: ProfilePatch = {
@@ -197,22 +198,21 @@ function MiCuentaPage() {
     mutation.mutate(patch);
   }
 
-  if (isLoading || !form) {
+  if (error) {
     return (
-      <div className="flex items-center justify-center py-24 text-slate-500">
-        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-        Cargando tu perfil…
+      <div className="mx-auto max-w-2xl px-4 py-16 text-center">
+        <p className="text-slate-700">
+          No pudimos preparar tu perfil. Intenta cerrar sesión e ingresar nuevamente.
+        </p>
       </div>
     );
   }
 
-  if (error || !profile) {
+  if (isLoading || !profile || !form) {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-16 text-center">
-        <p className="text-slate-700">No pudimos cargar tu perfil.</p>
-        <p className="text-sm text-slate-500 mt-2">
-          {error instanceof Error ? error.message : "Intentalo nuevamente en unos instantes."}
-        </p>
+      <div className="flex items-center justify-center py-24 text-slate-500">
+        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        Cargando tu perfil…
       </div>
     );
   }

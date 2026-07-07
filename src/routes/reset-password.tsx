@@ -77,7 +77,7 @@ function ResetPasswordPage() {
   return (
     <AuthLayout
       title="Nueva contraseña"
-      subtitle="Elegí una contraseña que solo vos conozcas."
+      subtitle="Elige una contraseña que solo tú conozcas."
       footer={
         <Link to="/login" className="text-indigo-600 font-medium hover:underline">
           Volver a iniciar sesión

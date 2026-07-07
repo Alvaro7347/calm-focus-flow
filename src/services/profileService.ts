@@ -70,6 +70,67 @@ export async function getCurrentProfile(): Promise<Profile | null> {
   return (data as Profile | null) ?? null;
 }
 
+/**
+ * Garantiza que el usuario autenticado tenga fila en `profiles`.
+ *
+ * Flujo:
+ *   1. Lee `auth.getUser()` para obtener el usuario actual.
+ *   2. Busca el profile por `id`.
+ *   3. Si no existe, inserta una fila mínima usando SOLO datos del propio
+ *      usuario autenticado (email + metadata). RLS garantiza que jamás se
+ *      pueda insertar un profile ajeno.
+ *
+ * Existe como red de seguridad para casos raros donde el trigger
+ * `on_auth_user_created` no se disparó (usuario creado antes del trigger,
+ * fallo transitorio, etc.). Idempotente: nunca sobrescribe datos.
+ */
+export async function ensureCurrentProfile(): Promise<Profile> {
+  const { data: userRes, error: userErr } = await supabase.auth.getUser();
+  if (userErr) throw userErr;
+  const user = userRes.user;
+  if (!user) throw new Error("No hay usuario autenticado");
+
+  const { data: existing, error: selErr } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", user.id)
+    .maybeSingle();
+  if (selErr) throw selErr;
+  if (existing) return existing as Profile;
+
+  const meta = (user.user_metadata ?? {}) as Record<string, unknown>;
+  const nombre =
+    (typeof meta.full_name === "string" && meta.full_name.trim()) ||
+    (typeof meta.name === "string" && meta.name.trim()) ||
+    null;
+  const avatar_url =
+    typeof meta.avatar_url === "string" ? meta.avatar_url : null;
+
+  const { data: inserted, error: insErr } = await supabase
+    .from("profiles")
+    .insert({
+      id: user.id,
+      email: user.email ?? null,
+      nombre,
+      avatar_url,
+    })
+    .select("*")
+    .single();
+
+  if (insErr) {
+    // Carrera con el trigger: releer.
+    const { data: retry, error: retryErr } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (retryErr) throw retryErr;
+    if (retry) return retry as Profile;
+    throw insErr;
+  }
+  return inserted as Profile;
+}
+
 export async function updateCurrentProfile(patch: ProfilePatch): Promise<Profile> {
   const userId = await getActiveUserId();
   if (!userId) throw new Error("No hay usuario activo");
