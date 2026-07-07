@@ -285,8 +285,8 @@ function MiCuentaPage() {
       <Section title="Foto de perfil">
         <div className="flex items-center gap-5">
           <Avatar className="h-20 w-20 border border-slate-200">
-            {profile.avatar_url ? (
-              <AvatarImage src={profile.avatar_url} alt={displayName} />
+            {avatarSrc ? (
+              <AvatarImage src={avatarSrc} alt={displayName} />
             ) : null}
             <AvatarFallback className="bg-indigo-50 text-indigo-700 text-lg font-medium">
               {initials(form.nombre, form.apellidos)}
@@ -294,17 +294,34 @@ function MiCuentaPage() {
           </Avatar>
           <div className="space-y-1">
             <div className="text-sm font-medium text-slate-900">{displayName}</div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              className="hidden"
+              onChange={handleFileChange}
+            />
             <Button
               type="button"
               variant="outline"
               size="sm"
-              disabled
-              title="Disponible próximamente"
+              onClick={handlePickFile}
+              disabled={avatarMutation.isPending}
               className="gap-2"
             >
-              <Camera className="h-4 w-4" />
-              Cambiar foto
+              {avatarMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Subiendo…
+                </>
+              ) : (
+                <>
+                  <Camera className="h-4 w-4" />
+                  Cambiar foto
+                </>
+              )}
             </Button>
+            <p className="text-xs text-slate-500">JPG, PNG o WEBP. Máx 2 MB.</p>
           </div>
         </div>
       </Section>
