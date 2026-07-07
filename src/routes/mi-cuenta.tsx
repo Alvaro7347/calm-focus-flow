@@ -22,7 +22,7 @@
  * ========================================================
  */
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { Loader2, Save, Camera, LogOut } from "lucide-react";
@@ -34,6 +34,11 @@ import {
   type Profile,
   type ProfilePatch,
 } from "@/services/profileService";
+import {
+  uploadCurrentUserAvatar,
+  resolveAvatarUrl,
+  AvatarUploadError,
+} from "@/services/avatarService";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -162,6 +167,52 @@ function MiCuentaPage() {
     },
   });
 
+  // ---- Avatar ----
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [avatarSrc, setAvatarSrc] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!profile?.avatar_url) {
+      setAvatarSrc(null);
+      return;
+    }
+    resolveAvatarUrl(profile.avatar_url).then((url) => {
+      if (!cancelled) setAvatarSrc(url);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [profile?.avatar_url]);
+
+  const avatarMutation = useMutation({
+    mutationFn: (file: File) => uploadCurrentUserAvatar(file),
+    onSuccess: (updated) => {
+      queryClient.setQueryData(["profile", "me"], updated);
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
+      toast.success("Foto actualizada");
+    },
+    onError: (err) => {
+      const message =
+        err instanceof AvatarUploadError
+          ? err.message
+          : "No pudimos subir la foto. Intenta nuevamente.";
+      toast.error(message);
+    },
+  });
+
+  function handlePickFile() {
+    fileInputRef.current?.click();
+  }
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    // Reset immediately so seleccionar el mismo archivo dos veces vuelva a disparar el evento.
+    e.target.value = "";
+    if (!file) return;
+    avatarMutation.mutate(file);
+  }
+
   const isDirty = useMemo(() => {
     if (!profile || !form) return false;
     const base = profileToForm(profile);
@@ -234,8 +285,8 @@ function MiCuentaPage() {
       <Section title="Foto de perfil">
         <div className="flex items-center gap-5">
           <Avatar className="h-20 w-20 border border-slate-200">
-            {profile.avatar_url ? (
-              <AvatarImage src={profile.avatar_url} alt={displayName} />
+            {avatarSrc ? (
+              <AvatarImage src={avatarSrc} alt={displayName} />
             ) : null}
             <AvatarFallback className="bg-indigo-50 text-indigo-700 text-lg font-medium">
               {initials(form.nombre, form.apellidos)}
@@ -243,17 +294,34 @@ function MiCuentaPage() {
           </Avatar>
           <div className="space-y-1">
             <div className="text-sm font-medium text-slate-900">{displayName}</div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              className="hidden"
+              onChange={handleFileChange}
+            />
             <Button
               type="button"
               variant="outline"
               size="sm"
-              disabled
-              title="Disponible próximamente"
+              onClick={handlePickFile}
+              disabled={avatarMutation.isPending}
               className="gap-2"
             >
-              <Camera className="h-4 w-4" />
-              Cambiar foto
+              {avatarMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Subiendo…
+                </>
+              ) : (
+                <>
+                  <Camera className="h-4 w-4" />
+                  Cambiar foto
+                </>
+              )}
             </Button>
+            <p className="text-xs text-slate-500">JPG, PNG o WEBP. Máx 2 MB.</p>
           </div>
         </div>
       </Section>
