@@ -43,9 +43,9 @@ export function AfterClarityStep({ summary, onGoFoco }: Props) {
         />
         {delta != null ? (
           <Row
-            label="Δ Carga mental"
+            label="Δ Carga mental (alivio)"
             value={delta > 0 ? `+${delta}` : String(delta)}
-            emphasize={delta < 0}
+            emphasize={delta > 0}
           />
         ) : null}
       </div>
