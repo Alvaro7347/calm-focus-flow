@@ -84,6 +84,8 @@ import {
   type TaskWithHierarchy,
 } from "@/services/taskService";
 import type { AreaRow, ProjectRow, SubprojectRow } from "@/types/tarea";
+import type { ActivityType } from "@/types/activity";
+import { ACTIVITY_TYPE_DB } from "@/types/activity";
 import { getProjectColor } from "@/lib/projectIdentity";
 
 export type TaskDetailMode = "create" | "edit";
@@ -129,7 +131,11 @@ export function TaskDetailForm({
 
   // ---------- Estado del formulario ----------
   const initialSplit = splitIsoToLocalDateTime(initialTask?.task.starts_at ?? null);
+  const initialEndSplit = splitIsoToLocalDateTime(initialTask?.task.ends_at ?? null);
+  const initialActivityType: ActivityType =
+    initialTask?.task.activity_type === "event" ? "evento" : "tarea";
 
+  const [activityType, setActivityType] = useState<ActivityType>(initialActivityType);
   const [title, setTitle] = useState(initialTask?.task.title ?? "");
   const [description, setDescription] = useState(initialTask?.task.description ?? "");
   const [priority, setPriority] = useState<TaskPriority>(
@@ -140,6 +146,7 @@ export function TaskDetailForm({
   );
   const [fecha, setFecha] = useState(initialSplit.fecha);
   const [hora, setHora] = useState(initialSplit.hora);
+  const [horaFin, setHoraFin] = useState(initialEndSplit.hora);
   const [duracion, setDuracion] = useState<string>(
     initialTask?.task.estimated_duration_min != null
       ? String(initialTask.task.estimated_duration_min)
@@ -413,12 +420,26 @@ export function TaskDetailForm({
     }
   }
 
+  const isEvento = activityType === "evento";
+
   function validate(): boolean {
     const next: Record<string, string> = {};
     if (!areaId) next.area = "Selecciona un área.";
     if (!projectId) next.project = "Selecciona un proyecto.";
     if (!subprojectId) next.subproject = "Selecciona un subproyecto.";
     if (!title.trim()) next.title = "Escribe un título.";
+    if (isEvento) {
+      if (!fecha) next.fecha = "Un evento necesita una fecha.";
+      if (!hora) next.hora = "Un evento necesita una hora de inicio.";
+      if (!horaFin) next.horaFin = "Un evento necesita una hora de fin.";
+      if (fecha && hora && horaFin) {
+        const s = new Date(`${fecha}T${hora}:00`);
+        const e = new Date(`${fecha}T${horaFin}:00`);
+        if (!Number.isNaN(s.getTime()) && !Number.isNaN(e.getTime()) && e <= s) {
+          next.horaFin = "La hora de fin debe ser posterior al inicio.";
+        }
+      }
+    }
     setErrors(next);
     return Object.keys(next).length === 0;
   }
@@ -427,6 +448,14 @@ export function TaskDetailForm({
     if (!fecha) return null;
     const iso = hora ? `${fecha}T${hora}:00` : `${fecha}T00:00:00`;
     const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return null;
+    return d.toISOString();
+  }
+
+  function buildEndsAt(): string | null {
+    if (!isEvento) return null;
+    if (!fecha || !horaFin) return null;
+    const d = new Date(`${fecha}T${horaFin}:00`);
     if (Number.isNaN(d.getTime())) return null;
     return d.toISOString();
   }
@@ -444,7 +473,10 @@ export function TaskDetailForm({
     setSaving(true);
     try {
       const startsAt = buildStartsAt();
-      const duracionNum = duracion ? Number(duracion) : null;
+      const endsAt = buildEndsAt();
+      // Los eventos derivan su duración de ends_at; no persistimos estimación.
+      const duracionNum = isEvento ? null : duracion ? Number(duracion) : null;
+      const dbActivityType = ACTIVITY_TYPE_DB[activityType];
 
       let saved: TaskRow;
       if (isEdit) {
@@ -461,10 +493,12 @@ export function TaskDetailForm({
           priority,
           status,
           starts_at: startsAt,
+          ends_at: endsAt,
+          activity_type: dbActivityType,
           estimated_duration_min: duracionNum,
           completed_at: nextCompletedAt,
         });
-        toast.success("Tarea actualizada.");
+        toast.success(isEvento ? "Evento actualizado." : "Tarea actualizada.");
       } else {
         const input: CreateTaskInput = {
           subproject_id: subprojectId,
@@ -474,15 +508,17 @@ export function TaskDetailForm({
           status,
           source: "manual",
           starts_at: startsAt,
+          ends_at: endsAt,
+          activity_type: dbActivityType,
           estimated_duration_min: duracionNum,
         };
         saved = await createTask(input);
-        toast.success("Tarea creada.");
+        toast.success(isEvento ? "Evento creado." : "Tarea creada.");
       }
       await invalidateAll();
       onSaved?.(saved);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "No se pudo guardar la tarea.";
+      const msg = err instanceof Error ? err.message : "No se pudo guardar.";
       toast.error(msg);
     } finally {
       setSaving(false);
@@ -519,6 +555,47 @@ export function TaskDetailForm({
       {/* Contenido con scroll */}
       <div className="flex-1 overflow-y-auto px-1 pb-4">
         <div className="space-y-6">
+          {/* 0. Tipo de actividad — Tarea vs Evento */}
+          <section aria-label="Tipo de actividad">
+            <div
+              role="tablist"
+              aria-label="Tipo de actividad"
+              className="inline-flex w-full rounded-lg bg-muted p-1"
+            >
+              <button
+                type="button"
+                role="tab"
+                aria-selected={!isEvento}
+                onClick={() => setActivityType("tarea")}
+                className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                  !isEvento
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Tarea
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={isEvento}
+                onClick={() => setActivityType("evento")}
+                className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                  isEvento
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Evento
+              </button>
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              {isEvento
+                ? "Bloque horario con inicio y fin. Aparece en el Calendario."
+                : "Unidad flexible. Puede tener fecha o quedar sin programar."}
+            </p>
+          </section>
+
           {/* 1. Información */}
           <section className="space-y-4">
             <div className="space-y-2">
@@ -527,7 +604,7 @@ export function TaskDetailForm({
                 id="td-title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="Nombra tu tarea"
+                placeholder={isEvento ? "Nombra tu evento" : "Nombra tu tarea"}
                 autoFocus={!isEdit}
               />
               {errors.title && <p className="text-xs text-destructive">{errors.title}</p>}
@@ -713,43 +790,72 @@ export function TaskDetailForm({
 
           {/* 4. Programación */}
           <section className="rounded-xl border bg-card p-4 space-y-4">
-            <h2 className="text-sm font-medium text-muted-foreground">Programación</h2>
+            <h2 className="text-sm font-medium text-muted-foreground">
+              {isEvento ? "Cuándo ocurre" : "Programación"}
+            </h2>
             <p className="text-xs text-muted-foreground">
-              Sin fecha, la tarea no aparecerá en el Calendario.
+              {isEvento
+                ? "Un evento requiere fecha, hora de inicio y hora de fin."
+                : "Sin fecha, la tarea no aparecerá en el Calendario."}
             </p>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label htmlFor="td-fecha">Fecha</Label>
+                <Label htmlFor="td-fecha">
+                  Fecha{isEvento ? " *" : ""}
+                </Label>
                 <Input
                   id="td-fecha"
                   type="date"
                   value={fecha}
                   onChange={(e) => setFecha(e.target.value)}
                 />
+                {errors.fecha && (
+                  <p className="text-xs text-destructive">{errors.fecha}</p>
+                )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="td-hora">Hora</Label>
+                <Label htmlFor="td-hora">
+                  {isEvento ? "Inicio *" : "Hora"}
+                </Label>
                 <Input
                   id="td-hora"
                   type="time"
                   value={hora}
                   onChange={(e) => setHora(e.target.value)}
                 />
+                {errors.hora && (
+                  <p className="text-xs text-destructive">{errors.hora}</p>
+                )}
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="td-duracion">Duración estimada (min)</Label>
-              <Input
-                id="td-duracion"
-                type="number"
-                min={0}
-                value={duracion}
-                onChange={(e) => setDuracion(e.target.value)}
-                placeholder="Ej: 30"
-              />
-            </div>
+            {isEvento ? (
+              <div className="space-y-2">
+                <Label htmlFor="td-hora-fin">Fin *</Label>
+                <Input
+                  id="td-hora-fin"
+                  type="time"
+                  value={horaFin}
+                  onChange={(e) => setHoraFin(e.target.value)}
+                />
+                {errors.horaFin && (
+                  <p className="text-xs text-destructive">{errors.horaFin}</p>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label htmlFor="td-duracion">Duración estimada (min)</Label>
+                <Input
+                  id="td-duracion"
+                  type="number"
+                  min={0}
+                  value={duracion}
+                  onChange={(e) => setDuracion(e.target.value)}
+                  placeholder="Ej: 30"
+                />
+              </div>
+            )}
           </section>
 
           {/* Placeholder de secciones futuras — NO implementar aún.
@@ -783,7 +889,9 @@ export function TaskDetailForm({
               ? "Guardando..."
               : isEdit
                 ? "Guardar cambios"
-                : "Guardar tarea"}
+                : isEvento
+                  ? "Guardar evento"
+                  : "Guardar tarea"}
           </Button>
         </div>
         {isEdit && initialTask && !initialTask.task.archived_at && (

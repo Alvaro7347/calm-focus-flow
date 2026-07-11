@@ -531,6 +531,7 @@ export type Database = {
       }
       tasks: {
         Row: {
+          activity_type: Database["public"]["Enums"]["activity_type"]
           actual_duration_min: number | null
           archived_at: string | null
           blocked_reason: string | null
@@ -538,6 +539,7 @@ export type Database = {
           completed_at: string | null
           created_at: string
           description: string | null
+          ends_at: string | null
           estimated_duration_min: number | null
           id: string
           priority: Database["public"]["Enums"]["task_priority"]
@@ -550,6 +552,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          activity_type?: Database["public"]["Enums"]["activity_type"]
           actual_duration_min?: number | null
           archived_at?: string | null
           blocked_reason?: string | null
@@ -557,6 +560,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           description?: string | null
+          ends_at?: string | null
           estimated_duration_min?: number | null
           id?: string
           priority?: Database["public"]["Enums"]["task_priority"]
@@ -569,6 +573,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          activity_type?: Database["public"]["Enums"]["activity_type"]
           actual_duration_min?: number | null
           archived_at?: string | null
           blocked_reason?: string | null
@@ -576,6 +581,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           description?: string | null
+          ends_at?: string | null
           estimated_duration_min?: number | null
           id?: string
           priority?: Database["public"]["Enums"]["task_priority"]
@@ -658,6 +664,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      activity_type: "task" | "event"
       capture_source: "text" | "voice"
       task_priority: "high" | "medium" | "low"
       task_source: "text" | "voice" | "manual" | "import" | "api"
@@ -789,6 +796,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      activity_type: ["task", "event"],
       capture_source: ["text", "voice"],
       task_priority: ["high", "medium", "low"],
       task_source: ["text", "voice", "manual", "import", "api"],

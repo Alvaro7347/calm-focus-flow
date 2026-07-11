@@ -68,7 +68,12 @@ function tareaToEvent(t: Tarea): CalendarEvent | null {
     const [h, m] = t.horaInicio.split(":").map(Number);
     start = new Date(fecha);
     start.setHours(h, m ?? 0, 0, 0);
-    end = addMinutes(start, t.duracionMin ?? 60);
+    // Los eventos traen su fin explícito; las tareas usan duración estimada.
+    if (t.finISO) {
+      end = new Date(t.finISO);
+    } else {
+      end = addMinutes(start, t.duracionMin ?? 60);
+    }
   }
 
   return {
