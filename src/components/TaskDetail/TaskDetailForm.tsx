@@ -84,6 +84,8 @@ import {
   type TaskWithHierarchy,
 } from "@/services/taskService";
 import type { AreaRow, ProjectRow, SubprojectRow } from "@/types/tarea";
+import type { ActivityType } from "@/types/activity";
+import { ACTIVITY_TYPE_DB } from "@/types/activity";
 import { getProjectColor } from "@/lib/projectIdentity";
 
 export type TaskDetailMode = "create" | "edit";
@@ -129,7 +131,11 @@ export function TaskDetailForm({
 
   // ---------- Estado del formulario ----------
   const initialSplit = splitIsoToLocalDateTime(initialTask?.task.starts_at ?? null);
+  const initialEndSplit = splitIsoToLocalDateTime(initialTask?.task.ends_at ?? null);
+  const initialActivityType: ActivityType =
+    initialTask?.task.activity_type === "event" ? "evento" : "tarea";
 
+  const [activityType, setActivityType] = useState<ActivityType>(initialActivityType);
   const [title, setTitle] = useState(initialTask?.task.title ?? "");
   const [description, setDescription] = useState(initialTask?.task.description ?? "");
   const [priority, setPriority] = useState<TaskPriority>(
@@ -140,6 +146,7 @@ export function TaskDetailForm({
   );
   const [fecha, setFecha] = useState(initialSplit.fecha);
   const [hora, setHora] = useState(initialSplit.hora);
+  const [horaFin, setHoraFin] = useState(initialEndSplit.hora);
   const [duracion, setDuracion] = useState<string>(
     initialTask?.task.estimated_duration_min != null
       ? String(initialTask.task.estimated_duration_min)
