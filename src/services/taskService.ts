@@ -216,14 +216,25 @@ function toTarea(row: JoinedTaskRow, categoria: CategoriaFoco): Tarea {
   const subName = sub?.name ?? undefined;
 
   const starts = row.starts_at ? new Date(row.starts_at) : null;
+  const ends = row.ends_at ? new Date(row.ends_at) : null;
   const hasTime = !!starts && (starts.getHours() !== 0 || starts.getMinutes() !== 0);
   const horaInicio =
     hasTime && starts
       ? `${String(starts.getHours()).padStart(2, "0")}:${String(starts.getMinutes()).padStart(2, "0")}`
       : undefined;
+  const horaFin = ends
+    ? `${String(ends.getHours()).padStart(2, "0")}:${String(ends.getMinutes()).padStart(2, "0")}`
+    : undefined;
   const fechaProgramada = starts
     ? `${starts.getFullYear()}-${String(starts.getMonth() + 1).padStart(2, "0")}-${String(starts.getDate()).padStart(2, "0")}`
     : undefined;
+
+  // Duración: si es evento, se deriva de ends_at - starts_at; si no, se
+  // toma la estimación manual del usuario.
+  let duracionMin = row.estimated_duration_min ?? undefined;
+  if (row.activity_type === "event" && starts && ends) {
+    duracionMin = Math.max(1, Math.round((ends.getTime() - starts.getTime()) / 60000));
+  }
 
   let diaEtiqueta: string | undefined;
   if (categoria === "esta_semana" && starts) {
