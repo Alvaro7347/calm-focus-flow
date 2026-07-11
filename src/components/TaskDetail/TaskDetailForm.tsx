@@ -555,6 +555,47 @@ export function TaskDetailForm({
       {/* Contenido con scroll */}
       <div className="flex-1 overflow-y-auto px-1 pb-4">
         <div className="space-y-6">
+          {/* 0. Tipo de actividad — Tarea vs Evento */}
+          <section aria-label="Tipo de actividad">
+            <div
+              role="tablist"
+              aria-label="Tipo de actividad"
+              className="inline-flex w-full rounded-lg bg-muted p-1"
+            >
+              <button
+                type="button"
+                role="tab"
+                aria-selected={!isEvento}
+                onClick={() => setActivityType("tarea")}
+                className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                  !isEvento
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Tarea
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={isEvento}
+                onClick={() => setActivityType("evento")}
+                className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                  isEvento
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Evento
+              </button>
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              {isEvento
+                ? "Bloque horario con inicio y fin. Aparece en el Calendario."
+                : "Unidad flexible. Puede tener fecha o quedar sin programar."}
+            </p>
+          </section>
+
           {/* 1. Información */}
           <section className="space-y-4">
             <div className="space-y-2">
@@ -563,7 +604,7 @@ export function TaskDetailForm({
                 id="td-title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="Nombra tu tarea"
+                placeholder={isEvento ? "Nombra tu evento" : "Nombra tu tarea"}
                 autoFocus={!isEdit}
               />
               {errors.title && <p className="text-xs text-destructive">{errors.title}</p>}
