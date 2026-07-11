@@ -375,15 +375,26 @@ function rowToScheduledTarea(row: JoinedTaskRow): Tarea {
   const sub = row.subprojects;
   const proj = sub?.projects ?? null;
   const starts = row.starts_at ? new Date(row.starts_at) : null;
+  const ends = row.ends_at ? new Date(row.ends_at) : null;
   const hasTime =
     !!starts && (starts.getHours() !== 0 || starts.getMinutes() !== 0);
   const horaInicio =
     hasTime && starts
       ? `${String(starts.getHours()).padStart(2, "0")}:${String(starts.getMinutes()).padStart(2, "0")}`
       : undefined;
+  const horaFin = ends
+    ? `${String(ends.getHours()).padStart(2, "0")}:${String(ends.getMinutes()).padStart(2, "0")}`
+    : undefined;
   const fechaProgramada = starts
     ? `${starts.getFullYear()}-${String(starts.getMonth() + 1).padStart(2, "0")}-${String(starts.getDate()).padStart(2, "0")}`
     : undefined;
+
+  // Duración: los eventos la derivan de ends_at; las tareas usan la
+  // estimación manual del usuario.
+  let duracionMin = row.estimated_duration_min ?? undefined;
+  if (row.activity_type === "event" && starts && ends) {
+    duracionMin = Math.max(1, Math.round((ends.getTime() - starts.getTime()) / 60000));
+  }
 
   return {
     id: row.id,
@@ -394,12 +405,15 @@ function rowToScheduledTarea(row: JoinedTaskRow): Tarea {
     subproyecto: sub?.name ?? undefined,
     fechaProgramada,
     horaInicio,
-    duracionMin: row.estimated_duration_min ?? undefined,
+    horaFin,
+    finISO: row.ends_at ?? undefined,
+    duracionMin,
     // Placeholder: Calendar no interpreta esta categoría; se conserva
     // sólo porque `Tarea` la exige. No confiar en este valor.
     categoriaFoco: "hoy",
     completada: row.status === "completed",
     priority: mapDbPriorityToUi(row.priority),
+    tipo: row.activity_type === "event" ? "evento" : "tarea",
   };
 }
 
