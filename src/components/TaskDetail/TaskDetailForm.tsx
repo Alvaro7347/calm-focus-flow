@@ -87,6 +87,12 @@ import type { AreaRow, ProjectRow, SubprojectRow } from "@/types/tarea";
 import type { ActivityType } from "@/types/activity";
 import { ACTIVITY_TYPE_DB } from "@/types/activity";
 import { getProjectColor } from "@/lib/projectIdentity";
+import {
+  findEventConflict,
+  parseEventConflictError,
+  buildConflictMessage,
+  type EventConflict,
+} from "@/services/eventConflictService";
 
 export type TaskDetailMode = "create" | "edit";
 
