@@ -261,13 +261,16 @@ function toTarea(row: JoinedTaskRow, categoria: CategoriaFoco): Tarea {
     subproyecto: subName,
     fechaProgramada,
     horaInicio,
-    duracionMin: row.estimated_duration_min ?? undefined,
+    horaFin,
+    finISO: row.ends_at ?? undefined,
+    duracionMin,
     diaEtiqueta,
     categoriaFoco: categoria,
     vencida: vencida || undefined,
     diasSinActividad,
     completada: row.status === "completed",
     priority: mapDbPriorityToUi(row.priority),
+    tipo: row.activity_type === "event" ? "evento" : "tarea",
   };
 }
 
