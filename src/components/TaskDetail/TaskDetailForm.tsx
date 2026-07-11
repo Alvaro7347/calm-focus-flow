@@ -420,12 +420,26 @@ export function TaskDetailForm({
     }
   }
 
+  const isEvento = activityType === "evento";
+
   function validate(): boolean {
     const next: Record<string, string> = {};
     if (!areaId) next.area = "Selecciona un área.";
     if (!projectId) next.project = "Selecciona un proyecto.";
     if (!subprojectId) next.subproject = "Selecciona un subproyecto.";
     if (!title.trim()) next.title = "Escribe un título.";
+    if (isEvento) {
+      if (!fecha) next.fecha = "Un evento necesita una fecha.";
+      if (!hora) next.hora = "Un evento necesita una hora de inicio.";
+      if (!horaFin) next.horaFin = "Un evento necesita una hora de fin.";
+      if (fecha && hora && horaFin) {
+        const s = new Date(`${fecha}T${hora}:00`);
+        const e = new Date(`${fecha}T${horaFin}:00`);
+        if (!Number.isNaN(s.getTime()) && !Number.isNaN(e.getTime()) && e <= s) {
+          next.horaFin = "La hora de fin debe ser posterior al inicio.";
+        }
+      }
+    }
     setErrors(next);
     return Object.keys(next).length === 0;
   }
@@ -434,6 +448,14 @@ export function TaskDetailForm({
     if (!fecha) return null;
     const iso = hora ? `${fecha}T${hora}:00` : `${fecha}T00:00:00`;
     const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return null;
+    return d.toISOString();
+  }
+
+  function buildEndsAt(): string | null {
+    if (!isEvento) return null;
+    if (!fecha || !horaFin) return null;
+    const d = new Date(`${fecha}T${horaFin}:00`);
     if (Number.isNaN(d.getTime())) return null;
     return d.toISOString();
   }
@@ -451,7 +473,10 @@ export function TaskDetailForm({
     setSaving(true);
     try {
       const startsAt = buildStartsAt();
-      const duracionNum = duracion ? Number(duracion) : null;
+      const endsAt = buildEndsAt();
+      // Los eventos derivan su duración de ends_at; no persistimos estimación.
+      const duracionNum = isEvento ? null : duracion ? Number(duracion) : null;
+      const dbActivityType = ACTIVITY_TYPE_DB[activityType];
 
       let saved: TaskRow;
       if (isEdit) {
@@ -468,10 +493,12 @@ export function TaskDetailForm({
           priority,
           status,
           starts_at: startsAt,
+          ends_at: endsAt,
+          activity_type: dbActivityType,
           estimated_duration_min: duracionNum,
           completed_at: nextCompletedAt,
         });
-        toast.success("Tarea actualizada.");
+        toast.success(isEvento ? "Evento actualizado." : "Tarea actualizada.");
       } else {
         const input: CreateTaskInput = {
           subproject_id: subprojectId,
@@ -481,15 +508,17 @@ export function TaskDetailForm({
           status,
           source: "manual",
           starts_at: startsAt,
+          ends_at: endsAt,
+          activity_type: dbActivityType,
           estimated_duration_min: duracionNum,
         };
         saved = await createTask(input);
-        toast.success("Tarea creada.");
+        toast.success(isEvento ? "Evento creado." : "Tarea creada.");
       }
       await invalidateAll();
       onSaved?.(saved);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "No se pudo guardar la tarea.";
+      const msg = err instanceof Error ? err.message : "No se pudo guardar.";
       toast.error(msg);
     } finally {
       setSaving(false);
