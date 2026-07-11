@@ -19,6 +19,9 @@ export interface RecurrenceRule {
   diasSemana?: number[]; // 0..6
 }
 
+import type { ActivityType } from "./activity";
+export type { ActivityType } from "./activity";
+
 export interface Tarea {
   id: string;
   titulo: string;
@@ -37,6 +40,15 @@ export interface Tarea {
   horaInicio?: string;
   /** Duración estimada en minutos (para el bloque en vista Semana). */
   duracionMin?: number;
+  /**
+   * Hora de fin (HH:mm) para eventos. Sólo se rellena cuando
+   * `tipo === "evento"`. Los consumidores que la ignoren siguen
+   * funcionando: la duración se recalcula a partir de `finISO`
+   * cuando existe.
+   */
+  horaFin?: string;
+  /** ISO completo del fin del evento (starts_at + horaFin). */
+  finISO?: string;
   diaEtiqueta?: string; // e.g. "Mié 2" for esta_semana
   categoriaFoco: CategoriaFoco;
   vencida?: boolean;
@@ -45,6 +57,12 @@ export interface Tarea {
   recurrencia?: RecurrenceRule;
   /** Prioridad de la tarea. Si no se define, se asume "normal". */
   priority?: Priority;
+  /**
+   * Tipo de actividad. Discriminante de la union `Activity` (ver
+   * `src/types/activity.ts`). Por compatibilidad hacia atrás se
+   * expone como opcional; si falta, asumir `"tarea"`.
+   */
+  tipo?: ActivityType;
 }
 
 export interface Area {
