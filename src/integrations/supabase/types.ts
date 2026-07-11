@@ -299,7 +299,7 @@ export type Database = {
           participant_segment: string | null
           question_key: string | null
           research_method: string
-          researcher_user_id: string | null
+          researcher_user_id: string
           signal_strength: string | null
         }
         Insert: {
@@ -314,7 +314,7 @@ export type Database = {
           participant_segment?: string | null
           question_key?: string | null
           research_method: string
-          researcher_user_id?: string | null
+          researcher_user_id?: string
           signal_strength?: string | null
         }
         Update: {
@@ -329,7 +329,7 @@ export type Database = {
           participant_segment?: string | null
           question_key?: string | null
           research_method?: string
-          researcher_user_id?: string | null
+          researcher_user_id?: string
           signal_strength?: string | null
         }
         Relationships: []
