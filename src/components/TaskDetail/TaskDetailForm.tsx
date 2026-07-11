@@ -889,7 +889,9 @@ export function TaskDetailForm({
               ? "Guardando..."
               : isEdit
                 ? "Guardar cambios"
-                : "Guardar tarea"}
+                : isEvento
+                  ? "Guardar evento"
+                  : "Guardar tarea"}
           </Button>
         </div>
         {isEdit && initialTask && !initialTask.task.archived_at && (
