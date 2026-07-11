@@ -790,43 +790,72 @@ export function TaskDetailForm({
 
           {/* 4. Programación */}
           <section className="rounded-xl border bg-card p-4 space-y-4">
-            <h2 className="text-sm font-medium text-muted-foreground">Programación</h2>
+            <h2 className="text-sm font-medium text-muted-foreground">
+              {isEvento ? "Cuándo ocurre" : "Programación"}
+            </h2>
             <p className="text-xs text-muted-foreground">
-              Sin fecha, la tarea no aparecerá en el Calendario.
+              {isEvento
+                ? "Un evento requiere fecha, hora de inicio y hora de fin."
+                : "Sin fecha, la tarea no aparecerá en el Calendario."}
             </p>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label htmlFor="td-fecha">Fecha</Label>
+                <Label htmlFor="td-fecha">
+                  Fecha{isEvento ? " *" : ""}
+                </Label>
                 <Input
                   id="td-fecha"
                   type="date"
                   value={fecha}
                   onChange={(e) => setFecha(e.target.value)}
                 />
+                {errors.fecha && (
+                  <p className="text-xs text-destructive">{errors.fecha}</p>
+                )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="td-hora">Hora</Label>
+                <Label htmlFor="td-hora">
+                  {isEvento ? "Inicio *" : "Hora"}
+                </Label>
                 <Input
                   id="td-hora"
                   type="time"
                   value={hora}
                   onChange={(e) => setHora(e.target.value)}
                 />
+                {errors.hora && (
+                  <p className="text-xs text-destructive">{errors.hora}</p>
+                )}
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="td-duracion">Duración estimada (min)</Label>
-              <Input
-                id="td-duracion"
-                type="number"
-                min={0}
-                value={duracion}
-                onChange={(e) => setDuracion(e.target.value)}
-                placeholder="Ej: 30"
-              />
-            </div>
+            {isEvento ? (
+              <div className="space-y-2">
+                <Label htmlFor="td-hora-fin">Fin *</Label>
+                <Input
+                  id="td-hora-fin"
+                  type="time"
+                  value={horaFin}
+                  onChange={(e) => setHoraFin(e.target.value)}
+                />
+                {errors.horaFin && (
+                  <p className="text-xs text-destructive">{errors.horaFin}</p>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label htmlFor="td-duracion">Duración estimada (min)</Label>
+                <Input
+                  id="td-duracion"
+                  type="number"
+                  min={0}
+                  value={duracion}
+                  onChange={(e) => setDuracion(e.target.value)}
+                  placeholder="Ej: 30"
+                />
+              </div>
+            )}
           </section>
 
           {/* Placeholder de secciones futuras — NO implementar aún.
