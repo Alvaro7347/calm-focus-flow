@@ -87,6 +87,12 @@ import type { AreaRow, ProjectRow, SubprojectRow } from "@/types/tarea";
 import type { ActivityType } from "@/types/activity";
 import { ACTIVITY_TYPE_DB } from "@/types/activity";
 import { getProjectColor } from "@/lib/projectIdentity";
+import {
+  findEventConflict,
+  parseEventConflictError,
+  buildConflictMessage,
+  type EventConflict,
+} from "@/services/eventConflictService";
 
 export type TaskDetailMode = "create" | "edit";
 
@@ -478,6 +484,19 @@ export function TaskDetailForm({
       const duracionNum = isEvento ? null : duracion ? Number(duracion) : null;
       const dbActivityType = ACTIVITY_TYPE_DB[activityType];
 
+      // Pre-chequeo de conflicto para dar un mensaje concreto al usuario.
+      // La garantía real vive en el trigger de Supabase (SQLSTATE CA001),
+      // que también protege contra escrituras concurrentes.
+      if (isEvento && startsAt && endsAt) {
+        const excludeId = isEdit ? initialTask?.task.id ?? null : null;
+        const conflict = await findEventConflict(startsAt, endsAt, excludeId);
+        if (conflict) {
+          showConflict(conflict);
+          setSaving(false);
+          return;
+        }
+      }
+
       let saved: TaskRow;
       if (isEdit) {
         if (!initialTask) throw new Error("Falta la tarea a editar.");
@@ -518,11 +537,32 @@ export function TaskDetailForm({
       await invalidateAll();
       onSaved?.(saved);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "No se pudo guardar.";
-      toast.error(msg);
+      // Si el trigger rechazó el guardado por solape (carrera con otro
+      // cliente o cambio entre pre-chequeo y guardado), traducimos el
+      // error a un mensaje humano y marcamos los campos de horario.
+      const conflict = parseEventConflictError(err);
+      if (conflict || (err as { code?: string })?.code === "CA001") {
+        showConflict(conflict);
+      } else {
+        const msg = err instanceof Error ? err.message : "No se pudo guardar.";
+        toast.error(msg);
+      }
     } finally {
       setSaving(false);
     }
+  }
+
+  /** Muestra el mensaje de conflicto y marca los campos de horario. */
+  function showConflict(conflict: EventConflict | null) {
+    const message = buildConflictMessage(conflict);
+    const fieldHint = "Este horario coincide con otro evento.";
+    setErrors((prev) => ({
+      ...prev,
+      hora: fieldHint,
+      horaFin: fieldHint,
+      conflict: message,
+    }));
+    toast.error(message, { duration: 8000 });
   }
 
   async function handleArchive() {
