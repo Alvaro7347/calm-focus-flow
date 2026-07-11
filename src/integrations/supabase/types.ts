@@ -661,7 +661,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      subproject_belongs_to_user: {
+        Args: { _subproject_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       activity_type: "task" | "event"
