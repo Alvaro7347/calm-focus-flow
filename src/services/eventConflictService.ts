@@ -93,10 +93,24 @@ export function buildConflictMessage(conflict: EventConflict | null): string {
 }
 
 /**
- * Intenta parsear el error del trigger `prevent_event_time_overlap`.
- * Devuelve el conflicto embebido en `error.details` cuando el
- * código del error es `CA001`. Cualquier otro error devuelve `null`.
+ * Detecta si un error corresponde a un conflicto horario de evento.
+ *
+ * Dos códigos posibles:
+ * - `CA001` → trigger `prevent_event_time_overlap` (incluye detalle
+ *   del evento en conflicto para mensajes descriptivos).
+ * - `23P01` → EXCLUDE constraint `tasks_no_event_overlap`, que es la
+ *   garantía real de concurrencia. Este código NO trae detalle, por
+ *   lo que devolvemos `null` y la UI cae al mensaje genérico.
+ *
+ * Cualquier otro error devuelve `undefined` para distinguir "no es
+ * conflicto" de "conflicto sin detalle".
  */
+export function isEventConflictError(err: unknown): boolean {
+  if (!err || typeof err !== "object") return false;
+  const code = (err as { code?: string }).code;
+  return code === "CA001" || code === "23P01";
+}
+
 export function parseEventConflictError(err: unknown): EventConflict | null {
   if (!err || typeof err !== "object") return null;
   const e = err as { code?: string; details?: string | null };
