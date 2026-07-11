@@ -540,8 +540,10 @@ export function TaskDetailForm({
       // Si el trigger rechazó el guardado por solape (carrera con otro
       // cliente o cambio entre pre-chequeo y guardado), traducimos el
       // error a un mensaje humano y marcamos los campos de horario.
+      // CA001 → trigger con detalle; 23P01 → EXCLUDE constraint (concurrencia).
       const conflict = parseEventConflictError(err);
-      if (conflict || (err as { code?: string })?.code === "CA001") {
+      const code = (err as { code?: string })?.code;
+      if (conflict || code === "CA001" || code === "23P01") {
         showConflict(conflict);
       } else {
         const msg = err instanceof Error ? err.message : "No se pudo guardar.";
