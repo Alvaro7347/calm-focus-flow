@@ -94,16 +94,18 @@ import {
   type EventConflict,
 } from "@/services/eventConflictService";
 
-export type TaskDetailMode = "create" | "edit";
+export type TaskDetailMode = "create" | "edit" | "duplicate";
 
 export interface TaskDetailFormProps {
   mode: TaskDetailMode;
-  /** Requerido en modo `edit`. Ignorado en modo `create`. */
+  /** Requerido en modo `edit` y `duplicate`. Ignorado en modo `create`. */
   initialTask?: TaskWithHierarchy | null;
   /** Se llama tras guardar o archivar con éxito. Útil para cerrar el sheet. */
   onSaved?: (task: TaskRow) => void;
   /** Se llama cuando el usuario cancela. */
   onCancel?: () => void;
+  /** El usuario pide duplicar la actividad actual (sólo en modo edit). */
+  onRequestDuplicate?: () => void;
 }
 
 type InlineKind = "area" | "project" | "subproject" | null;
