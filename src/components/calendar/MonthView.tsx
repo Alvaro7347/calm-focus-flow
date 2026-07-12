@@ -110,16 +110,23 @@ export function MonthView({ anchor, events, onSelectEvent }: Props) {
 function MiniEvent({ event }: { event: CalendarEvent }) {
   const pc = getProjectColor(event.proyectoColor);
   const done = event.completada;
+  const evento = isEvento(event);
+  // Diferenciación no-color: eventos usan un cuadradito sólido
+  // (bloque reservado); tareas mantienen el punto circular
+  // (marcador flexible). Densidad idéntica a la anterior.
+  const marker = done
+    ? "bg-slate-300"
+    : evento
+    ? `${pc.dot} rounded-sm`
+    : `${pc.dot} rounded-full`;
   return (
     <div
       className={`flex items-center gap-1 truncate rounded px-1 text-[10px] leading-tight ${
         done ? "text-slate-400 line-through" : pc.text
       }`}
+      aria-label={`${ariaTypeLabel(event)}: ${event.titulo}`}
     >
-      <span
-        className={`h-1.5 w-1.5 rounded-full shrink-0 ${done ? "bg-slate-300" : pc.dot}`}
-        aria-hidden
-      />
+      <span className={`h-1.5 w-1.5 shrink-0 ${marker}`} aria-hidden />
       <span className="truncate">{event.titulo}</span>
     </div>
   );
