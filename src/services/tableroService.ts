@@ -174,7 +174,7 @@ export async function fetchAreaTree(): Promise<AreaNode[]> {
          subprojects (
            id, name, display_order, archived_at,
            tasks (
-             id, title, status, priority, starts_at,
+             id, title, status, activity_type, priority, starts_at,
              estimated_duration_min, updated_at, archived_at
            )
          )
@@ -200,17 +200,21 @@ export async function fetchAreaTree(): Promise<AreaNode[]> {
           .filter((s) => s.archived_at === null)
           .sort((x, y) => x.display_order - y.display_order)
           .map((s) => {
-            const tareas = (s.tasks ?? [])
-              .filter((t) => t.archived_at === null)
-              .map((t) => mapTask(t, a.name, p.name, areaColor, s.name));
+            const rawTareas = (s.tasks ?? []).filter((t) => t.archived_at === null);
+            const tareas = rawTareas.map((t) => mapTask(t, a.name, p.name, areaColor, s.name));
+            // Contador canónico: sólo tareas (no eventos) pendientes.
+            const tareasPendientes = rawTareas.filter(
+              (t) => t.activity_type === "task" && t.status === "pending",
+            ).length;
             return {
               id: s.id,
               nombre: s.name,
               slug: slugify(s.name),
               tareas,
+              tareasPendientes,
             };
           });
-        const totalTareas = subproyectos.reduce((n, s) => n + s.tareas.length, 0);
+        const totalTareas = subproyectos.reduce((n, s) => n + s.tareasPendientes, 0);
         return {
           id: p.id,
           nombre: p.name,
