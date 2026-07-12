@@ -119,7 +119,7 @@ export async function activatePushOnThisDevice(): Promise<ActivationResult> {
     try {
       subscription = await reg.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(vapidPub),
+        applicationServerKey: urlBase64ToUint8Array(vapidPub).buffer as ArrayBuffer,
       });
     } catch (err) {
       console.error("[push] subscribe failed", err);
