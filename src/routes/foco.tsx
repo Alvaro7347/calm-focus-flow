@@ -23,7 +23,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import { Clock, Calendar, Hourglass, TrendingUp, Target, Sun } from "lucide-react";
+import { Clock, Calendar, Hourglass, TrendingUp, Target, Sun, AlertCircle } from "lucide-react";
 
 import { FocoColumna } from "@/components/foco/FocoColumna";
 import { getFocusTasks } from "@/services/focusService";
@@ -123,6 +123,7 @@ function FocoPage() {
 
 
   const hoy = data?.hoy ?? [];
+  const atrasados = data?.atrasados ?? [];
   const semana = data?.estaSemana ?? [];
   const esperando = data?.esperando ?? [];
   const sinMov = data?.sinMovimiento ?? [];
@@ -166,13 +167,23 @@ function FocoPage() {
           <FocoColumna
             numero={1}
             titulo="Hoy"
-            subtitulo="Agendado para hoy + todo lo vencido"
-            descripcion="Tareas agendadas para hoy, incluyendo lo vencido de días anteriores."
+            subtitulo="Agendado para hoy"
+            descripcion="Tareas y eventos agendados para el día local de hoy."
             icono={<Clock className="h-5 w-5" />}
             tareas={hoy}
           />
+          {atrasados.length > 0 && (
+            <FocoColumna
+              numero={2}
+              titulo="Atrasados"
+              subtitulo="Pendientes de días anteriores"
+              descripcion="Tareas y eventos activos cuya fecha ya pasó. Revisa, completa, reprograma o archiva."
+              icono={<AlertCircle className="h-5 w-5" />}
+              tareas={atrasados}
+            />
+          )}
           <FocoColumna
-            numero={2}
+            numero={atrasados.length > 0 ? 3 : 2}
             titulo="Esta semana"
             subtitulo="Lo agendado el resto de la semana"
             descripcion="Tareas programadas para el resto de la semana."
@@ -180,7 +191,7 @@ function FocoPage() {
             tareas={semana}
           />
           <FocoColumna
-            numero={3}
+            numero={atrasados.length > 0 ? 4 : 3}
             titulo="Esperando"
             subtitulo="Tareas en espera o bloqueadas"
             descripcion="Tareas detenidas a la espera de una respuesta o acción externa."
@@ -188,7 +199,7 @@ function FocoPage() {
             tareas={esperando}
           />
           <FocoColumna
-            numero={4}
+            numero={atrasados.length > 0 ? 5 : 4}
             titulo="Sin movimiento"
             subtitulo="Tareas sin actividad reciente"
             descripcion="Tareas que llevan varios días sin ningún avance."

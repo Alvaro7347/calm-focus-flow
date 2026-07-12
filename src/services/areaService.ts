@@ -101,13 +101,16 @@ export async function fetchAreas(includeArchived = false): Promise<AreaRow[]> {
 export async function fetchAreasWithCounts(): Promise<Area[]> {
   const rows = await fetchAreas(false);
 
-  // Contamos tareas activas cuya cadena Subproyecto → Proyecto → Área no
-  // esté archivada. Con `!inner` + `.is("<rel>.archived_at", null)` PostgREST
-  // descarta las tareas colgadas de ramas archivadas.
+  // Contador canónico: "tarea pendiente activa" = activity_type='task'
+  // + status='pending' + no archivada, y con toda su cadena
+  // Subproyecto → Proyecto → Área también sin archivar. Excluye eventos
+  // y tareas completadas para coincidir con la etiqueta "tareas".
   const { data: taskRows, error } = await supabase
     .from("tasks")
     .select("subprojects!inner(archived_at, projects!inner(area_id, archived_at, areas!inner(archived_at)))")
     .is("archived_at", null)
+    .eq("activity_type", "task")
+    .eq("status", "pending")
     .is("subprojects.archived_at", null)
     .is("subprojects.projects.archived_at", null)
     .is("subprojects.projects.areas.archived_at", null);
