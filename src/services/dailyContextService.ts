@@ -292,8 +292,61 @@ function detectScheduleConflicts(
 // Motor puro: recibe datos y `now`, devuelve el contexto
 // ============================================================
 
+// ============================================================
+// Timezone-aware helpers (IANA)
+// ============================================================
+
+interface TzParts { y: number; m: number; d: number; H: number; M: number; }
+
+function browserTz(): string {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+  } catch {
+    return "UTC";
+  }
+}
+
+function partsInTz(d: Date, tz: string): TzParts {
+  const dtf = new Intl.DateTimeFormat("en-US", {
+    timeZone: tz,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+  const map: Record<string, string> = {};
+  for (const p of dtf.formatToParts(d)) map[p.type] = p.value;
+  return {
+    y: Number(map.year),
+    m: Number(map.month),
+    d: Number(map.day),
+    H: Number(map.hour === "24" ? "0" : map.hour),
+    M: Number(map.minute),
+  };
+}
+
+/** "YYYY-MM-DD" of `d` in tz. */
+function tzDateKey(d: Date, tz: string): string {
+  const p = partsInTz(d, tz);
+  return `${p.y}-${String(p.m).padStart(2, "0")}-${String(p.d).padStart(2, "0")}`;
+}
+
+function partOfDayFromHour(h: number): PartOfDay {
+  if (h >= 5 && h < 12) return "morning";
+  if (h >= 12 && h < 19) return "afternoon";
+  return "night";
+}
+
+// ============================================================
+// Motor puro: recibe datos y `now`, devuelve el contexto
+// ============================================================
+
 export interface DailyContextInput {
   now: Date;
+  /** IANA timezone (perfil del usuario). Fallback: TZ del navegador. */
+  timezone?: string;
   tasks: JoinedTask[];
   /** TODAS las tareas del usuario en ventana relevante (incluye archivadas hoy y completadas esta semana). */
   recentTasks: JoinedTask[];
