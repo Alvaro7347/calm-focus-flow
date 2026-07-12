@@ -448,16 +448,26 @@ function EventChip({ event, onClick }: { event: CalendarEvent; onClick: () => vo
   const pc = getProjectColor(event.proyectoColor);
   const done = event.completada;
   const evento = isEvento(event);
-  const TypeIcon = evento ? CalendarIcon : Circle;
   return (
     <button
       onClick={onClick}
       aria-label={`${ariaTypeLabel(event)}: ${event.titulo}`}
-      className={`w-full flex items-center gap-1 truncate rounded px-1.5 py-0.5 text-[10px] font-medium text-left ${
-        done ? "bg-slate-100 text-slate-400 line-through" : evento ? `${pc.soft} ${pc.text}` : `bg-white border ${pc.border} ${pc.text}`
+      className={`w-full flex items-center gap-1 truncate rounded border px-1.5 py-0.5 text-[10px] font-medium text-left ${pc.border} ${
+        done
+          ? "bg-slate-100 border-slate-200 text-slate-400 line-through"
+          : evento
+          ? "bg-violet-50 border-violet-200 text-slate-800"
+          : `bg-white border-slate-200 ${pc.text}`
       }`}
     >
-      <TypeIcon className="h-2.5 w-2.5 shrink-0 opacity-70" aria-hidden />
+      {evento && (
+        <span
+          className="inline-flex h-3 w-3 shrink-0 items-center justify-center rounded-sm bg-violet-100 text-violet-700"
+          aria-hidden
+        >
+          <CalendarIcon className="h-2 w-2" />
+        </span>
+      )}
       <span className="truncate">{event.titulo}</span>
     </button>
   );
