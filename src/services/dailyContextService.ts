@@ -124,6 +124,72 @@ export interface DailyContextAreas {
   tasksByArea: CountByEntity[];
 }
 
+// ---------- Tipos del "plan del día" (determinista) ----------
+
+export type PartOfDay = "morning" | "afternoon" | "night";
+export type DayLoad = "light" | "moderate" | "high";
+export type Priority = "high" | "medium" | "low";
+
+export interface TodayEvent {
+  taskId: string;
+  title: string;
+  startsAt: string; // ISO
+  endsAt: string | null; // ISO
+  minutesUntil: number; // negativo si ya empezó
+  priority: Priority;
+  ended: boolean;
+}
+
+export type RecommendationKind =
+  | "event_imminent"
+  | "task"
+  | "ambiguous"
+  | "night_review"
+  | "empty";
+
+export type RecommendationReasonCode =
+  | "imminent_event"
+  | "high_overdue"
+  | "high_today"
+  | "high_no_date"
+  | "medium_overdue"
+  | "medium_today"
+  | "other_today"
+  | "oldest_pending"
+  | "multiple_high"
+  | "night"
+  | "empty_day";
+
+export interface TodayPlan {
+  timezone: string;
+  localTime: string; // HH:MM
+  partOfDay: PartOfDay;
+  load: DayLoad;
+  loadCounts: {
+    events: number;
+    today: number;
+    overdue: number;
+    highNoDate: number;
+    total: number;
+  };
+  events: TodayEvent[];
+  imminentEvent: TodayEvent | null;
+  nextEvent: TodayEvent | null;
+  areaSummary: { name: string; count: number } | null;
+  recommendation: {
+    kind: RecommendationKind;
+    activity?: {
+      taskId: string;
+      title: string;
+      priority: Priority;
+      startsAt?: string;
+      dueLabel?: "overdue" | "today" | "no_date";
+    };
+    reasonCode: RecommendationReasonCode;
+    alternatives?: Array<{ taskId: string; title: string }>;
+  };
+}
+
 export interface DailyContext {
   /** ISO de la fecha local considerada "hoy". */
   date: string;
@@ -134,6 +200,8 @@ export interface DailyContext {
   projects: DailyContextProjects;
   areas: DailyContextAreas;
   alerts: DailyContextAlert[];
+  /** Plan determinista del día. Alimenta directamente la pantalla "Tu Día". */
+  today: TodayPlan;
 }
 
 // ============================================================
