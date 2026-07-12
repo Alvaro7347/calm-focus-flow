@@ -317,6 +317,7 @@ export async function fetchFocusTasks(): Promise<FocusTasks> {
   const staleThreshold = today.getTime() - SIN_MOVIMIENTO_DIAS * 24 * 60 * 60 * 1000;
 
   const hoy: Tarea[] = [];
+  const atrasados: Tarea[] = [];
   const estaSemana: Tarea[] = [];
   const esperando: Tarea[] = [];
   const sinMovimiento: Tarea[] = [];
@@ -328,32 +329,45 @@ export async function fetchFocusTasks(): Promise<FocusTasks> {
     }
     // pending desde aquí
     const starts = row.starts_at ? new Date(row.starts_at) : null;
-    if (starts) {
-      const day = startOfLocalDay(starts).getTime();
-      if (day <= today.getTime()) {
+    const ends = row.ends_at ? new Date(row.ends_at) : null;
+    // Día efectivo: para eventos, el día en que aún ocurre (fin);
+    // para tareas, el día de starts_at. Esto evita que un evento
+    // que termina hoy salte a "Atrasados" durante el mismo día.
+    const referenceDate =
+      row.activity_type === "event" && ends ? ends : starts;
+    if (referenceDate) {
+      const day = startOfLocalDay(referenceDate).getTime();
+      if (day < today.getTime()) {
+        atrasados.push(toTarea(row, "atrasados"));
+        continue;
+      }
+      if (day === today.getTime()) {
         hoy.push(toTarea(row, "hoy"));
         continue;
       }
-      if (day >= tomorrow.getTime() && starts.getTime() <= endOfWeek.getTime()) {
+      if (day >= tomorrow.getTime() && day <= endOfWeek.getTime()) {
         estaSemana.push(toTarea(row, "esta_semana"));
         continue;
       }
+      // Programada más allá de esta semana: no aparece en FOCO
+      // (Calendar la muestra en su vista propia).
+      continue;
     }
-    // Sin fecha, o programada más allá de esta semana pero sin actividad reciente.
+    // Sin fecha
     const updatedMs = new Date(row.updated_at).getTime();
-    if (!starts && updatedMs <= staleThreshold) {
+    if (updatedMs <= staleThreshold) {
       sinMovimiento.push(toTarea(row, "sin_movimiento"));
-    } else if (!starts) {
-      // pending sin fecha y con actividad reciente: la dejamos en sin_movimiento
-      // igualmente para que el usuario no la pierda de vista.
+    } else {
+      // pending sin fecha y con actividad reciente: la dejamos
+      // en sin_movimiento igualmente para que no se pierda.
       sinMovimiento.push(toTarea(row, "sin_movimiento"));
     }
-    // pending programada más allá de esta semana: aún no aparece en FOCO
-    // (se muestra en Calendar, que ya lee desde Supabase).
-
   }
 
-  return { hoy, estaSemana, esperando, sinMovimiento };
+  // Atrasados: más antiguos primero.
+  atrasados.sort((a, b) => (a.fechaProgramada ?? "").localeCompare(b.fechaProgramada ?? ""));
+
+  return { hoy, atrasados, estaSemana, esperando, sinMovimiento };
 }
 
 // ============================================================
