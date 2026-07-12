@@ -4,19 +4,17 @@
  *
  * Contenedor visual del formulario `TaskDetailForm`.
  *
- * UX:
- * - Desktop (≥ 768px): Drawer lateral derecho (Sheet side="right"),
- *   sin cambiar la URL ni perder el contexto de la pantalla.
- * - Mobile  (< 768px): Bottom Sheet (Sheet side="bottom"),
- *   con la misma funcionalidad.
+ * Modos:
+ * - "create":    formulario vacío.
+ * - "edit":      carga la tarea/evento por `taskId` y actualiza.
+ * - "duplicate": carga la tarea/evento por `taskId` y usa sus
+ *                datos como valores iniciales para crear una copia
+ *                independiente (llama a `createTask`, nunca a
+ *                `updateTask`). Cancelar no crea nada.
  *
- * Un mismo componente sirve para crear y editar tareas. En modo
- * `edit` se pasa `taskId` y el sheet resuelve internamente
- * `TaskWithHierarchy` vía `taskService.fetchTaskForEdit()`.
- *
- * Este componente es el que abrirán FOCO, Calendar y Tablero en
- * iteraciones posteriores. Su contrato es intencionalmente simple:
- *   <TaskDetailSheet open onOpenChange={...} mode="edit" taskId={...} />
+ * El paso edit → duplicate se maneja internamente: el usuario
+ * pulsa "Duplicar" dentro del formulario en modo edit y este
+ * componente cambia su modo interno sin cerrar el sheet.
  * ========================================================
  */
 import { useEffect, useState } from "react";
@@ -37,7 +35,7 @@ export interface TaskDetailSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   mode: TaskDetailMode;
-  /** Requerido cuando mode = "edit". */
+  /** Requerido cuando mode = "edit" o "duplicate". */
   taskId?: string;
 }
 
@@ -52,13 +50,27 @@ export function TaskDetailSheet({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Cargar la tarea en modo edit cada vez que se abre con un id nuevo.
+  // Modo interno: permite cambiar de "edit" a "duplicate" sin cerrar
+  // el sheet ni perder los datos ya cargados.
+  const [effectiveMode, setEffectiveMode] = useState<TaskDetailMode>(mode);
   useEffect(() => {
-    if (!open || mode !== "edit" || !taskId) {
-      setLoadedTask(null);
-      setError(null);
+    setEffectiveMode(mode);
+  }, [mode, open, taskId]);
+
+  const needsLoad = effectiveMode === "edit" || effectiveMode === "duplicate";
+
+  // Cargar la tarea siempre que el modo requiera datos previos.
+  useEffect(() => {
+    if (!open || !needsLoad || !taskId) {
+      if (!open) {
+        setLoadedTask(null);
+        setError(null);
+      }
       return;
     }
+    // Si ya tenemos la tarea correcta cargada (p. ej. tras cambiar de
+    // edit → duplicate), no volvemos a pedirla.
+    if (loadedTask && loadedTask.task.id === taskId) return;
     let cancelled = false;
     setLoading(true);
     setError(null);
@@ -78,19 +90,31 @@ export function TaskDetailSheet({
     return () => {
       cancelled = true;
     };
-  }, [open, mode, taskId]);
+  }, [open, needsLoad, taskId, loadedTask]);
 
   const side = isMobile ? "bottom" : "right";
-  // Bottom sheet ~90vh en mobile; right drawer ~480px en desktop.
   const contentClass = isMobile
     ? "h-[90vh] w-full rounded-t-2xl p-0 flex flex-col sm:max-w-none"
     : "w-full sm:max-w-md md:max-w-lg p-0 flex flex-col";
 
-  const title = mode === "edit" ? "Detalle de tarea" : "Nueva tarea";
+  const isEvento = loadedTask?.task.activity_type === "event";
+  const title =
+    effectiveMode === "duplicate"
+      ? isEvento
+        ? "Duplicar evento"
+        : "Duplicar tarea"
+      : effectiveMode === "edit"
+        ? "Detalle de tarea"
+        : "Nueva tarea";
   const description =
-    mode === "edit"
-      ? "Edita cualquier campo. Los cambios se guardan al pulsar Guardar."
-      : "Añade una tarea a tu espacio. La organizarás con calma.";
+    effectiveMode === "duplicate"
+      ? "Estás creando una copia independiente. La original no se modifica."
+      : effectiveMode === "edit"
+        ? "Edita cualquier campo. Los cambios se guardan al pulsar Guardar."
+        : "Añade una tarea a tu espacio. La organizarás con calma.";
+
+  const showForm =
+    effectiveMode === "create" || (needsLoad && loadedTask && !loading);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -101,18 +125,23 @@ export function TaskDetailSheet({
         </SheetHeader>
 
         <div className="flex-1 overflow-hidden px-6 py-4">
-          {mode === "edit" && loading && (
-            <p className="text-sm text-muted-foreground">Cargando tarea…</p>
+          {needsLoad && loading && (
+            <p className="text-sm text-muted-foreground">Cargando…</p>
           )}
-          {mode === "edit" && error && (
+          {needsLoad && error && (
             <p className="text-sm text-destructive">{error}</p>
           )}
-          {(mode === "create" || (mode === "edit" && loadedTask && !loading)) && (
+          {showForm && (
             <TaskDetailForm
-              mode={mode}
+              mode={effectiveMode}
               initialTask={loadedTask}
               onSaved={() => onOpenChange(false)}
               onCancel={() => onOpenChange(false)}
+              onRequestDuplicate={
+                effectiveMode === "edit"
+                  ? () => setEffectiveMode("duplicate")
+                  : undefined
+              }
             />
           )}
         </div>
