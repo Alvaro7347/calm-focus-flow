@@ -73,6 +73,14 @@ function CalendarioPage() {
   const [anchor, setAnchor] = useState<Date>(new Date());
   const [selected, setSelected] = useState<CalendarEvent | null>(null);
   const isMobile = useIsMobile();
+  const { event: eventFromUrl } = Route.useSearch();
+  const navigate = useNavigate();
+
+  // Deep-link desde notificación push: abrimos el detalle del evento
+  // indicado en ?event=... y limpiamos el search param al cerrarlo.
+  const clearEventParam = () => {
+    navigate({ to: "/calendario", search: {}, replace: true });
+  };
 
   // Rango visible según la vista actual. calendarService devuelve
   // sólo los eventos que solapan con este rango.
