@@ -811,7 +811,10 @@ const JOIN_SELECT =
  * - Widgets/Dashboard/Notificaciones (renderizado directo).
  * - Integraciones externas vía server functions.
  */
-export async function getDailyContext(now: Date = new Date()): Promise<DailyContext> {
+export async function getDailyContext(
+  now: Date = new Date(),
+  timezone?: string,
+): Promise<DailyContext> {
   const today = startOfLocalDay(now);
   const weekStart = startOfWeekLocal(now);
   const windowStart = new Date(
