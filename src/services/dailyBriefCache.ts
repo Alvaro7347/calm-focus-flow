@@ -138,10 +138,11 @@ export async function getOrLoadTodayBrief(options?: {
 export function hasShownTuDiaToday(
   userId: string | null | undefined,
   now: Date = new Date(),
+  timezone?: string,
 ): boolean {
   if (!userId) return true;
   try {
-    return localStorage.getItem(shownKey(userId)) === todayISO(now);
+    return localStorage.getItem(shownKey(userId)) === todayISO(now, timezone);
   } catch {
     return false;
   }
@@ -150,15 +151,16 @@ export function hasShownTuDiaToday(
 export function markTuDiaShownToday(
   userId: string | null | undefined,
   now: Date = new Date(),
+  timezone?: string,
 ) {
   if (!userId) return;
   try {
-    localStorage.setItem(shownKey(userId), todayISO(now));
+    localStorage.setItem(shownKey(userId), todayISO(now, timezone));
   } catch {
     /* silencioso */
   }
 }
 
-export function todayISODate(now?: Date): string {
-  return todayISO(now);
+export function todayISODate(now?: Date, timezone?: string): string {
+  return todayISO(now, timezone);
 }
