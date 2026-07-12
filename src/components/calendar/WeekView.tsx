@@ -35,7 +35,7 @@
 import { useMemo } from "react";
 import { addDays, format, isSameDay, startOfWeek } from "date-fns";
 import { es } from "date-fns/locale";
-import { Calendar as CalendarIcon, Circle } from "lucide-react";
+import { Calendar as CalendarIcon } from "lucide-react";
 import type { CalendarEvent } from "@/services/calendarService";
 import { getProjectColor } from "@/lib/projectIdentity";
 import {
