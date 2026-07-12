@@ -28,8 +28,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { addDays, format, isSameDay, startOfWeek } from "date-fns";
 import { es } from "date-fns/locale";
+import { Calendar as CalendarIcon, Circle } from "lucide-react";
 import type { CalendarEvent } from "@/services/calendarService";
 import { getProjectColor } from "@/lib/projectIdentity";
+import { isEvento, scheduleText, typeLabel, ariaTypeLabel } from "@/lib/activityDisplay";
 
 interface Props {
   anchor: Date;
