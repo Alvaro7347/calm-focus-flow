@@ -17,6 +17,13 @@ interface Props {
   tarea: Tarea;
 }
 
+function formatShortDate(iso?: string): string {
+  if (!iso) return "";
+  const d = new Date(`${iso}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("es-ES", { day: "numeric", month: "short" });
+}
+
 function Breadcrumb({ tarea }: Props) {
   const parts = [tarea.area, tarea.proyecto, tarea.subproyecto].filter(Boolean);
   const color = getProjectColor(tarea.proyectoColor);
