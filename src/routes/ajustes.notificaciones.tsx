@@ -5,7 +5,7 @@ import { Loader2, Bell, BellOff, Smartphone, ShieldAlert, CheckCircle2 } from "l
 import { SettingsSubpage } from "@/components/settings/SettingsSubpage";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import {
   DEFAULT_PREFS,
   getMyNotificationPrefs,
