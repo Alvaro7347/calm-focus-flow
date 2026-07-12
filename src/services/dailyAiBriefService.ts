@@ -186,14 +186,13 @@ export async function getDailyBrief(options?: {
   }
 
   const forcedStress = loadToStress(context.today.load);
+  const aiError = result.ok ? undefined : result.error;
   if (result.ok) {
-    // Consistencia dura entre indicador y texto.
     result = {
       ...result,
       brief: { ...result.brief, stressLevel: forcedStress },
     };
   } else {
-    // Fallback determinista: nunca dejamos la pantalla vacía.
     result = {
       ok: true,
       brief: buildFallbackBrief(context),
@@ -204,8 +203,8 @@ export async function getDailyBrief(options?: {
   appendLog({
     at: new Date().toISOString(),
     contextDate: context.date,
-    ok: result.ok,
-    error: result.ok ? undefined : result.error,
+    ok: aiError === undefined,
+    error: aiError,
     brief: result.ok ? result.brief : undefined,
   });
 
