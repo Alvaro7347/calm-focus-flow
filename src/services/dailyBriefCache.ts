@@ -27,7 +27,20 @@ import { getDailyBrief, type DailyBrief, type DailyBriefResult } from "@/service
 const BRIEF_PREFIX = "calmapp.tuDia.brief.";   // + {userId}.{date}
 const SHOWN_PREFIX = "calmapp.tuDia.shown.";   // + {userId}
 
-function todayISO(now: Date = new Date()): string {
+function todayISO(now: Date = new Date(), timezone?: string): string {
+  if (timezone) {
+    try {
+      const fmt = new Intl.DateTimeFormat("en-CA", {
+        timeZone: timezone,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      });
+      return fmt.format(now); // en-CA emits YYYY-MM-DD
+    } catch {
+      /* fallback local */
+    }
+  }
   const y = now.getFullYear();
   const m = String(now.getMonth() + 1).padStart(2, "0");
   const d = String(now.getDate()).padStart(2, "0");
