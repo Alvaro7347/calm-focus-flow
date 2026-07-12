@@ -30,7 +30,7 @@
  */
 import { useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Archive, Plus } from "lucide-react";
+import { Archive, Copy, Plus } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -94,16 +94,18 @@ import {
   type EventConflict,
 } from "@/services/eventConflictService";
 
-export type TaskDetailMode = "create" | "edit";
+export type TaskDetailMode = "create" | "edit" | "duplicate";
 
 export interface TaskDetailFormProps {
   mode: TaskDetailMode;
-  /** Requerido en modo `edit`. Ignorado en modo `create`. */
+  /** Requerido en modo `edit` y `duplicate`. Ignorado en modo `create`. */
   initialTask?: TaskWithHierarchy | null;
   /** Se llama tras guardar o archivar con éxito. Útil para cerrar el sheet. */
   onSaved?: (task: TaskRow) => void;
   /** Se llama cuando el usuario cancela. */
   onCancel?: () => void;
+  /** El usuario pide duplicar la actividad actual (sólo en modo edit). */
+  onRequestDuplicate?: () => void;
 }
 
 type InlineKind = "area" | "project" | "subproject" | null;
@@ -131,9 +133,11 @@ export function TaskDetailForm({
   initialTask,
   onSaved,
   onCancel,
+  onRequestDuplicate,
 }: TaskDetailFormProps) {
   const queryClient = useQueryClient();
   const isEdit = mode === "edit";
+  const isDuplicate = mode === "duplicate";
 
   // ---------- Estado del formulario ----------
   const initialSplit = splitIsoToLocalDateTime(initialTask?.task.starts_at ?? null);
@@ -147,9 +151,14 @@ export function TaskDetailForm({
   const [priority, setPriority] = useState<TaskPriority>(
     (initialTask?.task.priority as TaskPriority | undefined) ?? "medium",
   );
-  const [status, setStatus] = useState<TaskStatus>(
-    (initialTask?.task.status as TaskStatus | undefined) ?? "pending",
-  );
+  // En modo duplicate: `completed` → `pending`; `waiting` se conserva; el resto queda `pending`.
+  const initialStatus: TaskStatus = (() => {
+    const src = initialTask?.task.status as TaskStatus | undefined;
+    if (!src) return "pending";
+    if (isDuplicate) return src === "waiting" ? "waiting" : "pending";
+    return src;
+  })();
+  const [status, setStatus] = useState<TaskStatus>(initialStatus);
   const [fecha, setFecha] = useState(initialSplit.fecha);
   const [hora, setHora] = useState(initialSplit.hora);
   const [horaFin, setHoraFin] = useState(initialEndSplit.hora);
@@ -532,7 +541,11 @@ export function TaskDetailForm({
           estimated_duration_min: duracionNum,
         };
         saved = await createTask(input);
-        toast.success(isEvento ? "Evento creado." : "Tarea creada.");
+        if (isDuplicate) {
+          toast.success(isEvento ? "Copia del evento creada." : "Copia de la tarea creada.");
+        } else {
+          toast.success(isEvento ? "Evento creado." : "Tarea creada.");
+        }
       }
       await invalidateAll();
       onSaved?.(saved);
@@ -637,6 +650,14 @@ export function TaskDetailForm({
                 : "Unidad flexible. Puede tener fecha o quedar sin programar."}
             </p>
           </section>
+
+          {isDuplicate && (
+            <p className="rounded-lg border border-dashed border-primary/30 bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
+              Revisa la fecha y los datos antes de crear la copia.
+            </p>
+          )}
+
+
 
           {/* 1. Información */}
           <section className="space-y-4">
@@ -962,26 +983,45 @@ export function TaskDetailForm({
             disabled={saving || archiving}
           >
             {saving
-              ? "Guardando..."
-              : isEdit
-                ? "Guardar cambios"
-                : isEvento
-                  ? "Guardar evento"
-                  : "Guardar tarea"}
+              ? isDuplicate
+                ? "Creando copia..."
+                : "Guardando..."
+              : isDuplicate
+                ? "Crear copia"
+                : isEdit
+                  ? "Guardar cambios"
+                  : isEvento
+                    ? "Guardar evento"
+                    : "Guardar tarea"}
           </Button>
         </div>
-        {isEdit && initialTask && !initialTask.task.archived_at && (
+        {isEdit && initialTask && !initialTask.task.archived_at && onRequestDuplicate && (
           <Button
             type="button"
             variant="ghost"
-            className="text-muted-foreground hover:text-destructive"
-            onClick={() => setConfirmArchive(true)}
+            className="justify-center text-muted-foreground hover:text-foreground"
+            onClick={onRequestDuplicate}
             disabled={saving || archiving}
           >
-            <Archive className="h-4 w-4" /> Archivar tarea
+            <Copy className="h-4 w-4" />
+            {isEvento ? "Duplicar evento" : "Duplicar tarea"}
           </Button>
         )}
+        {isEdit && initialTask && !initialTask.task.archived_at && (
+          <div className="mt-2 border-t pt-2">
+            <Button
+              type="button"
+              variant="ghost"
+              className="w-full justify-center text-muted-foreground hover:text-destructive"
+              onClick={() => setConfirmArchive(true)}
+              disabled={saving || archiving}
+            >
+              <Archive className="h-4 w-4" /> Archivar tarea
+            </Button>
+          </div>
+        )}
       </div>
+
 
       {/* Dialog: creación inline de Área / Proyecto / Subproyecto */}
       <Dialog
