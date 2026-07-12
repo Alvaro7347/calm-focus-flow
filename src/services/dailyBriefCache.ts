@@ -70,7 +70,7 @@ export function readCachedBrief(
   if (!userId) return null;
   const key = date ?? todayISO(new Date(), timezone);
   try {
-    const raw = localStorage.getItem(briefKey(userId, date));
+    const raw = localStorage.getItem(briefKey(userId, key));
     if (!raw) return null;
     const parsed = JSON.parse(raw) as CachedBrief;
     return parsed.brief ?? null;
