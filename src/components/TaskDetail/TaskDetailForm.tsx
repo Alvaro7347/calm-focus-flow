@@ -30,7 +30,7 @@
  */
 import { useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Archive, Plus } from "lucide-react";
+import { Archive, Copy, Plus } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
