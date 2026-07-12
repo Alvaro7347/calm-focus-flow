@@ -560,6 +560,203 @@ export function buildDailyContext(input: DailyContextInput): DailyContext {
     }
   }
 
+
+  // ============================================================
+  // Plan determinista del día (TodayPlan)
+  //
+  // Reglas obligatorias:
+  //  - Excluye `completed`, `archived`, `waiting`.
+  //  - Excluye Eventos ya terminados como acción inmediata.
+  //  - Jerarquía: Eventos inminentes → Tareas alta vencida → alta hoy →
+  //    alta sin fecha → media vencida → media hoy → otras hoy.
+  //  - Carga se calcula solo con actividades relevantes.
+  //  - Adaptación por hora local (tz IANA).
+  // ============================================================
+  const todayKey = tzDateKey(now, tz);
+  const nowP = partsInTz(now, tz);
+  const localTime = `${String(nowP.H).padStart(2, "0")}:${String(nowP.M).padStart(2, "0")}`;
+  const partOfDay = partOfDayFromHour(nowP.H);
+
+  const planEvents: TodayEvent[] = [];
+  let tasksTodayCount = 0;
+  let overduePlan = 0;
+  let highNoDateCount = 0;
+  const taskCandidates: Array<{ t: JoinedTask; tier: number }> = [];
+
+  for (const t of activeTasks) {
+    const isEvent = t.activity_type === "event";
+    const isWaiting = t.status === "waiting";
+    const starts = t.starts_at ? new Date(t.starts_at) : null;
+    const startsKey = starts ? tzDateKey(starts, tz) : null;
+    const isOverdueP = startsKey ? startsKey < todayKey : false;
+    const isTodayP = startsKey === todayKey;
+
+    if (isEvent) {
+      if (isTodayP && starts) {
+        const endsAt = t.ends_at ? new Date(t.ends_at) : null;
+        const impliedEnd =
+          endsAt?.getTime() ??
+          starts.getTime() + (t.estimated_duration_min ?? 60) * 60000;
+        const ended = impliedEnd <= now.getTime();
+        planEvents.push({
+          taskId: t.id,
+          title: t.title,
+          startsAt: starts.toISOString(),
+          endsAt: endsAt ? endsAt.toISOString() : null,
+          minutesUntil: Math.round((starts.getTime() - now.getTime()) / 60000),
+          priority: (t.priority ?? "medium") as Priority,
+          ended,
+        });
+      }
+      continue;
+    }
+    if (isWaiting) continue;
+
+    if (isTodayP) tasksTodayCount++;
+    else if (isOverdueP) overduePlan++;
+    else if (!starts && t.priority === "high") highNoDateCount++;
+
+    const relevant = isTodayP || isOverdueP || (!starts && t.priority === "high");
+    if (!relevant) continue;
+
+    const p = (t.priority ?? "medium") as Priority;
+    let tier = 99;
+    if (p === "high" && isOverdueP) tier = 1;
+    else if (p === "high" && isTodayP) tier = 2;
+    else if (p === "high" && !starts) tier = 3;
+    else if (p === "medium" && isOverdueP) tier = 4;
+    else if (p === "medium" && isTodayP) tier = 5;
+    else if (isTodayP) tier = 6;
+    taskCandidates.push({ t, tier });
+  }
+
+  taskCandidates.sort(
+    (a, b) =>
+      a.tier - b.tier ||
+      new Date(a.t.updated_at).getTime() - new Date(b.t.updated_at).getTime(),
+  );
+
+  planEvents.sort((a, b) => a.startsAt.localeCompare(b.startsAt));
+  const upcomingEvents = planEvents.filter((e) => !e.ended && e.minutesUntil > 0);
+  const nextEventPlan = upcomingEvents[0] ?? null;
+  const imminentEvent =
+    nextEventPlan && nextEventPlan.minutesUntil <= 60 ? nextEventPlan : null;
+
+  const activeEventCount = planEvents.filter((e) => !e.ended).length;
+  const totalRelevant =
+    activeEventCount + tasksTodayCount + overduePlan + highNoDateCount;
+  const load: DayLoad =
+    totalRelevant <= 2 ? "light" : totalRelevant <= 6 ? "moderate" : "high";
+
+  const tierReason: Record<number, RecommendationReasonCode> = {
+    1: "high_overdue",
+    2: "high_today",
+    3: "high_no_date",
+    4: "medium_overdue",
+    5: "medium_today",
+    6: "other_today",
+  };
+  const tierDue: Record<number, "overdue" | "today" | "no_date"> = {
+    1: "overdue",
+    2: "today",
+    3: "no_date",
+    4: "overdue",
+    5: "today",
+    6: "today",
+  };
+
+  let recommendation: TodayPlan["recommendation"];
+  if (partOfDay === "night") {
+    if (imminentEvent) {
+      recommendation = {
+        kind: "event_imminent",
+        activity: {
+          taskId: imminentEvent.taskId,
+          title: imminentEvent.title,
+          priority: imminentEvent.priority,
+          startsAt: imminentEvent.startsAt,
+        },
+        reasonCode: "imminent_event",
+      };
+    } else {
+      recommendation = { kind: "night_review", reasonCode: "night" };
+    }
+  } else if (imminentEvent) {
+    recommendation = {
+      kind: "event_imminent",
+      activity: {
+        taskId: imminentEvent.taskId,
+        title: imminentEvent.title,
+        priority: imminentEvent.priority,
+        startsAt: imminentEvent.startsAt,
+      },
+      reasonCode: "imminent_event",
+    };
+  } else if (taskCandidates.length === 0) {
+    if (nextEventPlan) {
+      recommendation = {
+        kind: "event_imminent",
+        activity: {
+          taskId: nextEventPlan.taskId,
+          title: nextEventPlan.title,
+          priority: nextEventPlan.priority,
+          startsAt: nextEventPlan.startsAt,
+        },
+        reasonCode: "imminent_event",
+      };
+    } else {
+      recommendation = { kind: "empty", reasonCode: "empty_day" };
+    }
+  } else {
+    const first = taskCandidates[0];
+    const second = taskCandidates[1];
+    if (second && first.tier === second.tier && first.tier <= 3) {
+      recommendation = {
+        kind: "ambiguous",
+        reasonCode: "multiple_high",
+        alternatives: taskCandidates
+          .filter((c) => c.tier === first.tier)
+          .slice(0, 3)
+          .map((c) => ({ taskId: c.t.id, title: c.t.title })),
+      };
+    } else {
+      recommendation = {
+        kind: "task",
+        activity: {
+          taskId: first.t.id,
+          title: first.t.title,
+          priority: (first.t.priority ?? "medium") as Priority,
+          startsAt: first.t.starts_at ?? undefined,
+          dueLabel: tierDue[first.tier] ?? "today",
+        },
+        reasonCode: tierReason[first.tier] ?? "other_today",
+      };
+    }
+  }
+
+  const topArea = tasksByAreaArr[0];
+  const todayPlan: TodayPlan = {
+    timezone: tz,
+    localTime,
+    partOfDay,
+    load,
+    loadCounts: {
+      events: activeEventCount,
+      today: tasksTodayCount,
+      overdue: overduePlan,
+      highNoDate: highNoDateCount,
+      total: totalRelevant,
+    },
+    events: planEvents,
+    imminentEvent,
+    nextEvent: nextEventPlan,
+    areaSummary:
+      topArea && topArea.count >= 2
+        ? { name: topArea.name, count: topArea.count }
+        : null,
+    recommendation,
+  };
+
   return {
     date: isoDate(today),
     generatedAt: now.toISOString(),
@@ -590,11 +787,10 @@ export function buildDailyContext(input: DailyContextInput): DailyContext {
       tasksByArea: tasksByAreaArr,
     },
     alerts,
-    // Sanity: mantener referencia estable de `areaById`/`projectById` para
-    // futuros consumidores no es necesario; los IDs viajan en el objeto.
+    today: todayPlan,
   } satisfies DailyContext;
 
-  // Referencias silenciadas para lint si el bundler poda las Maps.
+  // Silenciar lint si el bundler poda las Maps.
   void areaById;
   void projectById;
 }
