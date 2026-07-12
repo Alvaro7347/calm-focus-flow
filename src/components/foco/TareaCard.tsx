@@ -41,15 +41,19 @@ export function TareaCard({ tarea }: Props) {
   const base = `w-full text-left rounded-xl border border-slate-200 border-l-4 ${areaSwatch.border} bg-white p-4 transition-shadow hover:shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300`;
 
   const inner = (() => {
-    if (tarea.categoriaFoco === "hoy") {
+    if (tarea.categoriaFoco === "hoy" || tarea.categoriaFoco === "atrasados") {
+      const leftLabel =
+        tarea.categoriaFoco === "atrasados"
+          ? formatShortDate(tarea.fechaProgramada)
+          : tarea.horaInicio;
       return (
         <div className="flex gap-4">
-          <div className="text-sm text-slate-500 w-12 shrink-0 pt-0.5">{tarea.horaInicio}</div>
+          <div className="text-sm text-slate-500 w-12 shrink-0 pt-0.5">{leftLabel}</div>
           <div className="min-w-0 flex-1">
             <div className="text-sm font-semibold text-slate-900 leading-snug">{tarea.titulo}</div>
             <Breadcrumb tarea={tarea} />
-            {tarea.vencida && (
-              <div className="text-xs text-slate-400 mt-1">Pendiente desde ayer</div>
+            {tarea.categoriaFoco === "atrasados" && (
+              <div className="text-xs text-rose-500 mt-1">Atrasada</div>
             )}
           </div>
         </div>
