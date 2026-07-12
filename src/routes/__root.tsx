@@ -217,6 +217,29 @@ function RootComponent() {
     };
   }, [queryClient]);
 
+  // Deep-link desde el Service Worker: cuando el usuario toca una
+  // notificación push y la app ya estaba abierta, el SW envía
+  // `calmapp:navigate` con la URL destino. Navegamos in-app sin recargar
+  // para no descartar los search params (p. ej. ?event=<id>).
+  // El ícono de la home screen NO dispara este mensaje: sigue entrando
+  // por la ruta por defecto.
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) return;
+    const onMessage = (event: MessageEvent) => {
+      const data = event.data;
+      if (!data || data.type !== "calmapp:navigate" || typeof data.to !== "string") return;
+      try {
+        const url = new URL(data.to, window.location.origin);
+        if (url.origin !== window.location.origin) return;
+        navigate({ to: (url.pathname + url.search) as string, replace: false });
+      } catch {
+        /* ignore */
+      }
+    };
+    navigator.serviceWorker.addEventListener("message", onMessage);
+    return () => navigator.serviceWorker.removeEventListener("message", onMessage);
+  }, [navigate]);
+
   // Enforcement de rutas: si no hay sesión y la ruta no es pública → /login.
   // Si hay sesión y está en una pantalla de auth → /foco.
   useEffect(() => {

@@ -41,8 +41,16 @@ import { MonthView } from "@/components/calendar/MonthView";
 import { EventDetail } from "@/components/calendar/EventDetail";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { TaskDetailSheet } from "@/components/TaskDetail";
+import { useNavigate } from "@tanstack/react-router";
+
+interface CalendarioSearch {
+  event?: string;
+}
 
 export const Route = createFileRoute("/calendario")({
+  validateSearch: (search: Record<string, unknown>): CalendarioSearch => ({
+    event: typeof search.event === "string" ? search.event : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Calendario — CalmApp" },
@@ -65,6 +73,14 @@ function CalendarioPage() {
   const [anchor, setAnchor] = useState<Date>(new Date());
   const [selected, setSelected] = useState<CalendarEvent | null>(null);
   const isMobile = useIsMobile();
+  const { event: eventFromUrl } = Route.useSearch();
+  const navigate = useNavigate();
+
+  // Deep-link desde notificación push: abrimos el detalle del evento
+  // indicado en ?event=... y limpiamos el search param al cerrarlo.
+  const clearEventParam = () => {
+    navigate({ to: "/calendario", search: {}, replace: true });
+  };
 
   // Rango visible según la vista actual. calendarService devuelve
   // sólo los eventos que solapan con este rango.
@@ -145,10 +161,21 @@ function CalendarioPage() {
       {/* Tareas CalmApp → TaskDetailSheet (edición completa).
           Eventos externos (p. ej. Google Calendar en el futuro) → EventDetail (solo lectura). */}
       <TaskDetailSheet
-        open={!!selected && selected.source === "calmapp"}
-        onOpenChange={(o) => { if (!o) setSelected(null); }}
+        open={(!!selected && selected.source === "calmapp") || !!eventFromUrl}
+        onOpenChange={(o) => {
+          if (!o) {
+            setSelected(null);
+            if (eventFromUrl) clearEventParam();
+          }
+        }}
         mode="edit"
-        taskId={selected?.source === "calmapp" ? selected.id : undefined}
+        taskId={
+          eventFromUrl
+            ? eventFromUrl
+            : selected?.source === "calmapp"
+              ? selected.id
+              : undefined
+        }
       />
       <EventDetail
         event={selected && selected.source !== "calmapp" ? selected : null}
