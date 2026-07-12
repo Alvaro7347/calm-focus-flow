@@ -46,7 +46,7 @@ export function SubproyectoAccordion({ areaSlug, proyectoSlug, sub, open }: Prop
           className={`h-4 w-4 text-slate-400 transition-transform ${open ? "rotate-90" : ""}`}
         />
         <span className="text-sm text-slate-700 flex-1 truncate">{sub.nombre}</span>
-        <span className="text-xs text-slate-400">{sub.tareas.length}</span>
+        <span className="text-xs text-slate-400">{sub.tareasPendientes}</span>
       </Link>
 
       {open && (

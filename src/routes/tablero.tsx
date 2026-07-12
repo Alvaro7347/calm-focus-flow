@@ -153,7 +153,9 @@ function AreaPicker({ tree }: { tree: AreaNode[] }) {
                 className="block rounded-xl border border-slate-200 bg-white px-4 py-3 hover:border-indigo-200 hover:bg-indigo-50/40 transition-colors"
               >
                 <div className="text-sm font-medium text-slate-800">{a.nombre}</div>
-                <div className="text-xs text-slate-500 mt-0.5">{a.totalTareas} tareas</div>
+                <div className="text-xs text-slate-500 mt-0.5">
+                  {a.totalTareas === 1 ? "1 tarea" : `${a.totalTareas} tareas`}
+                </div>
               </Link>
             </li>
           ))}
