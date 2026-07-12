@@ -41,8 +41,16 @@ import { MonthView } from "@/components/calendar/MonthView";
 import { EventDetail } from "@/components/calendar/EventDetail";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { TaskDetailSheet } from "@/components/TaskDetail";
+import { useNavigate } from "@tanstack/react-router";
+
+interface CalendarioSearch {
+  event?: string;
+}
 
 export const Route = createFileRoute("/calendario")({
+  validateSearch: (search: Record<string, unknown>): CalendarioSearch => ({
+    event: typeof search.event === "string" ? search.event : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Calendario — CalmApp" },
