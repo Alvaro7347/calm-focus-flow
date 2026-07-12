@@ -35,7 +35,7 @@
 import { useMemo } from "react";
 import { addDays, format, isSameDay, startOfWeek } from "date-fns";
 import { es } from "date-fns/locale";
-import { Calendar as CalendarIcon, Circle } from "lucide-react";
+import { Calendar as CalendarIcon } from "lucide-react";
 import type { CalendarEvent } from "@/services/calendarService";
 import { getProjectColor } from "@/lib/projectIdentity";
 import {
@@ -402,15 +402,14 @@ function EventBlock({
 
   const done = event.completada;
   const evento = isEvento(event);
-  const TypeIcon = evento ? CalendarIcon : Circle;
   const sched = scheduleText(event);
-  // Evento → fondo tenue (`pc.soft`) para señalar bloque reservado.
-  // Tarea  → fondo blanco con borde lateral del área, transmite flexibilidad.
+  // Evento → fondo violeta suave + borde violeta tenue; señala compromiso fijo.
+  // Tarea  → fondo blanco con franja del área, transmite flexibilidad.
   const shellClass = done
-    ? "bg-slate-50 border-l-slate-300 text-slate-400 line-through"
+    ? `bg-slate-50 ${pc.border} text-slate-400 line-through border-slate-200`
     : evento
-    ? `${pc.soft} ${pc.border} ${pc.text}`
-    : `bg-white ${pc.border} text-slate-800`;
+    ? `bg-violet-50 border-violet-200 ${pc.border} text-slate-800`
+    : `bg-white border-slate-200 ${pc.border} text-slate-800`;
   return (
     <button
       onClick={onClick}
@@ -421,10 +420,17 @@ function EventBlock({
         left: `${placement.leftPct}%`,
         width: `${placement.widthPct}%`,
       }}
-      className={`pointer-events-auto absolute rounded-md ${evento ? "border border-l-2" : "border border-l-2 border-slate-200"} px-2 py-1 text-left text-[11px] leading-tight overflow-hidden transition-shadow hover:shadow-sm ${shellClass}`}
+      className={`pointer-events-auto absolute rounded-md border border-l-2 px-2 py-1 text-left text-[11px] leading-tight overflow-hidden transition-shadow hover:shadow-sm ${shellClass}`}
     >
       <div className="flex items-center gap-1">
-        <TypeIcon className="h-3 w-3 shrink-0 opacity-70" aria-hidden />
+        {evento && (
+          <span
+            className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded bg-violet-100 text-violet-700"
+            aria-hidden
+          >
+            <CalendarIcon className="h-2.5 w-2.5" />
+          </span>
+        )}
         <span
           className={`font-medium ${placement.twoLines ? "line-clamp-2" : "truncate"}`}
         >
@@ -432,7 +438,7 @@ function EventBlock({
         </span>
       </div>
       {placement.twoLines && sched && (
-        <div className="mt-0.5 text-[10px] opacity-70 truncate">{sched}</div>
+        <div className={`mt-0.5 text-[10px] truncate ${evento ? "text-violet-800" : "opacity-70"}`}>{sched}</div>
       )}
     </button>
   );
@@ -442,16 +448,26 @@ function EventChip({ event, onClick }: { event: CalendarEvent; onClick: () => vo
   const pc = getProjectColor(event.proyectoColor);
   const done = event.completada;
   const evento = isEvento(event);
-  const TypeIcon = evento ? CalendarIcon : Circle;
   return (
     <button
       onClick={onClick}
       aria-label={`${ariaTypeLabel(event)}: ${event.titulo}`}
-      className={`w-full flex items-center gap-1 truncate rounded px-1.5 py-0.5 text-[10px] font-medium text-left ${
-        done ? "bg-slate-100 text-slate-400 line-through" : evento ? `${pc.soft} ${pc.text}` : `bg-white border ${pc.border} ${pc.text}`
+      className={`w-full flex items-center gap-1 truncate rounded border px-1.5 py-0.5 text-[10px] font-medium text-left ${pc.border} ${
+        done
+          ? "bg-slate-100 border-slate-200 text-slate-400 line-through"
+          : evento
+          ? "bg-violet-50 border-violet-200 text-slate-800"
+          : `bg-white border-slate-200 ${pc.text}`
       }`}
     >
-      <TypeIcon className="h-2.5 w-2.5 shrink-0 opacity-70" aria-hidden />
+      {evento && (
+        <span
+          className="inline-flex h-3 w-3 shrink-0 items-center justify-center rounded-sm bg-violet-100 text-violet-700"
+          aria-hidden
+        >
+          <CalendarIcon className="h-2 w-2" />
+        </span>
+      )}
       <span className="truncate">{event.titulo}</span>
     </button>
   );

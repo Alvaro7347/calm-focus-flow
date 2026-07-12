@@ -28,7 +28,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { addDays, format, isSameDay, startOfWeek } from "date-fns";
 import { es } from "date-fns/locale";
-import { Calendar as CalendarIcon, Circle } from "lucide-react";
+import { Calendar as CalendarIcon } from "lucide-react";
 import type { CalendarEvent } from "@/services/calendarService";
 import { getProjectColor } from "@/lib/projectIdentity";
 import { isEvento, scheduleText, typeLabel, ariaTypeLabel } from "@/lib/activityDisplay";
@@ -157,23 +157,33 @@ export function DayView({ anchor, events, onSelectEvent }: Props) {
           const pc = getProjectColor(e.proyectoColor);
           const done = e.completada;
           const evento = isEvento(e);
-          const TypeIcon = evento ? CalendarIcon : Circle;
           const sched = scheduleText(e);
           return (
             <li key={e.id}>
               <button
                 onClick={() => onSelectEvent(e)}
                 aria-label={`${ariaTypeLabel(e)}: ${e.titulo}${sched ? ` — ${sched}` : ""}`}
-                className={`w-full rounded-xl border border-slate-200 border-l-4 ${pc.border} p-3 text-left transition-colors hover:bg-slate-50 ${
-                  evento && !done ? "bg-slate-50/60" : "bg-white"
+                className={`w-full rounded-xl border-l-4 ${pc.border} p-3 text-left transition-colors ${
+                  evento
+                    ? "border border-violet-200 bg-violet-50/70 hover:bg-violet-50"
+                    : "border border-slate-200 bg-white hover:bg-slate-50"
                 } ${done ? "opacity-70" : ""}`}
               >
                 <div className="flex items-center gap-2 text-[11px] text-slate-500">
                   <span className={`h-1.5 w-1.5 rounded-full ${pc.dot}`} aria-hidden />
                   <span className="truncate">{e.area}</span>
-                  <span className="ml-auto shrink-0 inline-flex items-center gap-1">
-                    <TypeIcon className="h-3 w-3 opacity-70" aria-hidden />
-                    <span>{sched ?? typeLabel(e)}</span>
+                  <span className="ml-auto shrink-0 inline-flex items-center gap-1.5">
+                    {evento && (
+                      <span
+                        className="inline-flex h-5 w-5 items-center justify-center rounded-md bg-violet-100 text-violet-700"
+                        aria-hidden
+                      >
+                        <CalendarIcon className="h-3 w-3" />
+                      </span>
+                    )}
+                    <span className={evento ? "text-violet-800 font-medium" : ""}>
+                      {sched ?? typeLabel(e)}
+                    </span>
                   </span>
                 </div>
                 <div
@@ -183,8 +193,14 @@ export function DayView({ anchor, events, onSelectEvent }: Props) {
                 >
                   {e.titulo}
                 </div>
-                <div className="mt-0.5 flex items-center gap-2 text-[11px] text-slate-400">
-                  <span className="uppercase tracking-wide">{typeLabel(e)}</span>
+                <div className="mt-1 flex items-center gap-2 text-[10px] text-slate-400">
+                  {evento ? (
+                    <span className="inline-flex items-center rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-700">
+                      Evento
+                    </span>
+                  ) : (
+                    <span className="uppercase tracking-wide">Tarea</span>
+                  )}
                   {e.proyecto && <span className="truncate">· {e.proyecto}</span>}
                 </div>
               </button>

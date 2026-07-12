@@ -10,7 +10,7 @@ import {
   startOfWeek,
 } from "date-fns";
 import { es } from "date-fns/locale";
-import { X, Calendar as CalendarIcon, Circle } from "lucide-react";
+import { X, Calendar as CalendarIcon } from "lucide-react";
 import type { CalendarEvent } from "@/services/calendarService";
 import { getProjectColor } from "@/lib/projectIdentity";
 import { isEvento, scheduleText, typeLabel, ariaTypeLabel } from "@/lib/activityDisplay";
@@ -185,27 +185,47 @@ function DayDetailSheet({
               {events.map((e) => {
                 const pc = getProjectColor(e.proyectoColor);
                 const evento = isEvento(e);
-                const TypeIcon = evento ? CalendarIcon : Circle;
                 const sched = scheduleText(e);
                 return (
                   <li key={e.id}>
                     <button
                       onClick={() => onSelectEvent(e)}
                       aria-label={`${ariaTypeLabel(e)}: ${e.titulo}${sched ? ` — ${sched}` : ""}`}
-                      className={`w-full rounded-lg border border-slate-100 border-l-2 ${pc.border} p-3 text-left hover:bg-slate-50 ${evento && !e.completada ? "bg-slate-50/60" : ""} ${e.completada ? "opacity-70" : ""}`}
+                      className={`w-full rounded-lg border-l-2 ${pc.border} p-3 text-left ${
+                        evento
+                          ? "border border-violet-200 bg-violet-50/70 hover:bg-violet-50"
+                          : "border border-slate-100 bg-white hover:bg-slate-50"
+                      } ${e.completada ? "opacity-70" : ""}`}
                     >
                       <div className="flex items-center gap-2 text-[11px] text-slate-500">
                         <span className={`h-1.5 w-1.5 ${pc.dot} ${evento ? "rounded-sm" : "rounded-full"}`} aria-hidden />
                         {e.area}
-                        <span className="ml-auto inline-flex items-center gap-1">
-                          <TypeIcon className="h-3 w-3 opacity-70" aria-hidden />
-                          <span>{sched ?? typeLabel(e)}</span>
+                        <span className="ml-auto inline-flex items-center gap-1.5">
+                          {evento && (
+                            <span
+                              className="inline-flex h-5 w-5 items-center justify-center rounded-md bg-violet-100 text-violet-700"
+                              aria-hidden
+                            >
+                              <CalendarIcon className="h-3 w-3" />
+                            </span>
+                          )}
+                          <span className={evento ? "text-violet-800 font-medium" : ""}>
+                            {sched ?? typeLabel(e)}
+                          </span>
                         </span>
                       </div>
                       <div className={`mt-1 text-sm font-medium ${e.completada ? "text-slate-400 line-through" : "text-slate-900"}`}>
                         {e.titulo}
                       </div>
-                      <div className="mt-0.5 text-[10px] uppercase tracking-wide text-slate-400">{typeLabel(e)}</div>
+                      <div className="mt-1 text-[10px] text-slate-400">
+                        {evento ? (
+                          <span className="inline-flex items-center rounded-full bg-violet-100 px-2 py-0.5 font-semibold uppercase tracking-wide text-violet-700">
+                            Evento
+                          </span>
+                        ) : (
+                          <span className="uppercase tracking-wide">Tarea</span>
+                        )}
+                      </div>
                     </button>
                   </li>
                 );

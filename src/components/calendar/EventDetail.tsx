@@ -1,6 +1,6 @@
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { X, Calendar as CalendarIcon, Circle } from "lucide-react";
+import { X, Calendar as CalendarIcon } from "lucide-react";
 import type { CalendarEvent } from "@/services/calendarService";
 import { areaColor } from "./areaColors";
 import { isEvento, scheduleText, typeLabel } from "@/lib/activityDisplay";
@@ -38,7 +38,6 @@ function Body({ event, onClose }: { event: CalendarEvent; onClose: () => void })
   const c = areaColor(event.area);
   const breadcrumb = [event.area, event.proyecto, event.subproyecto].filter(Boolean).join(" / ");
   const evento = isEvento(event);
-  const TypeIcon = evento ? CalendarIcon : Circle;
   const sched = scheduleText(event);
   const cuando = event.allDay
     ? `${format(event.start, "EEEE d 'de' MMMM", { locale: es })} · Todo el día`
@@ -46,15 +45,21 @@ function Body({ event, onClose }: { event: CalendarEvent; onClose: () => void })
     ? `${format(event.start, "EEEE d 'de' MMMM", { locale: es })} · ${format(event.start, "HH:mm")}–${format(event.end, "HH:mm")}`
     : `${format(event.start, "EEEE d 'de' MMMM", { locale: es })}${sched ? ` · ${sched}` : ""}`;
   return (
-    <div className="p-6">
+    <div className={`p-6 ${evento ? "rounded-t-2xl md:rounded-2xl bg-violet-50/40" : ""}`}>
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-2">
           <span className={`h-2.5 w-2.5 ${c.dot} ${evento ? "rounded-sm" : "rounded-full"}`} aria-hidden />
           <span className="text-xs font-medium text-slate-500">{event.area}</span>
-          <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 px-2 py-0.5 text-[10px] uppercase tracking-wide text-slate-500">
-            <TypeIcon className="h-3 w-3 opacity-70" aria-hidden />
-            {typeLabel(event)}
-          </span>
+          {evento ? (
+            <span className="inline-flex items-center gap-1 rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-700">
+              <CalendarIcon className="h-3 w-3" aria-hidden />
+              Evento
+            </span>
+          ) : (
+            <span className="inline-flex items-center rounded-full border border-slate-200 px-2 py-0.5 text-[10px] uppercase tracking-wide text-slate-500">
+              {typeLabel(event)}
+            </span>
+          )}
         </div>
         <button
           onClick={onClose}
