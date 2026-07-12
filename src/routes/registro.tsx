@@ -85,7 +85,7 @@ function RegistroPage() {
       // El trigger normalmente crea el profile; ensureCurrentProfile en Mi Cuenta lo cubre si aún no está.
     }
     setLoading(false);
-    navigate({ to: "/foco", replace: true });
+    navigate({ to: "/activar-notificaciones", replace: true });
   }
 
   if (sentConfirmation) {
