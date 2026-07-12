@@ -396,10 +396,21 @@ async function processDailySummaries(): Promise<{ users: number; sent: number }>
 // ============================================================
 // HTTP HANDLER
 // ============================================================
+async function getDispatchSecret(): Promise<string | null> {
+  const { data, error } = await admin
+    .from("internal_config")
+    .select("value")
+    .eq("key", "push_dispatch_secret")
+    .maybeSingle();
+  if (error || !data) return null;
+  return data.value;
+}
+
 Deno.serve(async (req) => {
   // Autenticación interna: solo pg_cron/admin autorizado puede invocar.
   const provided = req.headers.get("x-dispatch-secret");
-  if (!provided || provided !== DISPATCH_SECRET) {
+  const expected = await getDispatchSecret();
+  if (!expected || !provided || provided !== expected) {
     return new Response("unauthorized", { status: 401 });
   }
 
