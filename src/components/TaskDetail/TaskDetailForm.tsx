@@ -133,9 +133,11 @@ export function TaskDetailForm({
   initialTask,
   onSaved,
   onCancel,
+  onRequestDuplicate,
 }: TaskDetailFormProps) {
   const queryClient = useQueryClient();
   const isEdit = mode === "edit";
+  const isDuplicate = mode === "duplicate";
 
   // ---------- Estado del formulario ----------
   const initialSplit = splitIsoToLocalDateTime(initialTask?.task.starts_at ?? null);
@@ -149,9 +151,14 @@ export function TaskDetailForm({
   const [priority, setPriority] = useState<TaskPriority>(
     (initialTask?.task.priority as TaskPriority | undefined) ?? "medium",
   );
-  const [status, setStatus] = useState<TaskStatus>(
-    (initialTask?.task.status as TaskStatus | undefined) ?? "pending",
-  );
+  // En modo duplicate: `completed` → `pending`; `waiting` se conserva; el resto queda `pending`.
+  const initialStatus: TaskStatus = (() => {
+    const src = initialTask?.task.status as TaskStatus | undefined;
+    if (!src) return "pending";
+    if (isDuplicate) return src === "waiting" ? "waiting" : "pending";
+    return src;
+  })();
+  const [status, setStatus] = useState<TaskStatus>(initialStatus);
   const [fecha, setFecha] = useState(initialSplit.fecha);
   const [hora, setHora] = useState(initialSplit.hora);
   const [horaFin, setHoraFin] = useState(initialEndSplit.hora);
