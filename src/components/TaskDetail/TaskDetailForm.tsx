@@ -837,66 +837,100 @@ export function TaskDetailForm({
             </h2>
             <p className="text-xs text-muted-foreground">
               {isEvento
-                ? "Un evento requiere fecha, hora de inicio y hora de fin."
+                ? "Un evento requiere fecha, hora de inicio y hora de término."
                 : "Sin fecha, la tarea no aparecerá en el Calendario."}
             </p>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label htmlFor="td-fecha">
-                  Fecha{isEvento ? " *" : ""}
-                </Label>
-                <Input
-                  id="td-fecha"
-                  type="date"
-                  value={fecha}
-                  onChange={(e) => setFecha(e.target.value)}
-                />
-                {errors.fecha && (
-                  <p className="text-xs text-destructive">{errors.fecha}</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="td-hora">
-                  {isEvento ? "Inicio *" : "Hora"}
-                </Label>
-                <Input
-                  id="td-hora"
-                  type="time"
-                  value={hora}
-                  onChange={(e) => setHora(e.target.value)}
-                />
-                {errors.hora && (
-                  <p className="text-xs text-destructive">{errors.hora}</p>
-                )}
-              </div>
-            </div>
-
             {isEvento ? (
-              <div className="space-y-2">
-                <Label htmlFor="td-hora-fin">Fin *</Label>
-                <Input
-                  id="td-hora-fin"
-                  type="time"
-                  value={horaFin}
-                  onChange={(e) => setHoraFin(e.target.value)}
-                />
-                {errors.horaFin && (
-                  <p className="text-xs text-destructive">{errors.horaFin}</p>
-                )}
-              </div>
+              <>
+                {/* Fila 1: Fecha (100% ancho) */}
+                <div className="space-y-2 min-w-0">
+                  <Label htmlFor="td-fecha">Fecha *</Label>
+                  <Input
+                    id="td-fecha"
+                    type="date"
+                    value={fecha}
+                    onChange={(e) => setFecha(e.target.value)}
+                    className="w-full"
+                  />
+                  {errors.fecha && (
+                    <p className="text-xs text-destructive">{errors.fecha}</p>
+                  )}
+                </div>
+
+                {/* Fila 2: Hora de inicio | Hora de término */}
+                <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 gap-3">
+                  <div className="space-y-2 min-w-0">
+                    <Label htmlFor="td-hora">Hora de inicio *</Label>
+                    <Input
+                      id="td-hora"
+                      type="time"
+                      value={hora}
+                      onChange={(e) => setHora(e.target.value)}
+                      className="w-full"
+                    />
+                    {errors.hora && (
+                      <p className="text-xs text-destructive">{errors.hora}</p>
+                    )}
+                  </div>
+                  <div className="space-y-2 min-w-0">
+                    <Label htmlFor="td-hora-fin">Hora de término *</Label>
+                    <Input
+                      id="td-hora-fin"
+                      type="time"
+                      value={horaFin}
+                      onChange={(e) => setHoraFin(e.target.value)}
+                      className="w-full"
+                    />
+                    {errors.horaFin && (
+                      <p className="text-xs text-destructive">{errors.horaFin}</p>
+                    )}
+                  </div>
+                </div>
+              </>
             ) : (
-              <div className="space-y-2">
-                <Label htmlFor="td-duracion">Duración estimada (min)</Label>
-                <Input
-                  id="td-duracion"
-                  type="number"
-                  min={0}
-                  value={duracion}
-                  onChange={(e) => setDuracion(e.target.value)}
-                  placeholder="Ej: 30"
-                />
-              </div>
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-2 min-w-0">
+                    <Label htmlFor="td-fecha">Fecha</Label>
+                    <Input
+                      id="td-fecha"
+                      type="date"
+                      value={fecha}
+                      onChange={(e) => setFecha(e.target.value)}
+                      className="w-full"
+                    />
+                    {errors.fecha && (
+                      <p className="text-xs text-destructive">{errors.fecha}</p>
+                    )}
+                  </div>
+                  <div className="space-y-2 min-w-0">
+                    <Label htmlFor="td-hora">Hora</Label>
+                    <Input
+                      id="td-hora"
+                      type="time"
+                      value={hora}
+                      onChange={(e) => setHora(e.target.value)}
+                      className="w-full"
+                    />
+                    {errors.hora && (
+                      <p className="text-xs text-destructive">{errors.hora}</p>
+                    )}
+                  </div>
+                </div>
+                <div className="space-y-2 min-w-0">
+                  <Label htmlFor="td-duracion">Duración estimada (min)</Label>
+                  <Input
+                    id="td-duracion"
+                    type="number"
+                    min={0}
+                    value={duracion}
+                    onChange={(e) => setDuracion(e.target.value)}
+                    placeholder="Ej: 30"
+                    className="w-full"
+                  />
+                </div>
+              </>
             )}
           </section>
 
