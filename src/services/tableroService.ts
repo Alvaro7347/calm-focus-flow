@@ -86,6 +86,7 @@ type RawTask = {
   id: string;
   title: string;
   status: string;
+  activity_type: "task" | "event";
   priority: DbPriority | null;
   starts_at: string | null;
   estimated_duration_min: number | null;
