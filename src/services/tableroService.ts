@@ -45,6 +45,12 @@ export interface SubproyectoNode {
   nombre: string;
   slug: string;
   tareas: Tarea[];
+  /**
+   * Conteo canónico de "tareas pendientes activas": únicamente
+   * `activity_type = 'task'` con `status = 'pending'` y sin
+   * archivar. Excluye eventos y tareas completadas.
+   */
+  tareasPendientes: number;
 }
 
 export interface ProyectoNode {
@@ -57,6 +63,7 @@ export interface ProyectoNode {
    */
   color: string | null;
   subproyectos: SubproyectoNode[];
+  /** Suma de `tareasPendientes` de sus subproyectos. */
   totalTareas: number;
 }
 
@@ -67,6 +74,7 @@ export interface AreaNode {
   /** Slug de la paleta CalmApp. Puede ser `null` (usa color por defecto). */
   color: string | null;
   proyectos: ProyectoNode[];
+  /** Suma de `tareasPendientes` de sus proyectos. */
   totalTareas: number;
 }
 
