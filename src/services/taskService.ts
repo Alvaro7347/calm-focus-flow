@@ -244,7 +244,7 @@ function toTarea(row: JoinedTaskRow, categoria: CategoriaFoco): Tarea {
 
   const today = startOfLocalDay(new Date());
   const vencida =
-    categoria === "hoy" && !!starts && startOfLocalDay(starts).getTime() < today.getTime();
+    categoria === "atrasados" && !!starts && startOfLocalDay(starts).getTime() < today.getTime();
 
   const diasSinActividad =
     categoria === "sin_movimiento"
