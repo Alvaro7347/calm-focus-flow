@@ -35,8 +35,14 @@
 import { useMemo } from "react";
 import { addDays, format, isSameDay, startOfWeek } from "date-fns";
 import { es } from "date-fns/locale";
+import { Calendar as CalendarIcon, Circle } from "lucide-react";
 import type { CalendarEvent } from "@/services/calendarService";
 import { getProjectColor } from "@/lib/projectIdentity";
+import {
+  isEvento,
+  scheduleText,
+  ariaTypeLabel,
+} from "@/lib/activityDisplay";
 import {
   layoutDayEvents,
   maxConcurrencyPerHour,
@@ -395,24 +401,39 @@ function EventBlock({
   if (outOfRange) return null;
 
   const done = event.completada;
+  const evento = isEvento(event);
+  const TypeIcon = evento ? CalendarIcon : Circle;
+  const sched = scheduleText(event);
+  // Evento → fondo tenue (`pc.soft`) para señalar bloque reservado.
+  // Tarea  → fondo blanco con borde lateral del área, transmite flexibilidad.
+  const shellClass = done
+    ? "bg-slate-50 border-l-slate-300 text-slate-400 line-through"
+    : evento
+    ? `${pc.soft} ${pc.border} ${pc.text}`
+    : `bg-white ${pc.border} text-slate-800`;
   return (
     <button
       onClick={onClick}
+      aria-label={`${ariaTypeLabel(event)}: ${event.titulo}${sched ? ` — ${sched}` : ""}`}
       style={{
         top: placement.top,
         height: placement.height,
         left: `${placement.leftPct}%`,
         width: `${placement.widthPct}%`,
       }}
-      className={`pointer-events-auto absolute rounded-md border-l-2 px-2 py-1 text-left text-[11px] leading-tight overflow-hidden transition-shadow hover:shadow-sm ${
-        done ? "bg-slate-50 border-l-slate-300 text-slate-400 line-through" : `${pc.soft} ${pc.border} ${pc.text}`
-      }`}
+      className={`pointer-events-auto absolute rounded-md ${evento ? "border border-l-2" : "border border-l-2 border-slate-200"} px-2 py-1 text-left text-[11px] leading-tight overflow-hidden transition-shadow hover:shadow-sm ${shellClass}`}
     >
-      <div
-        className={`font-medium ${placement.twoLines ? "line-clamp-2" : "truncate"}`}
-      >
-        {event.titulo}
+      <div className="flex items-center gap-1">
+        <TypeIcon className="h-3 w-3 shrink-0 opacity-70" aria-hidden />
+        <span
+          className={`font-medium ${placement.twoLines ? "line-clamp-2" : "truncate"}`}
+        >
+          {event.titulo}
+        </span>
       </div>
+      {placement.twoLines && sched && (
+        <div className="mt-0.5 text-[10px] opacity-70 truncate">{sched}</div>
+      )}
     </button>
   );
 }
@@ -420,14 +441,18 @@ function EventBlock({
 function EventChip({ event, onClick }: { event: CalendarEvent; onClick: () => void }) {
   const pc = getProjectColor(event.proyectoColor);
   const done = event.completada;
+  const evento = isEvento(event);
+  const TypeIcon = evento ? CalendarIcon : Circle;
   return (
     <button
       onClick={onClick}
-      className={`w-full truncate rounded px-1.5 py-0.5 text-[10px] font-medium text-left ${
-        done ? "bg-slate-100 text-slate-400 line-through" : `${pc.soft} ${pc.text}`
+      aria-label={`${ariaTypeLabel(event)}: ${event.titulo}`}
+      className={`w-full flex items-center gap-1 truncate rounded px-1.5 py-0.5 text-[10px] font-medium text-left ${
+        done ? "bg-slate-100 text-slate-400 line-through" : evento ? `${pc.soft} ${pc.text}` : `bg-white border ${pc.border} ${pc.text}`
       }`}
     >
-      {event.titulo}
+      <TypeIcon className="h-2.5 w-2.5 shrink-0 opacity-70" aria-hidden />
+      <span className="truncate">{event.titulo}</span>
     </button>
   );
 }

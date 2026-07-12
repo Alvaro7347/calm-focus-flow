@@ -10,9 +10,10 @@ import {
   startOfWeek,
 } from "date-fns";
 import { es } from "date-fns/locale";
-import { X } from "lucide-react";
+import { X, Calendar as CalendarIcon, Circle } from "lucide-react";
 import type { CalendarEvent } from "@/services/calendarService";
 import { getProjectColor } from "@/lib/projectIdentity";
+import { isEvento, scheduleText, typeLabel, ariaTypeLabel } from "@/lib/activityDisplay";
 
 interface Props {
   anchor: Date;
@@ -109,16 +110,23 @@ export function MonthView({ anchor, events, onSelectEvent }: Props) {
 function MiniEvent({ event }: { event: CalendarEvent }) {
   const pc = getProjectColor(event.proyectoColor);
   const done = event.completada;
+  const evento = isEvento(event);
+  // Diferenciación no-color: eventos usan un cuadradito sólido
+  // (bloque reservado); tareas mantienen el punto circular
+  // (marcador flexible). Densidad idéntica a la anterior.
+  const marker = done
+    ? "bg-slate-300"
+    : evento
+    ? `${pc.dot} rounded-sm`
+    : `${pc.dot} rounded-full`;
   return (
     <div
       className={`flex items-center gap-1 truncate rounded px-1 text-[10px] leading-tight ${
         done ? "text-slate-400 line-through" : pc.text
       }`}
+      aria-label={`${ariaTypeLabel(event)}: ${event.titulo}`}
     >
-      <span
-        className={`h-1.5 w-1.5 rounded-full shrink-0 ${done ? "bg-slate-300" : pc.dot}`}
-        aria-hidden
-      />
+      <span className={`h-1.5 w-1.5 shrink-0 ${marker}`} aria-hidden />
       <span className="truncate">{event.titulo}</span>
     </div>
   );
@@ -176,22 +184,28 @@ function DayDetailSheet({
               )}
               {events.map((e) => {
                 const pc = getProjectColor(e.proyectoColor);
+                const evento = isEvento(e);
+                const TypeIcon = evento ? CalendarIcon : Circle;
+                const sched = scheduleText(e);
                 return (
                   <li key={e.id}>
                     <button
                       onClick={() => onSelectEvent(e)}
-                      className={`w-full rounded-lg border border-slate-100 border-l-2 ${pc.border} p-3 text-left hover:bg-slate-50 ${e.completada ? "opacity-70" : ""}`}
+                      aria-label={`${ariaTypeLabel(e)}: ${e.titulo}${sched ? ` — ${sched}` : ""}`}
+                      className={`w-full rounded-lg border border-slate-100 border-l-2 ${pc.border} p-3 text-left hover:bg-slate-50 ${evento && !e.completada ? "bg-slate-50/60" : ""} ${e.completada ? "opacity-70" : ""}`}
                     >
                       <div className="flex items-center gap-2 text-[11px] text-slate-500">
-                        <span className={`h-1.5 w-1.5 rounded-full ${pc.dot}`} aria-hidden />
+                        <span className={`h-1.5 w-1.5 ${pc.dot} ${evento ? "rounded-sm" : "rounded-full"}`} aria-hidden />
                         {e.area}
-                        <span className="ml-auto">
-                          {e.allDay ? "Todo el día" : format(e.start, "HH:mm")}
+                        <span className="ml-auto inline-flex items-center gap-1">
+                          <TypeIcon className="h-3 w-3 opacity-70" aria-hidden />
+                          <span>{sched ?? typeLabel(e)}</span>
                         </span>
                       </div>
                       <div className={`mt-1 text-sm font-medium ${e.completada ? "text-slate-400 line-through" : "text-slate-900"}`}>
                         {e.titulo}
                       </div>
+                      <div className="mt-0.5 text-[10px] uppercase tracking-wide text-slate-400">{typeLabel(e)}</div>
                     </button>
                   </li>
                 );

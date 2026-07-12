@@ -1,8 +1,9 @@
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { X } from "lucide-react";
+import { X, Calendar as CalendarIcon, Circle } from "lucide-react";
 import type { CalendarEvent } from "@/services/calendarService";
 import { areaColor } from "./areaColors";
+import { isEvento, scheduleText, typeLabel } from "@/lib/activityDisplay";
 
 interface Props {
   event: CalendarEvent | null;
@@ -36,12 +37,24 @@ export function EventDetail({ event, onClose }: Props) {
 function Body({ event, onClose }: { event: CalendarEvent; onClose: () => void }) {
   const c = areaColor(event.area);
   const breadcrumb = [event.area, event.proyecto, event.subproyecto].filter(Boolean).join(" / ");
+  const evento = isEvento(event);
+  const TypeIcon = evento ? CalendarIcon : Circle;
+  const sched = scheduleText(event);
+  const cuando = event.allDay
+    ? `${format(event.start, "EEEE d 'de' MMMM", { locale: es })} · Todo el día`
+    : evento
+    ? `${format(event.start, "EEEE d 'de' MMMM", { locale: es })} · ${format(event.start, "HH:mm")}–${format(event.end, "HH:mm")}`
+    : `${format(event.start, "EEEE d 'de' MMMM", { locale: es })}${sched ? ` · ${sched}` : ""}`;
   return (
     <div className="p-6">
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-2">
-          <span className={`h-2.5 w-2.5 rounded-full ${c.dot}`} aria-hidden />
+          <span className={`h-2.5 w-2.5 ${c.dot} ${evento ? "rounded-sm" : "rounded-full"}`} aria-hidden />
           <span className="text-xs font-medium text-slate-500">{event.area}</span>
+          <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 px-2 py-0.5 text-[10px] uppercase tracking-wide text-slate-500">
+            <TypeIcon className="h-3 w-3 opacity-70" aria-hidden />
+            {typeLabel(event)}
+          </span>
         </div>
         <button
           onClick={onClose}
@@ -57,11 +70,7 @@ function Body({ event, onClose }: { event: CalendarEvent; onClose: () => void })
       </h2>
 
       <dl className="mt-5 space-y-3 text-sm">
-        <Row label="Cuándo">
-          {event.allDay
-            ? `${format(event.start, "EEEE d 'de' MMMM", { locale: es })} · Todo el día`
-            : `${format(event.start, "EEEE d 'de' MMMM · HH:mm", { locale: es })} – ${format(event.end, "HH:mm")}`}
-        </Row>
+        <Row label="Cuándo">{cuando}</Row>
         {breadcrumb && <Row label="Contexto">{breadcrumb}</Row>}
         <Row label="Origen">{event.source === "calmapp" ? "CalmApp" : "Google Calendar"}</Row>
       </dl>
