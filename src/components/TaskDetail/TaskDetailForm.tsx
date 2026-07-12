@@ -541,7 +541,11 @@ export function TaskDetailForm({
           estimated_duration_min: duracionNum,
         };
         saved = await createTask(input);
-        toast.success(isEvento ? "Evento creado." : "Tarea creada.");
+        if (isDuplicate) {
+          toast.success(isEvento ? "Copia del evento creada." : "Copia de la tarea creada.");
+        } else {
+          toast.success(isEvento ? "Evento creado." : "Tarea creada.");
+        }
       }
       await invalidateAll();
       onSaved?.(saved);
