@@ -10,9 +10,10 @@ import {
   startOfWeek,
 } from "date-fns";
 import { es } from "date-fns/locale";
-import { X } from "lucide-react";
+import { X, Calendar as CalendarIcon, Circle } from "lucide-react";
 import type { CalendarEvent } from "@/services/calendarService";
 import { getProjectColor } from "@/lib/projectIdentity";
+import { isEvento, scheduleText, typeLabel, ariaTypeLabel } from "@/lib/activityDisplay";
 
 interface Props {
   anchor: Date;
