@@ -21,7 +21,10 @@ const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const VAPID_PUBLIC = Deno.env.get("VAPID_PUBLIC_KEY")!;
 const VAPID_PRIVATE = Deno.env.get("VAPID_PRIVATE_KEY")!;
 const VAPID_SUBJECT = Deno.env.get("VAPID_SUBJECT") ?? "mailto:soporte@calmapp.app";
-const DISPATCH_SECRET = Deno.env.get("PUSH_DISPATCH_SECRET")!;
+// Nota: PUSH_DISPATCH_SECRET vive en `public.internal_config` (clave
+// `push_dispatch_secret`) para que cron y edge function compartan el mismo
+// valor sin depender del env var (que puede haber sido generado sin exponer
+// su valor). Se lee al invocar la función.
 
 webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC, VAPID_PRIVATE);
 
@@ -393,10 +396,21 @@ async function processDailySummaries(): Promise<{ users: number; sent: number }>
 // ============================================================
 // HTTP HANDLER
 // ============================================================
+async function getDispatchSecret(): Promise<string | null> {
+  const { data, error } = await admin
+    .from("internal_config")
+    .select("value")
+    .eq("key", "push_dispatch_secret")
+    .maybeSingle();
+  if (error || !data) return null;
+  return data.value;
+}
+
 Deno.serve(async (req) => {
   // Autenticación interna: solo pg_cron/admin autorizado puede invocar.
   const provided = req.headers.get("x-dispatch-secret");
-  if (!provided || provided !== DISPATCH_SECRET) {
+  const expected = await getDispatchSecret();
+  if (!expected || !provided || provided !== expected) {
     return new Response("unauthorized", { status: 401 });
   }
 
