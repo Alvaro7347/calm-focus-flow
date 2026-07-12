@@ -68,6 +68,7 @@ function FocoPage() {
 
   // ---------- Tu Día ----------
   const userId = profile?.id ?? null;
+  const timezone = profile?.timezone ?? undefined;
   const [tuDiaOpen, setTuDiaOpen] = useState(false);
   const [tuDiaLoading, setTuDiaLoading] = useState(false);
   const [tuDiaBrief, setTuDiaBrief] = useState<DailyBrief | null>(null);
@@ -78,31 +79,29 @@ function FocoPage() {
     if (!userId) return;
     if (autoTriggeredFor.current === userId) return;
     autoTriggeredFor.current = userId;
-    if (hasShownTuDiaToday(userId)) return;
+    if (hasShownTuDiaToday(userId, new Date(), timezone)) return;
     setTuDiaOpen(true);
     setTuDiaLoading(true);
     setTuDiaError(null);
-    getOrLoadTodayBrief({ userId })
+    getOrLoadTodayBrief({ userId, timezone })
       .then((result) => {
         if (result.ok) setTuDiaBrief(result.brief);
         else setTuDiaError(result.error);
       })
       .catch((e) => setTuDiaError(e instanceof Error ? e.message : String(e)))
       .finally(() => setTuDiaLoading(false));
-  }, [userId]);
+  }, [userId, timezone]);
 
-  // Marcador: el usuario cerró Tu Día en esta sesión → habilita prompt de utilidad.
   const [tuDiaJustClosed, setTuDiaJustClosed] = useState(false);
 
   const handleCloseTuDia = () => {
-    markTuDiaShownToday(userId);
+    markTuDiaShownToday(userId, new Date(), timezone);
     setTuDiaOpen(false);
     setTuDiaJustClosed(true);
   };
 
   const handleReopenTuDia = () => {
-    // Reabrir: reutiliza el brief ya cacheado del usuario. No llama a la IA.
-    const cached = readCachedBrief(userId);
+    const cached = readCachedBrief(userId, undefined, timezone);
     if (cached) {
       setTuDiaBrief(cached);
       setTuDiaError(null);
@@ -110,11 +109,10 @@ function FocoPage() {
       setTuDiaOpen(true);
       return;
     }
-    // Si no hay caché (raro), intentar cargar sin forzar.
     setTuDiaOpen(true);
     setTuDiaLoading(true);
     setTuDiaError(null);
-    getOrLoadTodayBrief({ userId })
+    getOrLoadTodayBrief({ userId, timezone })
       .then((result) => {
         if (result.ok) setTuDiaBrief(result.brief);
         else setTuDiaError(result.error);

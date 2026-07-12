@@ -27,7 +27,20 @@ import { getDailyBrief, type DailyBrief, type DailyBriefResult } from "@/service
 const BRIEF_PREFIX = "calmapp.tuDia.brief.";   // + {userId}.{date}
 const SHOWN_PREFIX = "calmapp.tuDia.shown.";   // + {userId}
 
-function todayISO(now: Date = new Date()): string {
+function todayISO(now: Date = new Date(), timezone?: string): string {
+  if (timezone) {
+    try {
+      const fmt = new Intl.DateTimeFormat("en-CA", {
+        timeZone: timezone,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      });
+      return fmt.format(now); // en-CA emits YYYY-MM-DD
+    } catch {
+      /* fallback local */
+    }
+  }
   const y = now.getFullYear();
   const m = String(now.getMonth() + 1).padStart(2, "0");
   const d = String(now.getDate()).padStart(2, "0");
@@ -51,11 +64,13 @@ function shownKey(userId: string) {
 
 export function readCachedBrief(
   userId: string | null | undefined,
-  date: string = todayISO(),
+  date?: string,
+  timezone?: string,
 ): DailyBrief | null {
   if (!userId) return null;
+  const key = date ?? todayISO(new Date(), timezone);
   try {
-    const raw = localStorage.getItem(briefKey(userId, date));
+    const raw = localStorage.getItem(briefKey(userId, key));
     if (!raw) return null;
     const parsed = JSON.parse(raw) as CachedBrief;
     return parsed.brief ?? null;
@@ -95,11 +110,13 @@ export async function getOrLoadTodayBrief(options?: {
   userId: string | null | undefined;
   force?: boolean;
   now?: Date;
+  timezone?: string;
 }): Promise<DailyBriefResult> {
   const userId = options?.userId ?? null;
-  const date = todayISO(options?.now);
+  const now = options?.now ?? new Date();
+  const date = todayISO(now, options?.timezone);
   if (userId && !options?.force) {
-    const cached = readCachedBrief(userId, date);
+    const cached = readCachedBrief(userId, date, options?.timezone);
     if (cached) {
       return {
         ok: true,
@@ -108,7 +125,7 @@ export async function getOrLoadTodayBrief(options?: {
       };
     }
   }
-  const result = await getDailyBrief({ now: options?.now });
+  const result = await getDailyBrief({ now, timezone: options?.timezone });
   if (result.ok && userId) writeCachedBrief(userId, date, result.brief);
   return result;
 }
@@ -121,10 +138,11 @@ export async function getOrLoadTodayBrief(options?: {
 export function hasShownTuDiaToday(
   userId: string | null | undefined,
   now: Date = new Date(),
+  timezone?: string,
 ): boolean {
   if (!userId) return true;
   try {
-    return localStorage.getItem(shownKey(userId)) === todayISO(now);
+    return localStorage.getItem(shownKey(userId)) === todayISO(now, timezone);
   } catch {
     return false;
   }
@@ -133,15 +151,16 @@ export function hasShownTuDiaToday(
 export function markTuDiaShownToday(
   userId: string | null | undefined,
   now: Date = new Date(),
+  timezone?: string,
 ) {
   if (!userId) return;
   try {
-    localStorage.setItem(shownKey(userId), todayISO(now));
+    localStorage.setItem(shownKey(userId), todayISO(now, timezone));
   } catch {
     /* silencioso */
   }
 }
 
-export function todayISODate(now?: Date): string {
-  return todayISO(now);
+export function todayISODate(now?: Date, timezone?: string): string {
+  return todayISO(now, timezone);
 }
