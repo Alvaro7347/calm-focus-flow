@@ -1,8 +1,9 @@
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { X } from "lucide-react";
+import { X, Calendar as CalendarIcon, Circle } from "lucide-react";
 import type { CalendarEvent } from "@/services/calendarService";
 import { areaColor } from "./areaColors";
+import { isEvento, scheduleText, typeLabel } from "@/lib/activityDisplay";
 
 interface Props {
   event: CalendarEvent | null;
