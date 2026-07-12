@@ -173,6 +173,7 @@ const SIN_MOVIMIENTO_DIAS = 7;
 
 export interface FocusTasks {
   hoy: Tarea[];
+  atrasados: Tarea[];
   estaSemana: Tarea[];
   esperando: Tarea[];
   sinMovimiento: Tarea[];
