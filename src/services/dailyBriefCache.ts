@@ -64,9 +64,11 @@ function shownKey(userId: string) {
 
 export function readCachedBrief(
   userId: string | null | undefined,
-  date: string = todayISO(),
+  date?: string,
+  timezone?: string,
 ): DailyBrief | null {
   if (!userId) return null;
+  const key = date ?? todayISO(new Date(), timezone);
   try {
     const raw = localStorage.getItem(briefKey(userId, date));
     if (!raw) return null;
