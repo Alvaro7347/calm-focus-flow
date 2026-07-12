@@ -859,28 +859,28 @@ export function TaskDetailForm({
                 </div>
 
                 {/* Fila 2: Hora de inicio | Hora de término */}
-                <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2 min-w-0">
-                    <Label htmlFor="td-hora">Hora de inicio *</Label>
+                    <Label htmlFor="td-hora" className="text-sm">Hora de inicio *</Label>
                     <Input
                       id="td-hora"
                       type="time"
                       value={hora}
                       onChange={(e) => setHora(e.target.value)}
-                      className="w-full"
+                      className="w-full max-w-full"
                     />
                     {errors.hora && (
                       <p className="text-xs text-destructive">{errors.hora}</p>
                     )}
                   </div>
                   <div className="space-y-2 min-w-0">
-                    <Label htmlFor="td-hora-fin">Hora de término *</Label>
+                    <Label htmlFor="td-hora-fin" className="text-sm">Hora de término *</Label>
                     <Input
                       id="td-hora-fin"
                       type="time"
                       value={horaFin}
                       onChange={(e) => setHoraFin(e.target.value)}
-                      className="w-full"
+                      className="w-full max-w-full"
                     />
                     {errors.horaFin && (
                       <p className="text-xs text-destructive">{errors.horaFin}</p>
