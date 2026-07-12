@@ -156,21 +156,24 @@ export function DayView({ anchor, events, onSelectEvent }: Props) {
         {eventosDia.map((e) => {
           const pc = getProjectColor(e.proyectoColor);
           const done = e.completada;
+          const evento = isEvento(e);
+          const TypeIcon = evento ? CalendarIcon : Circle;
+          const sched = scheduleText(e);
           return (
             <li key={e.id}>
               <button
                 onClick={() => onSelectEvent(e)}
-                className={`w-full rounded-xl border border-slate-200 border-l-4 ${pc.border} bg-white p-3 text-left transition-colors hover:bg-slate-50 ${
-                  done ? "opacity-70" : ""
-                }`}
+                aria-label={`${ariaTypeLabel(e)}: ${e.titulo}${sched ? ` — ${sched}` : ""}`}
+                className={`w-full rounded-xl border border-slate-200 border-l-4 ${pc.border} p-3 text-left transition-colors hover:bg-slate-50 ${
+                  evento && !done ? "bg-slate-50/60" : "bg-white"
+                } ${done ? "opacity-70" : ""}`}
               >
                 <div className="flex items-center gap-2 text-[11px] text-slate-500">
                   <span className={`h-1.5 w-1.5 rounded-full ${pc.dot}`} aria-hidden />
                   <span className="truncate">{e.area}</span>
-                  <span className="ml-auto shrink-0">
-                    {e.allDay
-                      ? "Todo el día"
-                      : `${format(e.start, "HH:mm")} – ${format(e.end, "HH:mm")}`}
+                  <span className="ml-auto shrink-0 inline-flex items-center gap-1">
+                    <TypeIcon className="h-3 w-3 opacity-70" aria-hidden />
+                    <span>{sched ?? typeLabel(e)}</span>
                   </span>
                 </div>
                 <div
@@ -180,11 +183,10 @@ export function DayView({ anchor, events, onSelectEvent }: Props) {
                 >
                   {e.titulo}
                 </div>
-                {e.proyecto && (
-                  <div className="mt-0.5 text-[11px] text-slate-400 truncate">
-                    {e.proyecto}
-                  </div>
-                )}
+                <div className="mt-0.5 flex items-center gap-2 text-[11px] text-slate-400">
+                  <span className="uppercase tracking-wide">{typeLabel(e)}</span>
+                  {e.proyecto && <span className="truncate">· {e.proyecto}</span>}
+                </div>
               </button>
             </li>
           );
