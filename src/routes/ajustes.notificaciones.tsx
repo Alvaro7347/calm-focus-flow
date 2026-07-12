@@ -48,7 +48,7 @@ function NotificacionesAjustes() {
     try {
       await updateMyNotificationPrefs(patch);
     } catch {
-      toast({ title: "No pudimos guardar el cambio.", variant: "destructive" });
+      toast.error("No pudimos guardar el cambio.");
       setPrefs(prefs); // rollback
     } finally {
       setSaving(false);
@@ -63,13 +63,13 @@ function NotificacionesAjustes() {
     const sub = await getCurrentDeviceSubscription();
     setDeviceStatus(!sub ? "none" : sub.is_active ? "active" : "inactive");
     if (res.ok) {
-      toast({ title: "Notificaciones activadas en este dispositivo." });
+      toast.success("Notificaciones activadas en este dispositivo.");
     } else if (res.reason === "permission_denied") {
-      toast({ title: "Permiso rechazado en el navegador.", variant: "destructive" });
+      toast.error("Permiso rechazado en el navegador.");
     } else if (res.reason === "ios_needs_install") {
-      toast({ title: "Agrega CalmApp a tu pantalla de inicio para activar." });
+      toast("Agrega CalmApp a tu pantalla de inicio para activar.");
     } else {
-      toast({ title: "No pudimos activar las notificaciones.", variant: "destructive" });
+      toast.error("No pudimos activar las notificaciones.");
     }
   }
 
@@ -78,7 +78,7 @@ function NotificacionesAjustes() {
     await deactivateThisDevice();
     setActivating(false);
     setDeviceStatus("inactive");
-    toast({ title: "Este dispositivo dejó de recibir notificaciones." });
+    toast.success("Este dispositivo dejó de recibir notificaciones.");
   }
 
   return (
