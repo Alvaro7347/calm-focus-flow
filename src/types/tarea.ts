@@ -1,4 +1,9 @@
-export type CategoriaFoco = "hoy" | "esta_semana" | "esperando" | "sin_movimiento";
+export type CategoriaFoco =
+  | "hoy"
+  | "atrasados"
+  | "esta_semana"
+  | "esperando"
+  | "sin_movimiento";
 
 /**
  * Prioridad de una tarea. Atributo transversal del modelo:
