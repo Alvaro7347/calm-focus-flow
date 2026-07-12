@@ -651,6 +651,14 @@ export function TaskDetailForm({
             </p>
           </section>
 
+          {isDuplicate && (
+            <p className="rounded-lg border border-dashed border-primary/30 bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
+              Revisa la fecha y los datos antes de crear la copia.
+            </p>
+          )}
+
+
+
           {/* 1. Información */}
           <section className="space-y-4">
             <div className="space-y-2">
