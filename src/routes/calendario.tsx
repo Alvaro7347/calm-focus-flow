@@ -161,10 +161,21 @@ function CalendarioPage() {
       {/* Tareas CalmApp → TaskDetailSheet (edición completa).
           Eventos externos (p. ej. Google Calendar en el futuro) → EventDetail (solo lectura). */}
       <TaskDetailSheet
-        open={!!selected && selected.source === "calmapp"}
-        onOpenChange={(o) => { if (!o) setSelected(null); }}
+        open={(!!selected && selected.source === "calmapp") || !!eventFromUrl}
+        onOpenChange={(o) => {
+          if (!o) {
+            setSelected(null);
+            if (eventFromUrl) clearEventParam();
+          }
+        }}
         mode="edit"
-        taskId={selected?.source === "calmapp" ? selected.id : undefined}
+        taskId={
+          eventFromUrl
+            ? eventFromUrl
+            : selected?.source === "calmapp"
+              ? selected.id
+              : undefined
+        }
       />
       <EventDetail
         event={selected && selected.source !== "calmapp" ? selected : null}
