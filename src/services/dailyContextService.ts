@@ -356,6 +356,7 @@ export interface DailyContextInput {
 
 export function buildDailyContext(input: DailyContextInput): DailyContext {
   const { now, tasks, recentTasks, areas, projects } = input;
+  const tz = input.timezone && input.timezone.trim() ? input.timezone : browserTz();
 
   const today = startOfLocalDay(now);
   const tomorrow = new Date(today.getTime() + DAY_MS);
