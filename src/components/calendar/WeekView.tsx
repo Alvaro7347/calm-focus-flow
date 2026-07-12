@@ -35,8 +35,14 @@
 import { useMemo } from "react";
 import { addDays, format, isSameDay, startOfWeek } from "date-fns";
 import { es } from "date-fns/locale";
+import { Calendar as CalendarIcon, Circle } from "lucide-react";
 import type { CalendarEvent } from "@/services/calendarService";
 import { getProjectColor } from "@/lib/projectIdentity";
+import {
+  isEvento,
+  scheduleText,
+  ariaTypeLabel,
+} from "@/lib/activityDisplay";
 import {
   layoutDayEvents,
   maxConcurrencyPerHour,
