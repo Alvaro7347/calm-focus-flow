@@ -851,6 +851,7 @@ export async function getDailyContext(
 
   return buildDailyContext({
     now,
+    timezone,
     tasks: (activeRes.data ?? []) as unknown as JoinedTask[],
     recentTasks: (recentRes.data ?? []) as unknown as JoinedTask[],
     areas: (areasRes.data ?? []) as AreaRow[],
