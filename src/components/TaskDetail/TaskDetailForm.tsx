@@ -983,26 +983,45 @@ export function TaskDetailForm({
             disabled={saving || archiving}
           >
             {saving
-              ? "Guardando..."
-              : isEdit
-                ? "Guardar cambios"
-                : isEvento
-                  ? "Guardar evento"
-                  : "Guardar tarea"}
+              ? isDuplicate
+                ? "Creando copia..."
+                : "Guardando..."
+              : isDuplicate
+                ? "Crear copia"
+                : isEdit
+                  ? "Guardar cambios"
+                  : isEvento
+                    ? "Guardar evento"
+                    : "Guardar tarea"}
           </Button>
         </div>
-        {isEdit && initialTask && !initialTask.task.archived_at && (
+        {isEdit && initialTask && !initialTask.task.archived_at && onRequestDuplicate && (
           <Button
             type="button"
             variant="ghost"
-            className="text-muted-foreground hover:text-destructive"
-            onClick={() => setConfirmArchive(true)}
+            className="justify-center text-muted-foreground hover:text-foreground"
+            onClick={onRequestDuplicate}
             disabled={saving || archiving}
           >
-            <Archive className="h-4 w-4" /> Archivar tarea
+            <Copy className="h-4 w-4" />
+            {isEvento ? "Duplicar evento" : "Duplicar tarea"}
           </Button>
         )}
+        {isEdit && initialTask && !initialTask.task.archived_at && (
+          <div className="mt-2 border-t pt-2">
+            <Button
+              type="button"
+              variant="ghost"
+              className="w-full justify-center text-muted-foreground hover:text-destructive"
+              onClick={() => setConfirmArchive(true)}
+              disabled={saving || archiving}
+            >
+              <Archive className="h-4 w-4" /> Archivar tarea
+            </Button>
+          </div>
+        )}
       </div>
+
 
       {/* Dialog: creación inline de Área / Proyecto / Subproyecto */}
       <Dialog
