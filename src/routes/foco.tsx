@@ -23,7 +23,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import { Clock, Calendar, Hourglass, TrendingUp, Target, Sun } from "lucide-react";
+import { Clock, Calendar, Hourglass, TrendingUp, Target, Sun, AlertCircle } from "lucide-react";
 
 import { FocoColumna } from "@/components/foco/FocoColumna";
 import { getFocusTasks } from "@/services/focusService";
