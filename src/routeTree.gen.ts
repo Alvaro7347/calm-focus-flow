@@ -22,6 +22,7 @@ import { Route as FocoRouteImport } from './routes/foco'
 import { Route as CrearTareaRouteImport } from './routes/crear-tarea'
 import { Route as CalendarioRouteImport } from './routes/calendario'
 import { Route as AjustesRouteImport } from './routes/ajustes'
+import { Route as ActivarNotificacionesRouteImport } from './routes/activar-notificaciones'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as LegalIndexRouteImport } from './routes/legal.index'
 import { Route as AjustesIndexRouteImport } from './routes/ajustes.index'
@@ -101,6 +102,11 @@ const AjustesRoute = AjustesRouteImport.update({
   path: '/ajustes',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ActivarNotificacionesRoute = ActivarNotificacionesRouteImport.update({
+  id: '/activar-notificaciones',
+  path: '/activar-notificaciones',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -169,6 +175,7 @@ const AjustesAcercaDeRoute = AjustesAcercaDeRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/activar-notificaciones': typeof ActivarNotificacionesRoute
   '/ajustes': typeof AjustesRouteWithChildren
   '/calendario': typeof CalendarioRoute
   '/crear-tarea': typeof CrearTareaRoute
@@ -197,6 +204,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/activar-notificaciones': typeof ActivarNotificacionesRoute
   '/calendario': typeof CalendarioRoute
   '/crear-tarea': typeof CrearTareaRoute
   '/foco': typeof FocoRoute
@@ -224,6 +232,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/activar-notificaciones': typeof ActivarNotificacionesRoute
   '/ajustes': typeof AjustesRouteWithChildren
   '/calendario': typeof CalendarioRoute
   '/crear-tarea': typeof CrearTareaRoute
@@ -254,6 +263,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/activar-notificaciones'
     | '/ajustes'
     | '/calendario'
     | '/crear-tarea'
@@ -282,6 +292,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/activar-notificaciones'
     | '/calendario'
     | '/crear-tarea'
     | '/foco'
@@ -308,6 +319,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/activar-notificaciones'
     | '/ajustes'
     | '/calendario'
     | '/crear-tarea'
@@ -337,6 +349,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ActivarNotificacionesRoute: typeof ActivarNotificacionesRoute
   AjustesRoute: typeof AjustesRouteWithChildren
   CalendarioRoute: typeof CalendarioRoute
   CrearTareaRoute: typeof CrearTareaRoute
@@ -443,6 +456,13 @@ declare module '@tanstack/react-router' {
       path: '/ajustes'
       fullPath: '/ajustes'
       preLoaderRoute: typeof AjustesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/activar-notificaciones': {
+      id: '/activar-notificaciones'
+      path: '/activar-notificaciones'
+      fullPath: '/activar-notificaciones'
+      preLoaderRoute: typeof ActivarNotificacionesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -582,6 +602,7 @@ const LegalRouteWithChildren = LegalRoute._addFileChildren(LegalRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ActivarNotificacionesRoute: ActivarNotificacionesRoute,
   AjustesRoute: AjustesRouteWithChildren,
   CalendarioRoute: CalendarioRoute,
   CrearTareaRoute: CrearTareaRoute,

@@ -373,6 +373,92 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_deliveries: {
+        Row: {
+          activity_id: string | null
+          attempt: number
+          created_at: string
+          dedupe_key: string
+          error_summary: string | null
+          id: string
+          logical_date: string | null
+          notification_type: string
+          sent_at: string
+          status: string
+          subscription_id: string | null
+          user_id: string
+        }
+        Insert: {
+          activity_id?: string | null
+          attempt?: number
+          created_at?: string
+          dedupe_key: string
+          error_summary?: string | null
+          id?: string
+          logical_date?: string | null
+          notification_type: string
+          sent_at?: string
+          status?: string
+          subscription_id?: string | null
+          user_id: string
+        }
+        Update: {
+          activity_id?: string | null
+          attempt?: number
+          created_at?: string
+          dedupe_key?: string
+          error_summary?: string | null
+          id?: string
+          logical_date?: string | null
+          notification_type?: string
+          sent_at?: string
+          status?: string
+          subscription_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_deliveries_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "push_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_preferences: {
+        Row: {
+          created_at: string
+          daily_summary_enabled: boolean
+          daily_summary_hour: number
+          daily_summary_minute: number
+          event_reminders_enabled: boolean
+          notifications_enabled: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          daily_summary_enabled?: boolean
+          daily_summary_hour?: number
+          daily_summary_minute?: number
+          event_reminders_enabled?: boolean
+          notifications_enabled?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          daily_summary_enabled?: boolean
+          daily_summary_hour?: number
+          daily_summary_minute?: number
+          event_reminders_enabled?: boolean
+          notifications_enabled?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           apellidos: string | null
@@ -458,6 +544,57 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      push_subscriptions: {
+        Row: {
+          auth_key: string
+          created_at: string
+          deactivated_at: string | null
+          device_id: string | null
+          endpoint: string
+          id: string
+          is_active: boolean
+          last_seen_at: string
+          p256dh: string
+          platform: string | null
+          timezone: string | null
+          updated_at: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          auth_key: string
+          created_at?: string
+          deactivated_at?: string | null
+          device_id?: string | null
+          endpoint: string
+          id?: string
+          is_active?: boolean
+          last_seen_at?: string
+          p256dh: string
+          platform?: string | null
+          timezone?: string | null
+          updated_at?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          auth_key?: string
+          created_at?: string
+          deactivated_at?: string | null
+          device_id?: string | null
+          endpoint?: string
+          id?: string
+          is_active?: boolean
+          last_seen_at?: string
+          p256dh?: string
+          platform?: string | null
+          timezone?: string | null
+          updated_at?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       subprojects: {
         Row: {
