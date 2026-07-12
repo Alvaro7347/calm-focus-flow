@@ -110,11 +110,13 @@ export async function getOrLoadTodayBrief(options?: {
   userId: string | null | undefined;
   force?: boolean;
   now?: Date;
+  timezone?: string;
 }): Promise<DailyBriefResult> {
   const userId = options?.userId ?? null;
-  const date = todayISO(options?.now);
+  const now = options?.now ?? new Date();
+  const date = todayISO(now, options?.timezone);
   if (userId && !options?.force) {
-    const cached = readCachedBrief(userId, date);
+    const cached = readCachedBrief(userId, date, options?.timezone);
     if (cached) {
       return {
         ok: true,
@@ -123,7 +125,7 @@ export async function getOrLoadTodayBrief(options?: {
       };
     }
   }
-  const result = await getDailyBrief({ now: options?.now });
+  const result = await getDailyBrief({ now, timezone: options?.timezone });
   if (result.ok && userId) writeCachedBrief(userId, date, result.brief);
   return result;
 }
