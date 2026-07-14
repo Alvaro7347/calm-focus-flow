@@ -110,16 +110,12 @@ export async function fetchTaskForEdit(id: string): Promise<TaskWithHierarchy | 
 }
 
 /**
- * Claves de invalidación en TanStack Query que dependen del conjunto
- * de tareas. Cualquier mutación (create/update/archive) debe invalidar
- * TODAS estas claves para mantener la consistencia entre pantallas.
+ * NOTA: `TASK_INVALIDATION_KEYS` fue reemplazado por
+ * `invalidateActivityGraph()` en `src/lib/queryInvalidation.ts`,
+ * que es el punto único para reconciliar la caché tras mutar
+ * una actividad. No añadir claves aquí: extender el helper.
  */
-export const TASK_INVALIDATION_KEYS: readonly (readonly string[])[] = [
-  ["focus"],
-  ["calendar"],
-  ["tablero"],
-  ["areas", "nav"],
-] as const;
+
 
 
 export async function createTask(input: CreateTaskInput): Promise<TaskRow> {

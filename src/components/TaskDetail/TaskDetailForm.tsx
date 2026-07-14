@@ -76,13 +76,13 @@ import {
   archiveTask,
   createTask,
   updateTask,
-  TASK_INVALIDATION_KEYS,
   type CreateTaskInput,
   type TaskPriority,
   type TaskRow,
   type TaskStatus,
   type TaskWithHierarchy,
 } from "@/services/taskService";
+import { invalidateActivityGraph } from "@/lib/queryInvalidation";
 import type { AreaRow, ProjectRow, SubprojectRow } from "@/types/tarea";
 import type { ActivityType } from "@/types/activity";
 import { ACTIVITY_TYPE_DB } from "@/types/activity";
@@ -392,11 +392,7 @@ export function TaskDetailForm({
         setSubprojectId(result.newId);
       }
       // Propagar a las vistas que dependen de la jerarquía.
-      await Promise.all(
-        TASK_INVALIDATION_KEYS.map((k) =>
-          queryClient.invalidateQueries({ queryKey: k as unknown as string[] }),
-        ),
-      );
+      await invalidateActivityGraph(queryClient);
       toast.success(
         `Estructura reutilizada · ${result.counts.subprojects} subproyectos, ${result.counts.tasks} tareas.`,
       );
@@ -476,11 +472,9 @@ export function TaskDetailForm({
   }
 
   async function invalidateAll() {
-    await Promise.all(
-      TASK_INVALIDATION_KEYS.map((key) =>
-        queryClient.invalidateQueries({ queryKey: key as unknown as string[] }),
-      ),
-    );
+    await invalidateActivityGraph(queryClient, {
+      activityId: initialTask?.task.id,
+    });
   }
 
   async function handleSave() {

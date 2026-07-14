@@ -35,7 +35,7 @@ import {
 import { recordInAppSurveyResponse } from "@/services/surveyService";
 import { IN_APP_SURVEY_KEYS, ANALYTICS_EVENTS } from "@/services/analyticsEvents";
 import { trackEvent } from "@/services/analyticsService";
-import { TASK_INVALIDATION_KEYS } from "@/services/taskService";
+import { invalidateActivityGraph } from "@/lib/queryInvalidation";
 import { supabase } from "@/integrations/supabase/client";
 
 type Step = "intro" | "before" | "dump" | "review" | "next_steps" | "after" | "done";
@@ -238,9 +238,7 @@ function PrimeraDescargaPage() {
         created_count: createdCount,
         source: "aha_flow",
       });
-      for (const key of TASK_INVALIDATION_KEYS) {
-        queryClient.invalidateQueries({ queryKey: [...key] });
-      }
+      await invalidateActivityGraph(queryClient);
       setStep("after");
     } finally {
       setSubmitting(false);
