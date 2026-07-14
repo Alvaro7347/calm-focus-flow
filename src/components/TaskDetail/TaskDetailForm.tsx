@@ -476,11 +476,9 @@ export function TaskDetailForm({
   }
 
   async function invalidateAll() {
-    await Promise.all(
-      TASK_INVALIDATION_KEYS.map((key) =>
-        queryClient.invalidateQueries({ queryKey: key as unknown as string[] }),
-      ),
-    );
+    await invalidateActivityGraph(queryClient, {
+      activityId: initialTask?.task.id,
+    });
   }
 
   async function handleSave() {
