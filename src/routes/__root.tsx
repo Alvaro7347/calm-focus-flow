@@ -203,10 +203,7 @@ function RootComponent() {
       if (event === "SIGNED_OUT") {
         queryClient.clear();
       } else if (event === "SIGNED_IN") {
-        queryClient.invalidateQueries({ queryKey: AREAS_NAV_QUERY_KEY });
-        queryClient.invalidateQueries({ queryKey: ["focus"] });
-        queryClient.invalidateQueries({ queryKey: ["calendar"] });
-        queryClient.invalidateQueries({ queryKey: ["tablero"] });
+        invalidateActivityGraph(queryClient);
         queryClient.invalidateQueries({ queryKey: ["profile"] });
       }
     });
