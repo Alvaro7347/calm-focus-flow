@@ -238,9 +238,7 @@ function PrimeraDescargaPage() {
         created_count: createdCount,
         source: "aha_flow",
       });
-      for (const key of TASK_INVALIDATION_KEYS) {
-        queryClient.invalidateQueries({ queryKey: [...key] });
-      }
+      await invalidateActivityGraph(queryClient);
       setStep("after");
     } finally {
       setSubmitting(false);
