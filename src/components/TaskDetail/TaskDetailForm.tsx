@@ -76,7 +76,7 @@ import {
   archiveTask,
   createTask,
   updateTask,
-  TASK_INVALIDATION_KEYS,
+  TASK_INVALIDATION_KEYS as _UNUSED_TASK_INVALIDATION_KEYS,
   type CreateTaskInput,
   type TaskPriority,
   type TaskRow,
