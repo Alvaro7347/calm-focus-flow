@@ -23,7 +23,6 @@ import { LogoSymbol } from "../components/brand/LogoSymbol";
 import { SplashScreen } from "../components/brand/SplashScreen";
 import { BRAND } from "../brand/brand";
 import { BootstrapProvider } from "../lib/bootstrapContext";
-import { AREAS_NAV_QUERY_KEY } from "../hooks/useAreasNav";
 import { invalidateActivityGraph } from "../lib/queryInvalidation";
 import { supabase } from "../integrations/supabase/client";
 
