@@ -231,7 +231,18 @@ function RootComponent() {
       try {
         const url = new URL(data.to, window.location.origin);
         if (url.origin !== window.location.origin) return;
-        navigate({ to: (url.pathname + url.search) as string, replace: false });
+        // `to` debe ser sólo el pathname; el search se pasa como objeto
+        // para que TanStack Router lo parsee y `Route.useSearch()` lo
+        // reciba (necesario para abrir el detalle vía ?event=<id>).
+        const search: Record<string, string> = {};
+        url.searchParams.forEach((v, k) => {
+          search[k] = v;
+        });
+        navigate({
+          to: url.pathname as string,
+          search: search as never,
+          replace: false,
+        });
       } catch {
         /* ignore */
       }
