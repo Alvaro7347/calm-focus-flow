@@ -128,12 +128,7 @@ export function OrganizacionActions({
     }
   }, [editOpen, name, initialColor]);
 
-  const invalidate = () => {
-    qc.invalidateQueries({ queryKey: ["organizacion"] });
-    for (const key of TASK_INVALIDATION_KEYS) {
-      qc.invalidateQueries({ queryKey: [...key] });
-    }
-  };
+  const invalidate = () => invalidateActivityGraph(qc);
 
   const save = useMutation({
     mutationFn: async (patch: RenamePatch) => updateNode(type, id, patch),
