@@ -76,13 +76,13 @@ import {
   archiveTask,
   createTask,
   updateTask,
-  TASK_INVALIDATION_KEYS as _UNUSED_TASK_INVALIDATION_KEYS,
   type CreateTaskInput,
   type TaskPriority,
   type TaskRow,
   type TaskStatus,
   type TaskWithHierarchy,
 } from "@/services/taskService";
+import { invalidateActivityGraph } from "@/lib/queryInvalidation";
 import type { AreaRow, ProjectRow, SubprojectRow } from "@/types/tarea";
 import type { ActivityType } from "@/types/activity";
 import { ACTIVITY_TYPE_DB } from "@/types/activity";
