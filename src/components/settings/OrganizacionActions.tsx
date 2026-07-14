@@ -60,7 +60,7 @@ import {
   updateSubproject,
   archiveSubproject,
 } from "@/services/subprojectService";
-import { TASK_INVALIDATION_KEYS } from "@/services/taskService";
+import { invalidateActivityGraph } from "@/lib/queryInvalidation";
 import {
   PROJECT_COLORS,
   DEFAULT_PROJECT_COLOR,
