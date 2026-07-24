@@ -285,6 +285,7 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <ThemeInitializer />
       <BootstrapProvider value={{ bootstrapped: ready, bootstrapError: null }}>
         <div className="flex min-h-screen bg-background font-sans text-foreground">
           {ready ? <Sidebar /> : null}
