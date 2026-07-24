@@ -272,6 +272,7 @@ function RootComponent() {
   if (publicRoute) {
     return (
       <QueryClientProvider client={queryClient}>
+        <ThemeInitializer />
         <BootstrapProvider value={{ bootstrapped: true, bootstrapError: null }}>
           <Outlet />
         </BootstrapProvider>
