@@ -25,6 +25,11 @@ import { BRAND } from "../brand/brand";
 import { BootstrapProvider } from "../lib/bootstrapContext";
 import { invalidateActivityGraph } from "../lib/queryInvalidation";
 import { supabase } from "../integrations/supabase/client";
+import { ThemeInitializer } from "../hooks/useTheme";
+
+// Script anti-flash: aplica la clase `.dark` en <html> antes del primer
+// render, leyendo `calmapp.theme` (o `prefers-color-scheme` en modo system).
+const THEME_INIT_SCRIPT = `(function(){try{var k='calmapp.theme';var t=localStorage.getItem(k);if(t!=='light'&&t!=='dark'&&t!=='system')t='system';var d=t==='dark'||(t==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches);var r=document.documentElement;if(d)r.classList.add('dark');else r.classList.remove('dark');r.style.colorScheme=d?'dark':'light';}catch(e){}})();`;
 
 // Rutas visibles sin sesión (auth + legales).
 const PUBLIC_PREFIXES = [
