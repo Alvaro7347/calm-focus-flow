@@ -18,14 +18,14 @@ export const Route = createFileRoute("/ajustes/organizacion")({
       {
         name: "description",
         content:
-          "Gestiona la estructura de Áreas, Proyectos y Subproyectos de CalmApp.",
+          "Gestiona la estructura de Áreas, Proyectos y Etapas de CalmApp.",
       },
     ],
   }),
   component: () => (
     <SettingsSubpage
       title="Organización"
-      description="Áreas, Proyectos y Subproyectos de tu CalmApp."
+      description="Áreas, Proyectos y Etapas de tu CalmApp."
     >
       <OrganizacionTree />
     </SettingsSubpage>
