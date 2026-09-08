@@ -334,135 +334,6 @@ export type Database = {
         }
         Relationships: []
       }
-      goals: {
-        Row: {
-          archived_at: string | null
-          created_at: string
-          display_order: number
-          id: string
-          name: string
-          objective_id: string
-          progress_mode: Database["public"]["Enums"]["progress_mode"]
-          progress_pct: number
-          target_date: string | null
-          updated_at: string
-          vision_image_url: string | null
-          vision_text: string | null
-        }
-        Insert: {
-          archived_at?: string | null
-          created_at?: string
-          display_order?: number
-          id?: string
-          name: string
-          objective_id: string
-          progress_mode?: Database["public"]["Enums"]["progress_mode"]
-          progress_pct?: number
-          target_date?: string | null
-          updated_at?: string
-          vision_image_url?: string | null
-          vision_text?: string | null
-        }
-        Update: {
-          archived_at?: string | null
-          created_at?: string
-          display_order?: number
-          id?: string
-          name?: string
-          objective_id?: string
-          progress_mode?: Database["public"]["Enums"]["progress_mode"]
-          progress_pct?: number
-          target_date?: string | null
-          updated_at?: string
-          vision_image_url?: string | null
-          vision_text?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "goals_objective_id_fkey"
-            columns: ["objective_id"]
-            isOneToOne: false
-            referencedRelation: "objectives"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      habit_logs: {
-        Row: {
-          created_at: string
-          done: boolean
-          habit_id: string
-          id: string
-          log_date: string
-        }
-        Insert: {
-          created_at?: string
-          done?: boolean
-          habit_id: string
-          id?: string
-          log_date: string
-        }
-        Update: {
-          created_at?: string
-          done?: boolean
-          habit_id?: string
-          id?: string
-          log_date?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "habit_logs_habit_id_fkey"
-            columns: ["habit_id"]
-            isOneToOne: false
-            referencedRelation: "habits"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      habits: {
-        Row: {
-          archived_at: string | null
-          area_id: string
-          created_at: string
-          desired_future_text: string | null
-          frequency_rule: Json
-          id: string
-          name: string
-          reason_text: string | null
-          updated_at: string
-        }
-        Insert: {
-          archived_at?: string | null
-          area_id: string
-          created_at?: string
-          desired_future_text?: string | null
-          frequency_rule?: Json
-          id?: string
-          name: string
-          reason_text?: string | null
-          updated_at?: string
-        }
-        Update: {
-          archived_at?: string | null
-          area_id?: string
-          created_at?: string
-          desired_future_text?: string | null
-          frequency_rule?: Json
-          id?: string
-          name?: string
-          reason_text?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "habits_area_id_fkey"
-            columns: ["area_id"]
-            isOneToOne: false
-            referencedRelation: "areas"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       in_app_survey_responses: {
         Row: {
           answer_number: number | null
@@ -606,59 +477,6 @@ export type Database = {
         }
         Relationships: []
       }
-      objectives: {
-        Row: {
-          archived_at: string | null
-          area_id: string
-          created_at: string
-          display_order: number
-          id: string
-          name: string
-          progress_mode: Database["public"]["Enums"]["progress_mode"]
-          progress_pct: number
-          target_date: string | null
-          updated_at: string
-          vision_image_url: string | null
-          vision_text: string | null
-        }
-        Insert: {
-          archived_at?: string | null
-          area_id: string
-          created_at?: string
-          display_order?: number
-          id?: string
-          name: string
-          progress_mode?: Database["public"]["Enums"]["progress_mode"]
-          progress_pct?: number
-          target_date?: string | null
-          updated_at?: string
-          vision_image_url?: string | null
-          vision_text?: string | null
-        }
-        Update: {
-          archived_at?: string | null
-          area_id?: string
-          created_at?: string
-          display_order?: number
-          id?: string
-          name?: string
-          progress_mode?: Database["public"]["Enums"]["progress_mode"]
-          progress_pct?: number
-          target_date?: string | null
-          updated_at?: string
-          vision_image_url?: string | null
-          vision_text?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "objectives_area_id_fkey"
-            columns: ["area_id"]
-            isOneToOne: false
-            referencedRelation: "areas"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       profiles: {
         Row: {
           apellidos: string | null
@@ -711,12 +529,7 @@ export type Database = {
           display_order: number
           id: string
           name: string
-          progress_mode: Database["public"]["Enums"]["progress_mode"]
-          progress_pct: number
-          target_date: string | null
           updated_at: string
-          vision_image_url: string | null
-          vision_text: string | null
         }
         Insert: {
           archived_at?: string | null
@@ -727,12 +540,7 @@ export type Database = {
           display_order?: number
           id?: string
           name: string
-          progress_mode?: Database["public"]["Enums"]["progress_mode"]
-          progress_pct?: number
-          target_date?: string | null
           updated_at?: string
-          vision_image_url?: string | null
-          vision_text?: string | null
         }
         Update: {
           archived_at?: string | null
@@ -743,12 +551,7 @@ export type Database = {
           display_order?: number
           id?: string
           name?: string
-          progress_mode?: Database["public"]["Enums"]["progress_mode"]
-          progress_pct?: number
-          target_date?: string | null
           updated_at?: string
-          vision_image_url?: string | null
-          vision_text?: string | null
         }
         Relationships: [
           {
@@ -818,10 +621,7 @@ export type Database = {
           display_order: number
           id: string
           name: string
-          progress_mode: Database["public"]["Enums"]["progress_mode"]
-          progress_pct: number
           project_id: string
-          target_date: string | null
           updated_at: string
         }
         Insert: {
@@ -830,10 +630,7 @@ export type Database = {
           display_order?: number
           id?: string
           name: string
-          progress_mode?: Database["public"]["Enums"]["progress_mode"]
-          progress_pct?: number
           project_id: string
-          target_date?: string | null
           updated_at?: string
         }
         Update: {
@@ -842,10 +639,7 @@ export type Database = {
           display_order?: number
           id?: string
           name?: string
-          progress_mode?: Database["public"]["Enums"]["progress_mode"]
-          progress_pct?: number
           project_id?: string
-          target_date?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -895,7 +689,6 @@ export type Database = {
           activity_type: Database["public"]["Enums"]["activity_type"]
           actual_duration_min: number | null
           archived_at: string | null
-          area_id: string
           blocked_reason: string | null
           capture_session_id: string | null
           completed_at: string | null
@@ -903,13 +696,12 @@ export type Database = {
           description: string | null
           ends_at: string | null
           estimated_duration_min: number | null
-          goal_id: string | null
           id: string
           priority: Database["public"]["Enums"]["task_priority"]
           source: Database["public"]["Enums"]["task_source"]
           starts_at: string | null
           status: Database["public"]["Enums"]["task_status"]
-          subproject_id: string | null
+          subproject_id: string
           title: string
           updated_at: string
           user_id: string
@@ -918,7 +710,6 @@ export type Database = {
           activity_type?: Database["public"]["Enums"]["activity_type"]
           actual_duration_min?: number | null
           archived_at?: string | null
-          area_id: string
           blocked_reason?: string | null
           capture_session_id?: string | null
           completed_at?: string | null
@@ -926,13 +717,12 @@ export type Database = {
           description?: string | null
           ends_at?: string | null
           estimated_duration_min?: number | null
-          goal_id?: string | null
           id?: string
           priority?: Database["public"]["Enums"]["task_priority"]
           source?: Database["public"]["Enums"]["task_source"]
           starts_at?: string | null
           status?: Database["public"]["Enums"]["task_status"]
-          subproject_id?: string | null
+          subproject_id: string
           title: string
           updated_at?: string
           user_id: string
@@ -941,7 +731,6 @@ export type Database = {
           activity_type?: Database["public"]["Enums"]["activity_type"]
           actual_duration_min?: number | null
           archived_at?: string | null
-          area_id?: string
           blocked_reason?: string | null
           capture_session_id?: string | null
           completed_at?: string | null
@@ -949,37 +738,22 @@ export type Database = {
           description?: string | null
           ends_at?: string | null
           estimated_duration_min?: number | null
-          goal_id?: string | null
           id?: string
           priority?: Database["public"]["Enums"]["task_priority"]
           source?: Database["public"]["Enums"]["task_source"]
           starts_at?: string | null
           status?: Database["public"]["Enums"]["task_status"]
-          subproject_id?: string | null
+          subproject_id?: string
           title?: string
           updated_at?: string
           user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "tasks_area_id_fkey"
-            columns: ["area_id"]
-            isOneToOne: false
-            referencedRelation: "areas"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "tasks_capture_session_id_fkey"
             columns: ["capture_session_id"]
             isOneToOne: false
             referencedRelation: "capture_sessions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "tasks_goal_id_fkey"
-            columns: ["goal_id"]
-            isOneToOne: false
-            referencedRelation: "goals"
             referencedColumns: ["id"]
           },
           {
@@ -1047,7 +821,6 @@ export type Database = {
     Enums: {
       activity_type: "task" | "event"
       capture_source: "text" | "voice"
-      progress_mode: "auto" | "manual"
       task_priority: "high" | "medium" | "low"
       task_source: "text" | "voice" | "manual" | "import" | "api"
       task_status: "pending" | "completed" | "waiting"
@@ -1066,12 +839,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1095,11 +868,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1120,11 +893,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1145,11 +918,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1162,11 +935,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1180,7 +953,6 @@ export const Constants = {
     Enums: {
       activity_type: ["task", "event"],
       capture_source: ["text", "voice"],
-      progress_mode: ["auto", "manual"],
       task_priority: ["high", "medium", "low"],
       task_source: ["text", "voice", "manual", "import", "api"],
       task_status: ["pending", "completed", "waiting"],
