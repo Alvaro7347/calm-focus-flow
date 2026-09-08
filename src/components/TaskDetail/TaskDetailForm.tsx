@@ -394,7 +394,7 @@ export function TaskDetailForm({
       // Propagar a las vistas que dependen de la jerarquía.
       await invalidateActivityGraph(queryClient);
       toast.success(
-        `Estructura reutilizada · ${result.counts.subprojects} subproyectos, ${result.counts.tasks} tareas.`,
+        `Estructura reutilizada · ${result.counts.subprojects} etapas, ${result.counts.tasks} tareas.`,
       );
       setSuggestion(null);
       setInlineOpen(null);
@@ -437,7 +437,7 @@ export function TaskDetailForm({
     const next: Record<string, string> = {};
     if (!areaId) next.area = "Selecciona un área.";
     if (!projectId) next.project = "Selecciona un proyecto.";
-    if (!subprojectId) next.subproject = "Selecciona un subproyecto.";
+    if (!subprojectId) next.subproject = "Selecciona una etapa.";
     if (!title.trim()) next.title = "Escribe un título.";
     if (isEvento) {
       if (!fecha) next.fecha = "Un evento necesita una fecha.";
@@ -772,7 +772,7 @@ export function TaskDetailForm({
 
             {/* Subproyecto */}
             <div className="space-y-2">
-              <Label>Subproyecto *</Label>
+              <Label>Etapa *</Label>
               <div className="flex gap-2">
                 <div className="flex-1">
                   <Select
@@ -786,8 +786,8 @@ export function TaskDetailForm({
                           !projectId
                             ? "Primero elige un proyecto"
                             : subprojects.length === 0
-                              ? "Aún no hay subproyectos"
-                              : "Selecciona un subproyecto"
+                              ? "Aún no hay etapas"
+                              : "Selecciona una etapa"
                         }
                       />
                     </SelectTrigger>
@@ -806,7 +806,7 @@ export function TaskDetailForm({
                   size="icon"
                   onClick={() => openInline("subproject")}
                   disabled={!projectId}
-                  aria-label="Nuevo subproyecto"
+                  aria-label="Nueva etapa"
                 >
                   <Plus className="h-4 w-4" />
                 </Button>
@@ -1031,14 +1031,14 @@ export function TaskDetailForm({
             <DialogTitle>
               {inlineOpen === "area" && "Nueva área"}
               {inlineOpen === "project" && "Nuevo proyecto"}
-              {inlineOpen === "subproject" && "Nuevo subproyecto"}
+              {inlineOpen === "subproject" && "Nueva etapa"}
             </DialogTitle>
             <DialogDescription>
               {inlineOpen === "area" && "Crea un área para organizar tus tareas."}
               {inlineOpen === "project" &&
                 "El proyecto se creará dentro del área seleccionada."}
               {inlineOpen === "subproject" &&
-                "El subproyecto se creará dentro del proyecto seleccionado."}
+                "La etapa se creará dentro del proyecto seleccionado."}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
