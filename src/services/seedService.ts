@@ -103,6 +103,7 @@ export async function seedIfEmpty(): Promise<void> {
     }
 
     const input: CreateTaskInput = {
+      area_id: areaId,
       subproject_id: subprojectId,
       title: t.titulo,
       priority: mapPriority(t.priority),
