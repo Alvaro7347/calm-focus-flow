@@ -32,6 +32,7 @@ import {
   OrganizacionActions,
   type OrgNodeType,
 } from "@/components/settings/OrganizacionActions";
+import { CrearNodoDialog } from "@/components/settings/CrearNodoDialog";
 import { getProjectColor } from "@/lib/projectIdentity";
 
 export const ORGANIZACION_QUERY_KEY = ["organizacion"] as const;
@@ -147,17 +148,20 @@ function ProjectRow({ project, depth }: { project: ProyectoNode; depth: number }
         label={project.nombre}
         type="project"
         depth={depth}
-        expandable={hasChildren}
+        expandable
         expanded={open}
         onToggle={() => setOpen((v) => !v)}
         count={project.subproyectos.length || undefined}
       />
 
-      {hasChildren && open ? (
+      {open ? (
         <div className="animate-in fade-in slide-in-from-top-1 duration-200">
           {project.subproyectos.map((s) => (
             <SubprojectRow key={s.id} sub={s} depth={depth + 1} />
           ))}
+          <div style={{ paddingLeft: 16 + (depth + 1) * 20 }}>
+            <CrearNodoDialog type="subproject" parentId={project.id} />
+          </div>
         </div>
       ) : null}
     </>
@@ -166,7 +170,6 @@ function ProjectRow({ project, depth }: { project: ProyectoNode; depth: number }
 
 function AreaRow({ area }: { area: AreaNode }) {
   const [open, setOpen] = useState(true);
-  const hasChildren = area.proyectos.length > 0;
   return (
     <div>
       <NodeRow
@@ -174,18 +177,21 @@ function AreaRow({ area }: { area: AreaNode }) {
         label={area.nombre}
         type="area"
         depth={0}
-        expandable={hasChildren}
+        expandable
         expanded={open}
         onToggle={() => setOpen((v) => !v)}
         count={area.proyectos.length || undefined}
         color={area.color}
       />
 
-      {hasChildren && open ? (
+      {open ? (
         <div className="animate-in fade-in slide-in-from-top-1 duration-200">
           {area.proyectos.map((p) => (
             <ProjectRow key={p.id} project={p} depth={1} />
           ))}
+          <div style={{ paddingLeft: 16 + 1 * 20 }}>
+            <CrearNodoDialog type="project" parentId={area.id} />
+          </div>
         </div>
       ) : null}
     </div>
@@ -233,6 +239,10 @@ export function OrganizacionTree() {
         <Stat label="Etapas" value={stats.subprojects} />
       </section>
 
+      <div className="flex justify-end">
+        <CrearNodoDialog type="area" />
+      </div>
+
       <section className="rounded-xl border border-slate-200 bg-white overflow-hidden">
         {!ready || isLoading ? (
           <div className="px-4 py-10 text-center text-sm text-slate-500">
@@ -249,7 +259,7 @@ export function OrganizacionTree() {
               Sin áreas todavía
             </p>
             <p className="mt-1 text-xs text-slate-500">
-              Crea tu primera Área desde "Crear tarea".
+              Usa el botón "+ Nueva Área" de arriba para crear la primera.
             </p>
           </div>
         ) : (
