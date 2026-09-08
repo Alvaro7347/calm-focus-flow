@@ -83,3 +83,24 @@ export async function archiveProject(id: string): Promise<ProjectRow> {
 export async function unarchiveProject(id: string): Promise<ProjectRow> {
   return updateProject(id, { archived_at: null });
 }
+
+/**
+ * Fija el progreso del Proyecto a mano y lo pasa a modo `manual`.
+ * Mientras esté en este modo, el recálculo automático (a partir del
+ * progreso de sus Etapas) no vuelve a pisar el valor.
+ */
+export async function setProjectProgressManual(
+  id: string,
+  progressPct: number,
+): Promise<ProjectRow> {
+  return updateProject(id, { progress_pct: progressPct, progress_mode: "manual" });
+}
+
+/**
+ * Devuelve el Proyecto a modo `auto`. El valor de `progress_pct`
+ * queda desactualizado hasta el próximo cambio en sus Etapas/tareas
+ * (el recálculo lo dispara la base de datos, no este helper).
+ */
+export async function resetProjectProgressToAuto(id: string): Promise<ProjectRow> {
+  return updateProject(id, { progress_mode: "auto" });
+}
