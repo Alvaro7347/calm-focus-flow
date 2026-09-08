@@ -358,6 +358,7 @@ async function currentUserId(): Promise<string> {
 function cloneTaskInsert(
   row: Database["public"]["Tables"]["tasks"]["Row"],
   newSubprojectId: string,
+  newAreaId: string,
   userId: string,
 ): TaskInsert {
   return {
@@ -365,6 +366,7 @@ function cloneTaskInsert(
     description: row.description,
     priority: row.priority,
     estimated_duration_min: row.estimated_duration_min,
+    area_id: newAreaId,
     subproject_id: newSubprojectId,
     user_id: userId,
     status: "pending",
@@ -378,6 +380,7 @@ function cloneTaskInsert(
 async function duplicateSubprojectContents(
   sourceSubprojectId: string,
   newSubprojectId: string,
+  newAreaId: string,
   userId: string,
 ): Promise<{ tasks: number }> {
   const { data: tasks, error } = await supabase
@@ -388,7 +391,7 @@ async function duplicateSubprojectContents(
   if (error) throw error;
   const rows = tasks ?? [];
   if (rows.length === 0) return { tasks: 0 };
-  const inserts: TaskInsert[] = rows.map((r) => cloneTaskInsert(r, newSubprojectId, userId));
+  const inserts: TaskInsert[] = rows.map((r) => cloneTaskInsert(r, newSubprojectId, newAreaId, userId));
   const { error: insErr } = await supabase.from("tasks").insert(inserts);
   if (insErr) throw insErr;
   return { tasks: rows.length };
@@ -397,6 +400,7 @@ async function duplicateSubprojectContents(
 async function duplicateProjectContents(
   sourceProjectId: string,
   newProjectId: string,
+  newAreaId: string,
   userId: string,
 ): Promise<{ subprojects: number; tasks: number }> {
   const { data: subs, error } = await supabase
@@ -419,7 +423,7 @@ async function duplicateProjectContents(
       .select("id")
       .single();
     if (subErr) throw subErr;
-    const res = await duplicateSubprojectContents(s.id, created.id, userId);
+    const res = await duplicateSubprojectContents(s.id, created.id, newAreaId, userId);
     totalTasks += res.tasks;
   }
   return { subprojects: (subs ?? []).length, tasks: totalTasks };
@@ -486,7 +490,7 @@ export async function duplicateStructure(
         description: p.description,
         display_order: p.display_order,
       });
-      const r = await duplicateProjectContents(p.id, newProject.id, userId);
+      const r = await duplicateProjectContents(p.id, newProject.id, created.id, userId);
       subprojects += r.subprojects;
       tasks += r.tasks;
     }
@@ -513,7 +517,7 @@ export async function duplicateStructure(
       description: source?.description ?? null,
       display_order: source?.display_order ?? undefined,
     });
-    const r = await duplicateProjectContents(match.sourceId, newProject.id, userId);
+    const r = await duplicateProjectContents(match.sourceId, newProject.id, target.areaId, userId);
     return {
       kind: "project",
       newId: newProject.id,
@@ -523,6 +527,13 @@ export async function duplicateStructure(
 
   // subproject
   if (!target.projectId) throw new Error("Falta el proyecto destino.");
+  const { data: targetProject, error: targetProjectErr } = await supabase
+    .from("projects")
+    .select("area_id")
+    .eq("id", target.projectId)
+    .maybeSingle();
+  if (targetProjectErr) throw targetProjectErr;
+  if (!targetProject) throw new Error("El proyecto destino no existe.");
   const { data: source } = await supabase
     .from("subprojects")
     .select("display_order")
@@ -533,7 +544,7 @@ export async function duplicateStructure(
     project_id: target.projectId,
     display_order: source?.display_order ?? undefined,
   });
-  const r = await duplicateSubprojectContents(match.sourceId, newSub.id, userId);
+  const r = await duplicateSubprojectContents(match.sourceId, newSub.id, targetProject.area_id, userId);
   return {
     kind: "subproject",
     newId: newSub.id,
