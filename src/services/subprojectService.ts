@@ -85,3 +85,19 @@ export async function archiveSubproject(id: string): Promise<SubprojectRow> {
 export async function unarchiveSubproject(id: string): Promise<SubprojectRow> {
   return updateSubproject(id, { archived_at: null });
 }
+
+/**
+ * Fija el progreso de la Etapa a mano y la pasa a modo `manual`.
+ * Ver nota equivalente en `projectService.setProjectProgressManual`.
+ */
+export async function setStageProgressManual(
+  id: string,
+  progressPct: number,
+): Promise<SubprojectRow> {
+  return updateSubproject(id, { progress_pct: progressPct, progress_mode: "manual" });
+}
+
+/** Devuelve la Etapa a modo `auto` (recálculo desde sus tareas). */
+export async function resetStageProgressToAuto(id: string): Promise<SubprojectRow> {
+  return updateSubproject(id, { progress_mode: "auto" });
+}
