@@ -160,7 +160,7 @@ type SubprojectLite = Pick<
 >;
 type TaskLite = Pick<
   Database["public"]["Tables"]["tasks"]["Row"],
-  "id" | "title" | "subproject_id" | "created_at"
+  "id" | "title" | "subproject_id" | "area_id" | "created_at"
 >;
 
 interface RawObservations {
@@ -267,7 +267,7 @@ async function fetchObservations(): Promise<RawObservations> {
       .gte("created_at", sinceIso),
     supabase
       .from("tasks")
-      .select("id, title, subproject_id, created_at")
+      .select("id, title, subproject_id, area_id, created_at")
       .gte("created_at", sinceIso),
   ]);
 
@@ -331,14 +331,18 @@ function buildObservations(raw: RawObservations): Observation[] {
   }
 
   for (const t of raw.tasks) {
-    const sub = subprojectById.get(t.subproject_id);
+    const sub = t.subproject_id ? subprojectById.get(t.subproject_id) : undefined;
     const project = sub ? projectById.get(sub.project_id) : undefined;
-    const area = project ? areaById.get(project.area_id) : undefined;
+    // `t.area_id` es la fuente directa y siempre está presente (incluso
+    // en tareas directas, sin proyecto/etapa); se usa como base y solo
+    // se completa con el área del proyecto si por algún motivo faltara.
+    const areaId = t.area_id ?? project?.area_id;
+    const area = areaId ? areaById.get(areaId) : undefined;
     obs.push({
       kind: "task",
       name: t.title,
       createdAt: t.created_at,
-      areaId: project?.area_id,
+      areaId,
       areaName: area?.name,
       projectId: project?.id,
       projectName: project?.name,
