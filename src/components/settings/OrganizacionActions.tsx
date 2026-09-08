@@ -72,7 +72,7 @@ export type OrgNodeType = "area" | "project" | "subproject";
 const LABELS: Record<OrgNodeType, { singular: string; article: string }> = {
   area: { singular: "área", article: "esta" },
   project: { singular: "proyecto", article: "este" },
-  subproject: { singular: "subproyecto", article: "este" },
+  subproject: { singular: "etapa", article: "esta" },
 };
 
 interface RenamePatch {
@@ -219,7 +219,7 @@ export function OrganizacionActions({
             <DialogTitle>Editar {LABELS[type].singular}</DialogTitle>
             <DialogDescription>
               {type === "area"
-                ? "Cambia el nombre o el color. Proyectos, subproyectos y tareas heredarán el nuevo color."
+                ? "Cambia el nombre o el color. Proyectos, etapas y tareas heredarán el nuevo color."
                 : "Cambia el nombre. No afecta al historial de tareas."}
             </DialogDescription>
           </DialogHeader>
