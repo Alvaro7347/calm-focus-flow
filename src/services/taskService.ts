@@ -20,8 +20,12 @@
 
  *
  * Reglas de dominio (ver ARCHITECTURE.md):
- * - Toda tarea pertenece obligatoriamente a un usuario y a un
- *   subproyecto. Área y Proyecto se derivan por relación.
+ * - Toda tarea pertenece obligatoriamente a un usuario y a un Área
+ *   (`area_id`). El Subproyecto/Etapa (`subproject_id`) y la Meta
+ *   (`goal_id`) son OPCIONALES: una tarea puede colgar de un
+ *   Proyecto→Etapa, de un Objetivo→Meta, o ser una tarea directa
+ *   de Área sin proyecto ni objetivo (ver migración
+ *   `objetivos_metas_habitos_etapas`).
  * - No existe eliminación física: usar `archiveTask()` que
  *   escribe `archived_at`.
  * - Estados válidos: 'pending' | 'waiting' | 'completed'.
@@ -462,4 +466,3 @@ export async function fetchScheduledTasks(): Promise<Tarea[]> {
   const rows = (data ?? []) as unknown as JoinedTaskRow[];
   return rows.map(rowToScheduledTarea);
 }
-
