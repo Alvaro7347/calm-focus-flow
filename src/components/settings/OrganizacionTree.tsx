@@ -230,7 +230,7 @@ export function OrganizacionTree() {
       <section className="flex gap-2">
         <Stat label="Áreas" value={stats.areas} />
         <Stat label="Proyectos" value={stats.projects} />
-        <Stat label="Subproyectos" value={stats.subprojects} />
+        <Stat label="Etapas" value={stats.subprojects} />
       </section>
 
       <section className="rounded-xl border border-slate-200 bg-white overflow-hidden">
