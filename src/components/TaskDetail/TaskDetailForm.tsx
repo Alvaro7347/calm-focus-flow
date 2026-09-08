@@ -509,6 +509,7 @@ export function TaskDetailForm({
             ? (initialTask.task.completed_at ?? new Date().toISOString())
             : null;
         saved = await updateTask(initialTask.task.id, {
+          area_id: areaId,
           subproject_id: subprojectId,
           title: title.trim(),
           description: description.trim() || null,
@@ -523,6 +524,7 @@ export function TaskDetailForm({
         toast.success(isEvento ? "Evento actualizado." : "Tarea actualizada.");
       } else {
         const input: CreateTaskInput = {
+          area_id: areaId,
           subproject_id: subprojectId,
           title: title.trim(),
           description: description.trim() || null,
