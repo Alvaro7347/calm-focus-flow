@@ -38,7 +38,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { slugify } from "@/lib/slug";
 import { mapDbPriorityToUi, type DbPriority } from "@/services/mappers/priorityMapper";
-import type { Tarea } from "@/types/tarea";
+import type { Tarea, ProgressMode } from "@/types/tarea";
 
 export interface SubproyectoNode {
   id: string;
@@ -51,6 +51,12 @@ export interface SubproyectoNode {
    * archivar. Excluye eventos y tareas completadas.
    */
   tareasPendientes: number;
+  /** % de avance de la Etapa (0-100). Ver `progress_mode`. */
+  progresoPct: number;
+  /** 'auto' = recalculado desde sus tareas; 'manual' = fijado a mano. */
+  modoProgreso: ProgressMode;
+  /** Fecha objetivo de la Etapa, formato YYYY-MM-DD. */
+  fechaObjetivo: string | null;
 }
 
 export interface ProyectoNode {
@@ -65,6 +71,14 @@ export interface ProyectoNode {
   subproyectos: SubproyectoNode[];
   /** Suma de `tareasPendientes` de sus subproyectos. */
   totalTareas: number;
+  /** % de avance del Proyecto (0-100). Ver `progress_mode`. */
+  progresoPct: number;
+  /** 'auto' = promedio de sus Etapas; 'manual' = fijado a mano. */
+  modoProgreso: ProgressMode;
+  /** Fecha objetivo del Proyecto, formato YYYY-MM-DD. */
+  fechaObjetivo: string | null;
+  /** Visión emocional del Proyecto (texto libre). */
+  visionTexto: string | null;
 }
 
 export interface AreaNode {
@@ -99,6 +113,9 @@ type RawSubproject = {
   name: string;
   display_order: number;
   archived_at: string | null;
+  progress_pct: number;
+  progress_mode: ProgressMode;
+  target_date: string | null;
   tasks: RawTask[] | null;
 };
 
@@ -107,6 +124,10 @@ type RawProject = {
   name: string;
   display_order: number;
   archived_at: string | null;
+  progress_pct: number;
+  progress_mode: ProgressMode;
+  target_date: string | null;
+  vision_text: string | null;
   subprojects: RawSubproject[] | null;
 };
 
@@ -171,8 +192,10 @@ export async function fetchAreaTree(): Promise<AreaNode[]> {
       `id, name, display_order, archived_at, color,
        projects (
          id, name, display_order, archived_at,
+         progress_pct, progress_mode, target_date, vision_text,
          subprojects (
            id, name, display_order, archived_at,
+           progress_pct, progress_mode, target_date,
            tasks (
              id, title, status, activity_type, priority, starts_at,
              estimated_duration_min, updated_at, archived_at
@@ -212,6 +235,9 @@ export async function fetchAreaTree(): Promise<AreaNode[]> {
               slug: slugify(s.name),
               tareas,
               tareasPendientes,
+              progresoPct: s.progress_pct,
+              modoProgreso: s.progress_mode,
+              fechaObjetivo: s.target_date,
             };
           });
         const totalTareas = subproyectos.reduce((n, s) => n + s.tareasPendientes, 0);
@@ -222,6 +248,10 @@ export async function fetchAreaTree(): Promise<AreaNode[]> {
           color: areaColor,
           subproyectos,
           totalTareas,
+          progresoPct: p.progress_pct,
+          modoProgreso: p.progress_mode,
+          fechaObjetivo: p.target_date,
+          visionTexto: p.vision_text,
         };
       });
     const totalTareas = proyectos.reduce((n, p) => n + p.totalTareas, 0);
