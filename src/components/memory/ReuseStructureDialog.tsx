@@ -44,7 +44,7 @@ function kindLabel(kind: StructureMatch["kind"]): string {
     case "project":
       return "proyecto";
     case "subproject":
-      return "subproyecto";
+      return "etapa";
     default:
       return "estructura";
   }
@@ -91,7 +91,7 @@ export function ReuseStructureDialog({
               <li>{summary.projectsCount} proyectos</li>
             )}
             {match.kind !== "subproject" && (
-              <li>{summary.subprojectsCount} subproyectos</li>
+              <li>{summary.subprojectsCount} etapas</li>
             )}
             <li>{summary.tasksCount} tareas</li>
             <li>Última actividad: {formatDate(summary.lastUsedAt)}</li>
