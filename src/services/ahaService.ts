@@ -170,7 +170,7 @@ const INBOX_AREA_NAME = "Bandeja de entrada";
 const INBOX_PROJECT_NAME = "General";
 const INBOX_SUBPROJECT_NAME = "Descarga mental";
 
-async function ensureInboxSubprojectId(): Promise<string> {
+async function ensureInboxSubprojectId(): Promise<{ areaId: string; subprojectId: string }> {
   // 1) Área
   const areas = await fetchAreas(false);
   let area = areas.find((a) => a.name === INBOX_AREA_NAME);
@@ -181,12 +181,12 @@ async function ensureInboxSubprojectId(): Promise<string> {
   let project = projects.find((p) => p.name === INBOX_PROJECT_NAME);
   if (!project) project = await createProject({ name: INBOX_PROJECT_NAME, area_id: area.id });
 
-  // 3) Subproyecto
+  // 3) Subproyecto (Etapa)
   const subs = await fetchSubprojects(project.id, false);
   let sub = subs.find((s) => s.name === INBOX_SUBPROJECT_NAME);
   if (!sub) sub = await createSubproject({ name: INBOX_SUBPROJECT_NAME, project_id: project.id });
 
-  return sub.id;
+  return { areaId: area.id, subprojectId: sub.id };
 }
 
 function mapPriority(p: CapturedItemPriority): TaskPriority {
@@ -218,7 +218,7 @@ export async function createTasksFromConfirmedItems(
   const confirmed = items.filter((i) => i.confirmed);
   if (confirmed.length === 0) return { createdCount: 0, taskIds: [] };
 
-  const subprojectId = await ensureInboxSubprojectId();
+  const { areaId, subprojectId } = await ensureInboxSubprojectId();
   const ids: string[] = [];
 
   for (const item of confirmed) {
@@ -231,6 +231,7 @@ export async function createTasksFromConfirmedItems(
     const status = item.when === "esperando" ? "waiting" : "pending";
     try {
       const row = await createTask({
+        area_id: areaId,
         subproject_id: subprojectId,
         title: item.title.slice(0, 200),
         priority: mapPriority(item.priority),
