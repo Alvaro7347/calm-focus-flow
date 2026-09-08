@@ -31,8 +31,17 @@ export interface Tarea {
   id: string;
   titulo: string;
   area: string;
+  /** id del Área real en Supabase. Obligatorio a nivel de datos (`tasks.area_id`). */
+  areaId?: string;
   proyecto?: string;
   subproyecto?: string;
+  /**
+   * id de la Meta (Objetivo → Metas → Tareas) a la que pertenece esta
+   * tarea, si corresponde. Es independiente de `proyecto`/`subproyecto`:
+   * una tarea cuelga de un Proyecto/Etapa O de un Objetivo/Meta, o de
+   * ninguno (tarea directa de Área).
+   */
+  metaId?: string;
   /**
    * Slug de identidad visual del Proyecto padre (paleta CalmApp).
    * Puede ser `null`/`undefined`; los consumidores deben resolverlo
@@ -92,3 +101,16 @@ export type ProjectUpdate = Database["public"]["Tables"]["projects"]["Update"];
 export type SubprojectRow = Database["public"]["Tables"]["subprojects"]["Row"];
 export type SubprojectInsert = Database["public"]["Tables"]["subprojects"]["Insert"];
 export type SubprojectUpdate = Database["public"]["Tables"]["subprojects"]["Update"];
+
+/**
+ * Alias de dominio: un "Subproject" en base de datos es, conceptualmente,
+ * una Etapa dentro de un Proyecto (ver migración `objetivos_metas_habitos_etapas`).
+ * Se mantiene el nombre de tabla `subprojects` por compatibilidad; el
+ * código nuevo debería preferir `StageRow`/`StageInsert`/`StageUpdate`.
+ */
+export type StageRow = SubprojectRow;
+export type StageInsert = SubprojectInsert;
+export type StageUpdate = SubprojectUpdate;
+
+/** Modo de cálculo de `progress_pct` en Objetivos, Metas, Proyectos y Etapas. */
+export type ProgressMode = Database["public"]["Enums"]["progress_mode"];
