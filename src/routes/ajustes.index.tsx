@@ -35,7 +35,7 @@ function AjustesIndex() {
           to="/ajustes/organizacion"
           icon={FolderTree}
           title="Organización"
-          description="Áreas, Proyectos y Subproyectos"
+          description="Áreas, Proyectos y Etapas"
           iconColor="text-indigo-600"
           iconBg="bg-indigo-50"
         />
