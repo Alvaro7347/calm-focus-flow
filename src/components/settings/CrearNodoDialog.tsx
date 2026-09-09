@@ -39,6 +39,7 @@ import { createArea } from "@/services/areaService";
 import { createProject } from "@/services/projectService";
 import { createSubproject } from "@/services/subprojectService";
 import { createObjective, createGoal } from "@/services/objectiveService";
+import { createHabit } from "@/services/habitService";
 import { invalidateActivityGraph } from "@/lib/queryInvalidation";
 import {
   PROJECT_COLORS,
@@ -46,7 +47,7 @@ import {
   type ProjectColorSlug,
 } from "@/lib/projectIdentity";
 
-export type CrearNodoTipo = "area" | "project" | "subproject" | "objective" | "goal";
+export type CrearNodoTipo = "area" | "project" | "subproject" | "objective" | "goal" | "habit";
 
 const TITULOS: Record<CrearNodoTipo, string> = {
   area: "Nueva Área",
@@ -54,6 +55,7 @@ const TITULOS: Record<CrearNodoTipo, string> = {
   subproject: "Nueva Etapa",
   objective: "Nuevo Objetivo",
   goal: "Nueva Meta",
+  habit: "Nuevo Hábito",
 };
 
 interface Props {
@@ -72,12 +74,16 @@ export function CrearNodoDialog({ type, parentId, triggerLabel, className }: Pro
   const [color, setColor] = useState<ProjectColorSlug>(DEFAULT_PROJECT_COLOR);
   const [fecha, setFecha] = useState("");
   const [vision, setVision] = useState("");
+  const [razon, setRazon] = useState("");
+  const [futuro, setFuturo] = useState("");
 
   function reset() {
     setNombre("");
     setColor(DEFAULT_PROJECT_COLOR);
     setFecha("");
     setVision("");
+    setRazon("");
+    setFuturo("");
   }
 
   const crear = useMutation({
@@ -114,17 +120,26 @@ export function CrearNodoDialog({ type, parentId, triggerLabel, className }: Pro
           vision_text: vision.trim() || null,
         });
       }
-      if (!parentId) throw new Error("Falta el objetivo destino.");
-      return createGoal({
-        objective_id: parentId,
+      if (type === "goal") {
+        if (!parentId) throw new Error("Falta el objetivo destino.");
+        return createGoal({
+          objective_id: parentId,
+          name: trimmed,
+          target_date: fecha || null,
+          vision_text: vision.trim() || null,
+        });
+      }
+      if (!parentId) throw new Error("Falta el área destino.");
+      return createHabit({
+        area_id: parentId,
         name: trimmed,
-        target_date: fecha || null,
-        vision_text: vision.trim() || null,
+        reason_text: razon.trim() || null,
+        desired_future_text: futuro.trim() || null,
       });
     },
     onSuccess: async () => {
       await invalidateActivityGraph(qc);
-      toast.success(`${TITULOS[type]} creada.`);
+      toast.success(`Se creó "${nombre.trim()}".`);
       reset();
       setOpen(false);
     },
@@ -166,6 +181,8 @@ export function CrearNodoDialog({ type, parentId, triggerLabel, className }: Pro
                 "Crea la Etapa aunque todavía no sepas qué tareas tendrá."}
               {type === "goal" &&
                 "Crea la Meta aunque todavía no sepas qué tareas tendrá."}
+              {type === "habit" &&
+                "La frecuencia y el detalle emocional se ajustan después, desde el Tablero."}
             </DialogDescription>
           </DialogHeader>
 
@@ -193,7 +210,9 @@ export function CrearNodoDialog({ type, parentId, triggerLabel, className }: Pro
                         ? "Ej: Plan Deuda 2027"
                         : type === "goal"
                           ? "Ej: Reducir deuda a $4 millones"
-                          : "Ej: Prospección"
+                          : type === "habit"
+                            ? "Ej: Leer 30 minutos"
+                            : "Ej: Prospección"
                 }
               />
             </div>
@@ -242,6 +261,31 @@ export function CrearNodoDialog({ type, parentId, triggerLabel, className }: Pro
                   rows={3}
                 />
               </div>
+            )}
+
+            {type === "habit" && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="crear-nodo-razon">¿Por qué quiero incorporar esto? (opcional)</Label>
+                  <Textarea
+                    id="crear-nodo-razon"
+                    value={razon}
+                    onChange={(e) => setRazon(e.target.value)}
+                    rows={2}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="crear-nodo-futuro">
+                    ¿Qué versión de mí quiero desarrollar? (opcional)
+                  </Label>
+                  <Textarea
+                    id="crear-nodo-futuro"
+                    value={futuro}
+                    onChange={(e) => setFuturo(e.target.value)}
+                    rows={2}
+                  />
+                </div>
+              </>
             )}
 
             <DialogFooter>
