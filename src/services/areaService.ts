@@ -102,25 +102,26 @@ export async function fetchAreasWithCounts(): Promise<Area[]> {
   const rows = await fetchAreas(false);
 
   // Contador canónico: "tarea pendiente activa" = activity_type='task'
-  // + status='pending' + no archivada, y con toda su cadena
-  // Subproyecto → Proyecto → Área también sin archivar. Excluye eventos
-  // y tareas completadas para coincidir con la etiqueta "tareas".
+  // + status='pending' + no archivada, agrupada por `area_id` directo
+  // (siempre presente, sin importar si la tarea tiene Proyecto,
+  // Objetivo o Hábito). Si tiene Etapa, esa Etapa/Proyecto no debe
+  // estar archivada (el Área ya viene filtrada por `fetchAreas(false)`).
   const { data: taskRows, error } = await supabase
     .from("tasks")
-    .select("subprojects!inner(archived_at, projects!inner(area_id, archived_at, areas!inner(archived_at)))")
+    .select("area_id, subprojects(archived_at, projects(archived_at))")
     .is("archived_at", null)
     .eq("activity_type", "task")
-    .eq("status", "pending")
-    .is("subprojects.archived_at", null)
-    .is("subprojects.projects.archived_at", null)
-    .is("subprojects.projects.areas.archived_at", null);
+    .eq("status", "pending");
   if (error) throw error;
 
   const counts = new Map<string, number>();
-  for (const t of (taskRows ?? []) as Array<{ subprojects: { projects: { area_id: string | null } } }>) {
-    const areaId = t.subprojects?.projects?.area_id;
-    if (!areaId) continue;
-    counts.set(areaId, (counts.get(areaId) ?? 0) + 1);
+  for (const t of (taskRows ?? []) as Array<{
+    area_id: string;
+    subprojects: { archived_at: string | null; projects: { archived_at: string | null } | null } | null;
+  }>) {
+    const sub = t.subprojects;
+    if (sub && (sub.archived_at !== null || sub.projects?.archived_at !== null)) continue;
+    counts.set(t.area_id, (counts.get(t.area_id) ?? 0) + 1);
   }
 
   return rows.map((r) => ({
