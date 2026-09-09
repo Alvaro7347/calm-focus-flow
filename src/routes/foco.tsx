@@ -26,6 +26,7 @@ import { useEffect, useRef, useState } from "react";
 import { Clock, Calendar, Hourglass, TrendingUp, Target, Sun, AlertCircle } from "lucide-react";
 
 import { FocoColumna } from "@/components/foco/FocoColumna";
+import { HoyProgresoBadge } from "@/components/foco/HoyProgresoBadge";
 import { getFocusTasks } from "@/services/focusService";
 import { TuDiaScreen } from "@/components/tuDia/TuDiaScreen";
 import {
@@ -153,6 +154,10 @@ function FocoPage() {
           <Sun className="h-3.5 w-3.5" aria-hidden />
           <span>Tu Día</span>
         </button>
+      </div>
+
+      <div className="flex justify-end mb-4 md:mb-0 md:-mt-4">
+        <HoyProgresoBadge />
       </div>
 
       {isLoading ? (
