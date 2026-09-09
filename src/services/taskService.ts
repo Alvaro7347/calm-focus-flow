@@ -86,30 +86,43 @@ export async function fetchTaskById(id: string): Promise<TaskRow | null> {
  * (subproyecto → proyecto → área). Usado por Task Detail en modo
  * `edit` para poder poblar los tres selectores en cascada.
  */
+/**
+ * Devuelve una tarea junto con los IDs de la jerarquía a la que está
+ * vinculada — a lo más UNA de estas tres rutas está presente
+ * (Proyecto→Etapa, Objetivo→Meta, o Hábito), o ninguna (tarea directa
+ * de Área). `areaId` siempre viene directo de `tasks.area_id`.
+ */
 export interface TaskWithHierarchy {
   task: TaskRow;
-  subprojectId: string;
-  projectId: string;
   areaId: string;
+  projectId?: string;
+  subprojectId?: string;
+  objectiveId?: string;
+  goalId?: string;
+  habitId?: string;
 }
 
 export async function fetchTaskForEdit(id: string): Promise<TaskWithHierarchy | null> {
   const { data, error } = await supabase
     .from("tasks")
-    .select("*, subprojects!inner(id, project_id, projects!inner(id, area_id))")
+    .select("*, subprojects(project_id), goals(objective_id)")
     .eq("id", id)
     .maybeSingle();
   if (error) throw error;
   if (!data) return null;
   const row = data as unknown as TaskRow & {
-    subprojects: { id: string; project_id: string; projects: { id: string; area_id: string } };
+    subprojects: { project_id: string } | null;
+    goals: { objective_id: string } | null;
   };
-  const { subprojects, ...task } = row;
+  const { subprojects, goals, ...task } = row;
   return {
     task: task as TaskRow,
-    subprojectId: subprojects.id,
-    projectId: subprojects.project_id,
-    areaId: subprojects.projects.area_id,
+    areaId: task.area_id,
+    projectId: subprojects?.project_id,
+    subprojectId: task.subproject_id ?? undefined,
+    objectiveId: goals?.objective_id,
+    goalId: task.goal_id ?? undefined,
+    habitId: task.habit_id ?? undefined,
   };
 }
 
@@ -466,3 +479,4 @@ export async function fetchScheduledTasks(): Promise<Tarea[]> {
   const rows = (data ?? []) as unknown as JoinedTaskRow[];
   return rows.map(rowToScheduledTarea);
 }
+
