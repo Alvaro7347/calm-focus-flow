@@ -25,8 +25,8 @@
  */
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight, Folder, FolderOpen, Hash, Layers, Target } from "lucide-react";
-import { fetchAreaTree, type AreaNode, type ProyectoNode, type SubproyectoNode, type ObjetivoNode, type MetaNode } from "@/services/tableroService";
+import { ChevronRight, Folder, FolderOpen, Hash, Layers, Target, Repeat } from "lucide-react";
+import { fetchAreaTree, type AreaNode, type ProyectoNode, type SubproyectoNode, type ObjetivoNode, type MetaNode, type HabitoNode } from "@/services/tableroService";
 import { useBootstrapReady } from "@/lib/bootstrapContext";
 import {
   OrganizacionActions,
@@ -69,9 +69,11 @@ function NodeRow({
       ? Hash
       : type === "objective"
         ? Target
-        : expanded
-          ? FolderOpen
-          : Folder;
+        : type === "habit"
+          ? Repeat
+          : expanded
+            ? FolderOpen
+            : Folder;
   const iconColor =
     type === "area"
       ? "text-indigo-600"
@@ -149,6 +151,10 @@ function GoalRow({ goal, depth }: { goal: MetaNode; depth: number }) {
   return <NodeRow id={goal.id} label={goal.nombre} type="goal" depth={depth} />;
 }
 
+function HabitRow({ habit, depth }: { habit: HabitoNode; depth: number }) {
+  return <NodeRow id={habit.id} label={habit.nombre} type="habit" depth={depth} />;
+}
+
 function ObjectiveRow({ objective, depth }: { objective: ObjetivoNode; depth: number }) {
   const [open, setOpen] = useState(false);
   return (
@@ -220,7 +226,7 @@ function AreaRow({ area }: { area: AreaNode }) {
         expandable
         expanded={open}
         onToggle={() => setOpen((v) => !v)}
-        count={area.proyectos.length + area.objetivos.length || undefined}
+        count={area.proyectos.length + area.objetivos.length + area.habitos.length || undefined}
         color={area.color}
       />
 
@@ -250,6 +256,19 @@ function AreaRow({ area }: { area: AreaNode }) {
           ))}
           <div style={{ paddingLeft: 16 + 1 * 20 }}>
             <CrearNodoDialog type="objective" parentId={area.id} />
+          </div>
+
+          <p
+            className="pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400"
+            style={{ paddingLeft: 16 + 1 * 20 }}
+          >
+            Hábitos
+          </p>
+          {area.habitos.map((h) => (
+            <HabitRow key={h.id} habit={h} depth={1} />
+          ))}
+          <div style={{ paddingLeft: 16 + 1 * 20 }}>
+            <CrearNodoDialog type="habit" parentId={area.id} />
           </div>
         </div>
       ) : null}
@@ -285,13 +304,15 @@ export function OrganizacionTree() {
     let subprojects = 0;
     let objectives = 0;
     let goals = 0;
+    let habits = 0;
     for (const a of tree) {
       projects += a.proyectos.length;
       for (const p of a.proyectos) subprojects += p.subproyectos.length;
       objectives += a.objetivos.length;
       for (const o of a.objetivos) goals += o.metas.length;
+      habits += a.habitos.length;
     }
-    return { areas: tree.length, projects, subprojects, objectives, goals };
+    return { areas: tree.length, projects, subprojects, objectives, goals, habits };
   }, [data]);
 
   return (
@@ -302,6 +323,7 @@ export function OrganizacionTree() {
         <Stat label="Etapas" value={stats.subprojects} />
         <Stat label="Objetivos" value={stats.objectives} />
         <Stat label="Metas" value={stats.goals} />
+        <Stat label="Hábitos" value={stats.habits} />
       </section>
 
       <div className="flex justify-end">
