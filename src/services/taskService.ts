@@ -193,13 +193,12 @@ export interface FocusTasks {
 }
 
 type JoinedTaskRow = TaskRow & {
+  areas: { name: string; color: string | null; archived_at: string | null } | null;
   subprojects:
     | {
         name: string;
-        projects: {
-          name: string;
-          areas: { name: string; color: string | null } | null;
-        } | null;
+        archived_at: string | null;
+        projects: { name: string; archived_at: string | null } | null;
       }
     | null;
 };
@@ -225,7 +224,7 @@ const SHORT_DOW_ES = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 function toTarea(row: JoinedTaskRow, categoria: CategoriaFoco): Tarea {
   const sub = row.subprojects;
   const proj = sub?.projects ?? null;
-  const areaName = proj?.areas?.name ?? "";
+  const areaName = row.areas?.name ?? "";
   const projectName = proj?.name ?? undefined;
   const subName = sub?.name ?? undefined;
 
@@ -271,7 +270,7 @@ function toTarea(row: JoinedTaskRow, categoria: CategoriaFoco): Tarea {
     titulo: row.title,
     area: areaName,
     proyecto: projectName,
-    proyectoColor: proj?.areas?.color ?? null,
+    proyectoColor: row.areas?.color ?? null,
     subproyecto: subName,
     fechaProgramada,
     horaInicio,
@@ -302,26 +301,67 @@ function toTarea(row: JoinedTaskRow, categoria: CategoriaFoco): Tarea {
  *                   reciente (updated_at > SIN_MOVIMIENTO_DIAS)
  *                   que no encajen en HOY o ESTA SEMANA.
  */
+export interface TodayCompletion {
+  total: number;
+  completadas: number;
+  /** 0-100. 0 si no hay tareas programadas para hoy. */
+  pct: number;
+}
+
+/**
+ * % de tareas (activity_type='task', no eventos) con `starts_at` de
+ * HOY que ya están completadas. Mismo criterio de "hoy" que FOCO
+ * (día local), pero aquí SÍ se incluyen las completadas (para poder
+ * calcular el numerador).
+ */
+export async function fetchTodayCompletion(): Promise<TodayCompletion> {
+  const start = startOfLocalDay(new Date());
+  const end = new Date(start);
+  end.setDate(end.getDate() + 1);
+
+  const { data, error } = await supabase
+    .from("tasks")
+    .select("status, areas!inner(archived_at)")
+    .is("archived_at", null)
+    .is("areas.archived_at", null)
+    .eq("activity_type", "task")
+    .gte("starts_at", start.toISOString())
+    .lt("starts_at", end.toISOString());
+
+  if (error) throw error;
+
+  const rows = (data ?? []) as Array<{ status: string }>;
+  const total = rows.length;
+  const completadas = rows.filter((r) => r.status === "completed").length;
+  return { total, completadas, pct: total > 0 ? Math.round((completadas / total) * 100) : 0 };
+}
+
 export async function fetchFocusTasks(): Promise<FocusTasks> {
-  // El `!inner` en cada nivel + `.is("<rel>.archived_at", null)` hace que
-  // PostgREST excluya del resultado cualquier tarea cuyo Subproyecto,
-  // Proyecto o Área esté archivado. Así, archivar un nodo organizacional
-  // oculta automáticamente sus tareas en FOCO sin necesidad de tocarlas.
+  // `areas!inner` va directo por `tasks.area_id` (siempre presente,
+  // incluso en tareas directas/Objetivo-Meta/Hábito), así que filtrar
+  // por área archivada nunca excluye tareas por no tener Proyecto.
+  // `subprojects` queda como LEFT join (sin `!inner`): las tareas sin
+  // Etapa deben seguir apareciendo. El archivado de Etapa/Proyecto se
+  // filtra después, en JS.
   const { data, error } = await supabase
     .from("tasks")
     .select(
-      "*, subprojects!inner(name, archived_at, projects!inner(name, archived_at, areas!inner(name, color, archived_at)))",
+      "*, areas!inner(name, color, archived_at), subprojects(name, archived_at, projects(name, archived_at))",
     )
     .is("archived_at", null)
-    .is("subprojects.archived_at", null)
-    .is("subprojects.projects.archived_at", null)
-    .is("subprojects.projects.areas.archived_at", null)
+    .is("areas.archived_at", null)
     .neq("status", "completed")
     .order("starts_at", { ascending: true, nullsFirst: false });
 
   if (error) throw error;
 
-  const rows = (data ?? []) as unknown as JoinedTaskRow[];
+  const rows = ((data ?? []) as unknown as JoinedTaskRow[]).filter((r) => {
+    const sub = r.subprojects;
+    if (!sub) return true; // tarea directa / Objetivo-Meta / Hábito
+    if (sub.archived_at !== null) return false;
+    if (sub.projects && sub.projects.archived_at !== null) return false;
+    return true;
+  });
 
   const today = startOfLocalDay(new Date());
   const tomorrow = new Date(today);
@@ -427,9 +467,9 @@ function rowToScheduledTarea(row: JoinedTaskRow): Tarea {
   return {
     id: row.id,
     titulo: row.title,
-    area: proj?.areas?.name ?? "",
+    area: row.areas?.name ?? "",
     proyecto: proj?.name ?? undefined,
-    proyectoColor: proj?.areas?.color ?? null,
+    proyectoColor: row.areas?.color ?? null,
     subproyecto: sub?.name ?? undefined,
     fechaProgramada,
     horaInicio,
@@ -459,24 +499,27 @@ function rowToScheduledTarea(row: JoinedTaskRow): Tarea {
  *   que es quien conoce la vista visible.
  */
 export async function fetchScheduledTasks(): Promise<Tarea[]> {
-  // Ver `fetchFocusTasks`: los `!inner` + filtros `.is(..., null)` en cada
-  // nivel garantizan que las tareas cuyo Subproyecto/Proyecto/Área esté
-  // archivado dejen de aparecer automáticamente en Calendar.
+  // Ver `fetchFocusTasks`: mismo criterio (área vía `area_id` con
+  // `!inner`; Etapa/Proyecto como LEFT join, filtrado de archivado en JS).
   const { data, error } = await supabase
     .from("tasks")
     .select(
-      "*, subprojects!inner(name, archived_at, projects!inner(name, archived_at, areas!inner(name, color, archived_at)))",
+      "*, areas!inner(name, color, archived_at), subprojects(name, archived_at, projects(name, archived_at))",
     )
     .is("archived_at", null)
-    .is("subprojects.archived_at", null)
-    .is("subprojects.projects.archived_at", null)
-    .is("subprojects.projects.areas.archived_at", null)
+    .is("areas.archived_at", null)
     .not("starts_at", "is", null)
     .order("starts_at", { ascending: true });
 
   if (error) throw error;
 
-  const rows = (data ?? []) as unknown as JoinedTaskRow[];
+  const rows = ((data ?? []) as unknown as JoinedTaskRow[]).filter((r) => {
+    const sub = r.subprojects;
+    if (!sub) return true;
+    if (sub.archived_at !== null) return false;
+    if (sub.projects && sub.projects.archived_at !== null) return false;
+    return true;
+  });
   return rows.map(rowToScheduledTarea);
 }
 
