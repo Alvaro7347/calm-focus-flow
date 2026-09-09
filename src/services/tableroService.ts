@@ -81,6 +81,38 @@ export interface ProyectoNode {
   visionTexto: string | null;
 }
 
+export interface MetaNode {
+  id: string;
+  nombre: string;
+  slug: string;
+  tareas: Tarea[];
+  tareasPendientes: number;
+  /** % de avance de la Meta (0-100). Ver `progress_mode`. */
+  progresoPct: number;
+  modoProgreso: ProgressMode;
+  /** Fecha objetivo de la Meta, formato YYYY-MM-DD. */
+  fechaObjetivo: string | null;
+  /** Visión emocional de la Meta (opcional; a diferencia de la Etapa). */
+  visionTexto: string | null;
+}
+
+export interface ObjetivoNode {
+  id: string;
+  nombre: string;
+  slug: string;
+  metas: MetaNode[];
+  /** Suma de `tareasPendientes` de sus Metas. */
+  totalTareas: number;
+  /** % de avance del Objetivo (0-100). Ver `progress_mode`. */
+  progresoPct: number;
+  /** 'auto' = promedio de sus Metas; 'manual' = fijado a mano. */
+  modoProgreso: ProgressMode;
+  /** Fecha objetivo, formato YYYY-MM-DD. */
+  fechaObjetivo: string | null;
+  /** Visión emocional del Objetivo (texto libre). */
+  visionTexto: string | null;
+}
+
 export interface AreaNode {
   id: string;
   nombre: string;
@@ -88,6 +120,8 @@ export interface AreaNode {
   /** Slug de la paleta CalmApp. Puede ser `null` (usa color por defecto). */
   color: string | null;
   proyectos: ProyectoNode[];
+  /** Objetivo → Meta, hermano de Proyecto → Etapa dentro de la misma Área. */
+  objetivos: ObjetivoNode[];
   /** Suma de `tareasPendientes` de sus proyectos. */
   totalTareas: number;
 }
@@ -131,6 +165,30 @@ type RawProject = {
   subprojects: RawSubproject[] | null;
 };
 
+type RawGoal = {
+  id: string;
+  name: string;
+  display_order: number;
+  archived_at: string | null;
+  progress_pct: number;
+  progress_mode: ProgressMode;
+  target_date: string | null;
+  vision_text: string | null;
+  tasks: RawTask[] | null;
+};
+
+type RawObjective = {
+  id: string;
+  name: string;
+  display_order: number;
+  archived_at: string | null;
+  progress_pct: number;
+  progress_mode: ProgressMode;
+  target_date: string | null;
+  vision_text: string | null;
+  goals: RawGoal[] | null;
+};
+
 type RawArea = {
   id: string;
   name: string;
@@ -138,6 +196,7 @@ type RawArea = {
   archived_at: string | null;
   color: string | null;
   projects: RawProject[] | null;
+  objectives: RawObjective[] | null;
 };
 
 function isoDate(iso: string): string {
@@ -177,6 +236,29 @@ function mapTask(
   };
 }
 
+/** Variante de `mapTask` para tareas vinculadas a una Meta (sin Proyecto/Etapa). */
+function mapGoalTask(row: RawTask, areaName: string, metaId: string): Tarea {
+  const starts = row.starts_at ? new Date(row.starts_at) : null;
+  const hasTime = !!starts && (starts.getHours() !== 0 || starts.getMinutes() !== 0);
+  const horaInicio =
+    hasTime && starts
+      ? `${String(starts.getHours()).padStart(2, "0")}:${String(starts.getMinutes()).padStart(2, "0")}`
+      : undefined;
+
+  return {
+    id: row.id,
+    titulo: row.title,
+    area: areaName,
+    metaId,
+    fechaProgramada: row.starts_at ? isoDate(row.starts_at) : undefined,
+    horaInicio,
+    duracionMin: row.estimated_duration_min ?? undefined,
+    categoriaFoco: "hoy",
+    completada: row.status === "completed",
+    priority: mapDbPriorityToUi(row.priority),
+  };
+}
+
 /**
  * Obtiene el árbol completo Área → Proyecto → Subproyecto → Tareas
  * del usuario autenticado desde Supabase. Excluye nodos archivados
@@ -196,6 +278,18 @@ export async function fetchAreaTree(): Promise<AreaNode[]> {
          subprojects (
            id, name, display_order, archived_at,
            progress_pct, progress_mode, target_date,
+           tasks (
+             id, title, status, activity_type, priority, starts_at,
+             estimated_duration_min, updated_at, archived_at
+           )
+         )
+       ),
+       objectives (
+         id, name, display_order, archived_at,
+         progress_pct, progress_mode, target_date, vision_text,
+         goals (
+           id, name, display_order, archived_at,
+           progress_pct, progress_mode, target_date, vision_text,
            tasks (
              id, title, status, activity_type, priority, starts_at,
              estimated_duration_min, updated_at, archived_at
@@ -254,14 +348,55 @@ export async function fetchAreaTree(): Promise<AreaNode[]> {
           visionTexto: p.vision_text,
         };
       });
-    const totalTareas = proyectos.reduce((n, p) => n + p.totalTareas, 0);
+    const totalTareasProyectos = proyectos.reduce((n, p) => n + p.totalTareas, 0);
+
+    const objetivos: ObjetivoNode[] = (a.objectives ?? [])
+      .filter((o) => o.archived_at === null)
+      .sort((x, y) => x.display_order - y.display_order)
+      .map((o) => {
+        const metas: MetaNode[] = (o.goals ?? [])
+          .filter((g) => g.archived_at === null)
+          .sort((x, y) => x.display_order - y.display_order)
+          .map((g) => {
+            const rawTareas = (g.tasks ?? []).filter((t) => t.archived_at === null);
+            const tareas = rawTareas.map((t) => mapGoalTask(t, a.name, g.id));
+            const tareasPendientes = rawTareas.filter(
+              (t) => t.activity_type === "task" && t.status === "pending",
+            ).length;
+            return {
+              id: g.id,
+              nombre: g.name,
+              slug: slugify(g.name),
+              tareas,
+              tareasPendientes,
+              progresoPct: g.progress_pct,
+              modoProgreso: g.progress_mode,
+              fechaObjetivo: g.target_date,
+              visionTexto: g.vision_text,
+            };
+          });
+        const totalTareasObjetivo = metas.reduce((n, m) => n + m.tareasPendientes, 0);
+        return {
+          id: o.id,
+          nombre: o.name,
+          slug: slugify(o.name),
+          metas,
+          totalTareas: totalTareasObjetivo,
+          progresoPct: o.progress_pct,
+          modoProgreso: o.progress_mode,
+          fechaObjetivo: o.target_date,
+          visionTexto: o.vision_text,
+        };
+      });
+
     return {
       id: a.id,
       nombre: a.name,
       slug: slugify(a.name),
       color: areaColor,
       proyectos,
-      totalTareas,
+      objetivos,
+      totalTareas: totalTareasProyectos + objetivos.reduce((n, o) => n + o.totalTareas, 0),
     };
   });
 }
