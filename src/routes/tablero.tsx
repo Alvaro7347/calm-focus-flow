@@ -32,6 +32,7 @@ import {
 } from "@/services/tableroService";
 import { ProyectoAccordion } from "@/components/tablero/ProyectoAccordion";
 import { ObjetivoAccordion } from "@/components/tablero/ObjetivoAccordion";
+import { HabitoRow } from "@/components/tablero/HabitoRow";
 
 interface TableroSearch {
   area?: string;
@@ -149,6 +150,20 @@ function TableroPage() {
               open={objetivo === o.slug}
               openMetaSlug={objetivo === o.slug ? meta : undefined}
             />
+          ))}
+        </div>
+      )}
+
+      {/* Hábitos: hermano de Proyectos y Objetivos. */}
+      <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mt-8 mb-3">
+        Hábitos
+      </h2>
+      {area.habitos.length === 0 ? (
+        <p className="text-sm text-slate-500">Esta área todavía no tiene hábitos.</p>
+      ) : (
+        <div className="rounded-xl border border-slate-200 bg-white divide-y divide-slate-100 overflow-hidden">
+          {area.habitos.map((h) => (
+            <HabitoRow key={h.id} habito={h} />
           ))}
         </div>
       )}
