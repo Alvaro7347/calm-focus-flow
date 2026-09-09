@@ -38,7 +38,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { slugify } from "@/lib/slug";
 import { mapDbPriorityToUi, type DbPriority } from "@/services/mappers/priorityMapper";
-import type { Tarea, ProgressMode } from "@/types/tarea";
+import type { Tarea, ProgressMode, RecurrenceRule } from "@/types/tarea";
 
 export interface SubproyectoNode {
   id: string;
@@ -113,6 +113,25 @@ export interface ObjetivoNode {
   visionTexto: string | null;
 }
 
+export interface HabitoNode {
+  id: string;
+  nombre: string;
+  slug: string;
+  razon: string | null;
+  futuroDeseado: string | null;
+  frecuencia: RecurrenceRule | null;
+  /** true si ya se marcó cumplido el día de hoy. */
+  hoyCumplido: boolean;
+  /**
+   * % de cumplimiento del mes calendario en curso, hasta hoy.
+   * Simplificación v1: si `frecuencia.diasSemana` está definido, solo
+   * cuentan como "esperados" esos días de la semana; en cualquier otro
+   * caso (diaria/semanal sin días/mensual/anual/sin frecuencia) se
+   * asume "esperado todos los días" del mes transcurrido.
+   */
+  cumplimientoPct: number;
+}
+
 export interface AreaNode {
   id: string;
   nombre: string;
@@ -122,6 +141,8 @@ export interface AreaNode {
   proyectos: ProyectoNode[];
   /** Objetivo → Meta, hermano de Proyecto → Etapa dentro de la misma Área. */
   objetivos: ObjetivoNode[];
+  /** Hábitos, hermanos de Proyecto y Objetivo dentro de la misma Área. */
+  habitos: HabitoNode[];
   /** Suma de `tareasPendientes` de sus proyectos. */
   totalTareas: number;
 }
@@ -189,6 +210,21 @@ type RawObjective = {
   goals: RawGoal[] | null;
 };
 
+type RawHabitLog = {
+  log_date: string;
+  done: boolean;
+};
+
+type RawHabit = {
+  id: string;
+  name: string;
+  archived_at: string | null;
+  reason_text: string | null;
+  desired_future_text: string | null;
+  frequency_rule: unknown;
+  habit_logs: RawHabitLog[] | null;
+};
+
 type RawArea = {
   id: string;
   name: string;
@@ -197,11 +233,56 @@ type RawArea = {
   color: string | null;
   projects: RawProject[] | null;
   objectives: RawObjective[] | null;
+  habits: RawHabit[] | null;
 };
 
 function isoDate(iso: string): string {
   const d = new Date(iso);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function todayIso(): string {
+  return isoDate(new Date().toISOString());
+}
+
+/**
+ * Cuenta cuántos días, dentro de [desde, hasta] (ambos inclusive), se
+ * consideran "esperados" para un Hábito según su frecuencia.
+ * Simplificación v1: solo `diasSemana` restringe días; cualquier otro
+ * valor de frecuencia (o su ausencia) asume "todos los días".
+ */
+function diasEsperados(frecuencia: RecurrenceRule | null, desde: Date, hasta: Date): number {
+  const diasSemana = frecuencia?.diasSemana;
+  let n = 0;
+  for (let d = new Date(desde); d <= hasta; d.setDate(d.getDate() + 1)) {
+    if (!diasSemana || diasSemana.length === 0 || diasSemana.includes(d.getDay())) n++;
+  }
+  return n;
+}
+
+function mapHabit(h: RawHabit): HabitoNode {
+  const frecuencia = (h.frequency_rule as RecurrenceRule | null) ?? null;
+  const logs = (h.habit_logs ?? []).filter((l) => l.done);
+  const doneDates = new Set(logs.map((l) => l.log_date));
+
+  const hoy = new Date();
+  const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+  const esperados = diasEsperados(frecuencia, inicioMes, hoy);
+  const cumplidosEsteMes = logs.filter((l) => {
+    const d = new Date(l.log_date + "T00:00:00");
+    return d >= inicioMes && d <= hoy;
+  }).length;
+
+  return {
+    id: h.id,
+    nombre: h.name,
+    slug: slugify(h.name),
+    razon: h.reason_text,
+    futuroDeseado: h.desired_future_text,
+    frecuencia,
+    hoyCumplido: doneDates.has(todayIso()),
+    cumplimientoPct: esperados > 0 ? Math.round((cumplidosEsteMes / esperados) * 100) : 0,
+  };
 }
 
 function mapTask(
@@ -295,6 +376,10 @@ export async function fetchAreaTree(): Promise<AreaNode[]> {
              estimated_duration_min, updated_at, archived_at
            )
          )
+       ),
+       habits (
+         id, name, archived_at, reason_text, desired_future_text, frequency_rule,
+         habit_logs ( log_date, done )
        )`,
     )
     .is("archived_at", null)
@@ -389,6 +474,10 @@ export async function fetchAreaTree(): Promise<AreaNode[]> {
         };
       });
 
+    const habitos: HabitoNode[] = (a.habits ?? [])
+      .filter((h) => h.archived_at === null)
+      .map(mapHabit);
+
     return {
       id: a.id,
       nombre: a.name,
@@ -396,6 +485,7 @@ export async function fetchAreaTree(): Promise<AreaNode[]> {
       color: areaColor,
       proyectos,
       objetivos,
+      habitos,
       totalTareas: totalTareasProyectos + objetivos.reduce((n, o) => n + o.totalTareas, 0),
     };
   });
