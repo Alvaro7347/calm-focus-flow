@@ -31,11 +31,14 @@ import {
   type AreaNode,
 } from "@/services/tableroService";
 import { ProyectoAccordion } from "@/components/tablero/ProyectoAccordion";
+import { ObjetivoAccordion } from "@/components/tablero/ObjetivoAccordion";
 
 interface TableroSearch {
   area?: string;
   proyecto?: string;
   subproyecto?: string;
+  objetivo?: string;
+  meta?: string;
 }
 
 export const Route = createFileRoute("/tablero")({
@@ -44,12 +47,14 @@ export const Route = createFileRoute("/tablero")({
     area: typeof search.area === "string" ? search.area : undefined,
     proyecto: typeof search.proyecto === "string" ? search.proyecto : undefined,
     subproyecto: typeof search.subproyecto === "string" ? search.subproyecto : undefined,
+    objetivo: typeof search.objetivo === "string" ? search.objetivo : undefined,
+    meta: typeof search.meta === "string" ? search.meta : undefined,
   }),
   component: TableroPage,
 });
 
 function TableroPage() {
-  const { area: areaSlug, proyecto, subproyecto } = Route.useSearch();
+  const { area: areaSlug, proyecto, subproyecto, objetivo, meta } = Route.useSearch();
 
   const {
     data: tree,
@@ -109,6 +114,9 @@ function TableroPage() {
         </p>
       </header>
 
+      <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">
+        Proyectos
+      </h2>
       {area.proyectos.length === 0 ? (
         <p className="text-sm text-slate-500">Esta área todavía no tiene proyectos.</p>
       ) : (
@@ -120,6 +128,26 @@ function TableroPage() {
               proyecto={p}
               open={proyecto === p.slug}
               openSubproyectoSlug={proyecto === p.slug ? subproyecto : undefined}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Objetivos: hermano de Proyectos, sección visualmente separada. */}
+      <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mt-8 mb-3">
+        Objetivos
+      </h2>
+      {area.objetivos.length === 0 ? (
+        <p className="text-sm text-slate-500">Esta área todavía no tiene objetivos.</p>
+      ) : (
+        <div className="rounded-xl border border-slate-200 bg-white divide-y divide-slate-100 overflow-hidden">
+          {area.objetivos.map((o) => (
+            <ObjetivoAccordion
+              key={o.slug}
+              areaSlug={area.slug}
+              objetivo={o}
+              open={objetivo === o.slug}
+              openMetaSlug={objetivo === o.slug ? meta : undefined}
             />
           ))}
         </div>
