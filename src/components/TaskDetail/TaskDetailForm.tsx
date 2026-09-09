@@ -66,6 +66,8 @@ import {
 import { fetchAreas, createArea } from "@/services/areaService";
 import { fetchProjects, createProject } from "@/services/projectService";
 import { fetchSubprojects, createSubproject } from "@/services/subprojectService";
+import { fetchObjectives, fetchGoals } from "@/services/objectiveService";
+import { fetchHabits } from "@/services/habitService";
 import {
   findSimilarStructure,
   duplicateStructure,
@@ -84,6 +86,8 @@ import {
 } from "@/services/taskService";
 import { invalidateActivityGraph } from "@/lib/queryInvalidation";
 import type { AreaRow, ProjectRow, SubprojectRow } from "@/types/tarea";
+import type { ObjectiveRow, GoalRow } from "@/types/objetivo";
+import type { HabitRow } from "@/types/habito";
 import type { ActivityType } from "@/types/activity";
 import { ACTIVITY_TYPE_DB } from "@/types/activity";
 import { getProjectColor } from "@/lib/projectIdentity";
@@ -177,6 +181,44 @@ export function TaskDetailForm({
   const [projectId, setProjectId] = useState<string>(initialTask?.projectId ?? "");
   const [subprojectId, setSubprojectId] = useState<string>(initialTask?.subprojectId ?? "");
 
+  /**
+   * Vínculo alternativo de la tarea: como mucho UNO de Proyecto→Etapa,
+   * Objetivo→Meta o Hábito (o "ninguno" = tarea directa de Área). A
+   * diferencia de Proyecto/Objetivo, el Hábito no tiene nivel
+   * intermedio: se vincula directo (`tasks.habit_id`).
+   */
+  type VinculoTipo = "ninguno" | "proyecto" | "objetivo" | "habito";
+  const initialVinculo: VinculoTipo = initialTask?.subprojectId
+    ? "proyecto"
+    : initialTask?.goalId
+      ? "objetivo"
+      : initialTask?.habitId
+        ? "habito"
+        : "ninguno";
+  const [vinculo, setVinculo] = useState<VinculoTipo>(initialVinculo);
+
+  const [objectives, setObjectives] = useState<ObjectiveRow[]>([]);
+  const [goals, setGoals] = useState<GoalRow[]>([]);
+  const [objectiveId, setObjectiveId] = useState<string>(initialTask?.objectiveId ?? "");
+  const [goalId, setGoalId] = useState<string>(initialTask?.goalId ?? "");
+  const [userTouchedObjective, setUserTouchedObjective] = useState(false);
+
+  const [habits, setHabits] = useState<HabitRow[]>([]);
+  const [habitId, setHabitId] = useState<string>(initialTask?.habitId ?? "");
+
+  function handleVinculoChange(v: VinculoTipo) {
+    setVinculo(v);
+    if (v !== "proyecto") {
+      setProjectId("");
+      setSubprojectId("");
+    }
+    if (v !== "objetivo") {
+      setObjectiveId("");
+      setGoalId("");
+    }
+    if (v !== "habito") setHabitId("");
+  }
+
   // Cuando cambia el área o el proyecto por acción del usuario, reseteamos
   // los niveles inferiores. Este flag evita el reset durante la primera
   // carga en modo edit (donde areaId/projectId ya vienen precargados).
@@ -264,13 +306,81 @@ export function TaskDetailForm({
     };
   }, [projectId]);
 
+  // ---- Área → Objetivos
+  useEffect(() => {
+    if (!areaId) {
+      setObjectives([]);
+      return;
+    }
+    let cancelled = false;
+    fetchObjectives(areaId)
+      .then((rows) => {
+        if (!cancelled) setObjectives(rows);
+      })
+      .catch(() => {
+        if (!cancelled) setObjectives([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [areaId]);
+
+  // ---- Objetivo → Metas
+  useEffect(() => {
+    if (!objectiveId) {
+      setGoals([]);
+      return;
+    }
+    let cancelled = false;
+    fetchGoals(objectiveId)
+      .then((rows) => {
+        if (!cancelled) setGoals(rows);
+      })
+      .catch(() => {
+        if (!cancelled) setGoals([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [objectiveId]);
+
+  // ---- Área → Hábitos
+  useEffect(() => {
+    if (!areaId) {
+      setHabits([]);
+      return;
+    }
+    let cancelled = false;
+    fetchHabits(areaId)
+      .then((rows) => {
+        if (!cancelled) setHabits(rows);
+      })
+      .catch(() => {
+        if (!cancelled) setHabits([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [areaId]);
+
   function handleAreaChange(value: string) {
     setAreaId(value);
     if (userTouchedArea || value !== initialTask?.areaId) {
       setProjectId("");
       setSubprojectId("");
+      setObjectiveId("");
+      setGoalId("");
+      setHabitId("");
     }
     setUserTouchedArea(true);
+  }
+
+  function handleObjectiveChange(value: string) {
+    setObjectiveId(value);
+    if (userTouchedObjective || value !== initialTask?.objectiveId) {
+      setGoalId("");
+    }
+    setUserTouchedObjective(true);
   }
 
   function handleProjectChange(value: string) {
@@ -436,8 +546,15 @@ export function TaskDetailForm({
   function validate(): boolean {
     const next: Record<string, string> = {};
     if (!areaId) next.area = "Selecciona un área.";
-    if (!projectId) next.project = "Selecciona un proyecto.";
-    if (!subprojectId) next.subproject = "Selecciona una etapa.";
+    if (vinculo === "proyecto") {
+      if (!projectId) next.project = "Selecciona un proyecto.";
+      if (!subprojectId) next.subproject = "Selecciona una etapa.";
+    } else if (vinculo === "objetivo") {
+      if (!objectiveId) next.objective = "Selecciona un objetivo.";
+      if (!goalId) next.goal = "Selecciona una meta.";
+    } else if (vinculo === "habito") {
+      if (!habitId) next.habit = "Selecciona un hábito.";
+    }
     if (!title.trim()) next.title = "Escribe un título.";
     if (isEvento) {
       if (!fecha) next.fecha = "Un evento necesita una fecha.";
@@ -487,6 +604,18 @@ export function TaskDetailForm({
       const duracionNum = isEvento ? null : duracion ? Number(duracion) : null;
       const dbActivityType = ACTIVITY_TYPE_DB[activityType];
 
+      // Vínculo mutuamente excluyente: Proyecto→Etapa, Objetivo→Meta,
+      // Hábito, o ninguno (tarea directa de Área). Ver constraint
+      // `tasks_single_link_chk` en la base de datos.
+      const linkFields =
+        vinculo === "proyecto"
+          ? { subproject_id: subprojectId, goal_id: null, habit_id: null }
+          : vinculo === "objetivo"
+            ? { subproject_id: null, goal_id: goalId, habit_id: null }
+            : vinculo === "habito"
+              ? { subproject_id: null, goal_id: null, habit_id: habitId }
+              : { subproject_id: null, goal_id: null, habit_id: null };
+
       // Pre-chequeo de conflicto para dar un mensaje concreto al usuario.
       // La garantía real vive en el trigger de Supabase (SQLSTATE CA001),
       // que también protege contra escrituras concurrentes.
@@ -510,7 +639,7 @@ export function TaskDetailForm({
             : null;
         saved = await updateTask(initialTask.task.id, {
           area_id: areaId,
-          subproject_id: subprojectId,
+          ...linkFields,
           title: title.trim(),
           description: description.trim() || null,
           priority,
@@ -525,7 +654,7 @@ export function TaskDetailForm({
       } else {
         const input: CreateTaskInput = {
           area_id: areaId,
-          subproject_id: subprojectId,
+          ...linkFields,
           title: title.trim(),
           description: description.trim() || null,
           priority,
@@ -726,7 +855,27 @@ export function TaskDetailForm({
               {errors.area && <p className="text-xs text-destructive">{errors.area}</p>}
             </div>
 
+            {/* Vínculo: Proyecto/Etapa, Objetivo/Meta, Hábito, o ninguno. */}
+            <div className="space-y-2">
+              <Label>Vincular a</Label>
+              <Select
+                value={vinculo}
+                onValueChange={(v) => handleVinculoChange(v as typeof vinculo)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ninguno">Ninguno (tarea directa del Área)</SelectItem>
+                  <SelectItem value="proyecto">Proyecto</SelectItem>
+                  <SelectItem value="objetivo">Objetivo</SelectItem>
+                  <SelectItem value="habito">Hábito</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             {/* Proyecto */}
+            {vinculo === "proyecto" && (
             <div className="space-y-2">
               <Label>Proyecto *</Label>
               <div className="flex gap-2">
@@ -769,8 +918,10 @@ export function TaskDetailForm({
               </div>
               {errors.project && <p className="text-xs text-destructive">{errors.project}</p>}
             </div>
+            )}
 
             {/* Subproyecto */}
+            {vinculo === "proyecto" && (
             <div className="space-y-2">
               <Label>Etapa *</Label>
               <div className="flex gap-2">
@@ -815,6 +966,97 @@ export function TaskDetailForm({
                 <p className="text-xs text-destructive">{errors.subproject}</p>
               )}
             </div>
+            )}
+
+            {/* Objetivo */}
+            {vinculo === "objetivo" && (
+            <div className="space-y-2">
+              <Label>Objetivo *</Label>
+              <Select value={objectiveId} onValueChange={handleObjectiveChange} disabled={!areaId}>
+                <SelectTrigger>
+                  <SelectValue
+                    placeholder={
+                      !areaId
+                        ? "Primero elige un área"
+                        : objectives.length === 0
+                          ? "Aún no hay objetivos"
+                          : "Selecciona un objetivo"
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {objectives.map((o) => (
+                    <SelectItem key={o.id} value={o.id}>
+                      {o.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.objective && <p className="text-xs text-destructive">{errors.objective}</p>}
+              <p className="text-xs text-muted-foreground">
+                ¿No existe todavía? Créalo desde Ajustes → Organización.
+              </p>
+            </div>
+            )}
+
+            {/* Meta */}
+            {vinculo === "objetivo" && (
+            <div className="space-y-2">
+              <Label>Meta *</Label>
+              <Select value={goalId} onValueChange={setGoalId} disabled={!objectiveId}>
+                <SelectTrigger>
+                  <SelectValue
+                    placeholder={
+                      !objectiveId
+                        ? "Primero elige un objetivo"
+                        : goals.length === 0
+                          ? "Aún no hay metas"
+                          : "Selecciona una meta"
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {goals.map((g) => (
+                    <SelectItem key={g.id} value={g.id}>
+                      {g.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.goal && <p className="text-xs text-destructive">{errors.goal}</p>}
+            </div>
+            )}
+
+            {/* Hábito: sin nivel intermedio, se vincula directo. */}
+            {vinculo === "habito" && (
+            <div className="space-y-2">
+              <Label>Hábito *</Label>
+              <Select value={habitId} onValueChange={setHabitId} disabled={!areaId}>
+                <SelectTrigger>
+                  <SelectValue
+                    placeholder={
+                      !areaId
+                        ? "Primero elige un área"
+                        : habits.length === 0
+                          ? "Aún no hay hábitos"
+                          : "Selecciona un hábito"
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {habits.map((h) => (
+                    <SelectItem key={h.id} value={h.id}>
+                      {h.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.habit && <p className="text-xs text-destructive">{errors.habit}</p>}
+              <p className="text-xs text-muted-foreground">
+                ¿No existe todavía? Créalo desde Ajustes → Organización.
+              </p>
+            </div>
+            )}
           </section>
 
           {/* 3. Estado + Prioridad */}
