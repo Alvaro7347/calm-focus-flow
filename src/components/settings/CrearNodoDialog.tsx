@@ -38,6 +38,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { createArea } from "@/services/areaService";
 import { createProject } from "@/services/projectService";
 import { createSubproject } from "@/services/subprojectService";
+import { createObjective, createGoal } from "@/services/objectiveService";
 import { invalidateActivityGraph } from "@/lib/queryInvalidation";
 import {
   PROJECT_COLORS,
@@ -45,12 +46,14 @@ import {
   type ProjectColorSlug,
 } from "@/lib/projectIdentity";
 
-export type CrearNodoTipo = "area" | "project" | "subproject";
+export type CrearNodoTipo = "area" | "project" | "subproject" | "objective" | "goal";
 
 const TITULOS: Record<CrearNodoTipo, string> = {
   area: "Nueva Área",
   project: "Nuevo Proyecto",
   subproject: "Nueva Etapa",
+  objective: "Nuevo Objetivo",
+  goal: "Nueva Meta",
 };
 
 interface Props {
@@ -94,11 +97,29 @@ export function CrearNodoDialog({ type, parentId, triggerLabel, className }: Pro
           vision_text: vision.trim() || null,
         });
       }
-      if (!parentId) throw new Error("Falta el proyecto destino.");
-      return createSubproject({
-        project_id: parentId,
+      if (type === "subproject") {
+        if (!parentId) throw new Error("Falta el proyecto destino.");
+        return createSubproject({
+          project_id: parentId,
+          name: trimmed,
+          target_date: fecha || null,
+        });
+      }
+      if (type === "objective") {
+        if (!parentId) throw new Error("Falta el área destino.");
+        return createObjective({
+          area_id: parentId,
+          name: trimmed,
+          target_date: fecha || null,
+          vision_text: vision.trim() || null,
+        });
+      }
+      if (!parentId) throw new Error("Falta el objetivo destino.");
+      return createGoal({
+        objective_id: parentId,
         name: trimmed,
         target_date: fecha || null,
+        vision_text: vision.trim() || null,
       });
     },
     onSuccess: async () => {
@@ -139,10 +160,12 @@ export function CrearNodoDialog({ type, parentId, triggerLabel, className }: Pro
             <DialogDescription>
               {type === "area" &&
                 "Se crea directamente, sin necesidad de asignarle ninguna tarea todavía."}
-              {type === "project" &&
+              {(type === "project" || type === "objective") &&
                 "Puedes definir su visión y fecha objetivo ahora, o dejarlas para después."}
               {type === "subproject" &&
                 "Crea la Etapa aunque todavía no sepas qué tareas tendrá."}
+              {type === "goal" &&
+                "Crea la Meta aunque todavía no sepas qué tareas tendrá."}
             </DialogDescription>
           </DialogHeader>
 
@@ -162,7 +185,15 @@ export function CrearNodoDialog({ type, parentId, triggerLabel, className }: Pro
                 onChange={(e) => setNombre(e.target.value)}
                 maxLength={80}
                 placeholder={
-                  type === "area" ? "Ej: Negocio" : type === "project" ? "Ej: Saint George" : "Ej: Prospección"
+                  type === "area"
+                    ? "Ej: Negocio"
+                    : type === "project"
+                      ? "Ej: Saint George"
+                      : type === "objective"
+                        ? "Ej: Plan Deuda 2027"
+                        : type === "goal"
+                          ? "Ej: Reducir deuda a $4 millones"
+                          : "Ej: Prospección"
                 }
               />
             </div>
@@ -188,7 +219,7 @@ export function CrearNodoDialog({ type, parentId, triggerLabel, className }: Pro
               </div>
             )}
 
-            {(type === "project" || type === "subproject") && (
+            {(type === "project" || type === "subproject" || type === "objective" || type === "goal") && (
               <div className="space-y-2">
                 <Label htmlFor="crear-nodo-fecha">Fecha objetivo (opcional)</Label>
                 <Input
@@ -200,14 +231,14 @@ export function CrearNodoDialog({ type, parentId, triggerLabel, className }: Pro
               </div>
             )}
 
-            {type === "project" && (
+            {(type === "project" || type === "objective" || type === "goal") && (
               <div className="space-y-2">
                 <Label htmlFor="crear-nodo-vision">Visión (opcional)</Label>
                 <Textarea
                   id="crear-nodo-vision"
                   value={vision}
                   onChange={(e) => setVision(e.target.value)}
-                  placeholder="¿Cómo se ve/siente llegar a este Proyecto?"
+                  placeholder="¿Cómo se ve/siente llegar a este punto?"
                   rows={3}
                 />
               </div>
