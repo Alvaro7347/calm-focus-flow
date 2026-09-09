@@ -25,8 +25,8 @@
  */
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight, Folder, FolderOpen, Hash, Layers } from "lucide-react";
-import { fetchAreaTree, type AreaNode, type ProyectoNode, type SubproyectoNode } from "@/services/tableroService";
+import { ChevronRight, Folder, FolderOpen, Hash, Layers, Target } from "lucide-react";
+import { fetchAreaTree, type AreaNode, type ProyectoNode, type SubproyectoNode, type ObjetivoNode, type MetaNode } from "@/services/tableroService";
 import { useBootstrapReady } from "@/lib/bootstrapContext";
 import {
   OrganizacionActions,
@@ -64,7 +64,14 @@ function NodeRow({
   // Para áreas, el icono se reemplaza por un punto de color
   // que representa la identidad visual del Área (heredada por sus
   // proyectos, subproyectos y tareas en el resto de la app).
-  const Icon = type === "subproject" ? Hash : expanded ? FolderOpen : Folder;
+  const Icon =
+    type === "subproject" || type === "goal"
+      ? Hash
+      : type === "objective"
+        ? Target
+        : expanded
+          ? FolderOpen
+          : Folder;
   const iconColor =
     type === "area"
       ? "text-indigo-600"
@@ -138,6 +145,39 @@ function SubprojectRow({ sub, depth }: { sub: SubproyectoNode; depth: number }) 
   return <NodeRow id={sub.id} label={sub.nombre} type="subproject" depth={depth} />;
 }
 
+function GoalRow({ goal, depth }: { goal: MetaNode; depth: number }) {
+  return <NodeRow id={goal.id} label={goal.nombre} type="goal" depth={depth} />;
+}
+
+function ObjectiveRow({ objective, depth }: { objective: ObjetivoNode; depth: number }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <NodeRow
+        id={objective.id}
+        label={objective.nombre}
+        type="objective"
+        depth={depth}
+        expandable
+        expanded={open}
+        onToggle={() => setOpen((v) => !v)}
+        count={objective.metas.length || undefined}
+      />
+
+      {open ? (
+        <div className="animate-in fade-in slide-in-from-top-1 duration-200">
+          {objective.metas.map((g) => (
+            <GoalRow key={g.id} goal={g} depth={depth + 1} />
+          ))}
+          <div style={{ paddingLeft: 16 + (depth + 1) * 20 }}>
+            <CrearNodoDialog type="goal" parentId={objective.id} />
+          </div>
+        </div>
+      ) : null}
+    </>
+  );
+}
+
 function ProjectRow({ project, depth }: { project: ProyectoNode; depth: number }) {
   const [open, setOpen] = useState(false);
   const hasChildren = project.subproyectos.length > 0;
@@ -180,17 +220,36 @@ function AreaRow({ area }: { area: AreaNode }) {
         expandable
         expanded={open}
         onToggle={() => setOpen((v) => !v)}
-        count={area.proyectos.length || undefined}
+        count={area.proyectos.length + area.objetivos.length || undefined}
         color={area.color}
       />
 
       {open ? (
         <div className="animate-in fade-in slide-in-from-top-1 duration-200">
+          <p
+            className="pt-2 pb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400"
+            style={{ paddingLeft: 16 + 1 * 20 }}
+          >
+            Proyectos
+          </p>
           {area.proyectos.map((p) => (
             <ProjectRow key={p.id} project={p} depth={1} />
           ))}
           <div style={{ paddingLeft: 16 + 1 * 20 }}>
             <CrearNodoDialog type="project" parentId={area.id} />
+          </div>
+
+          <p
+            className="pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400"
+            style={{ paddingLeft: 16 + 1 * 20 }}
+          >
+            Objetivos
+          </p>
+          {area.objetivos.map((o) => (
+            <ObjectiveRow key={o.id} objective={o} depth={1} />
+          ))}
+          <div style={{ paddingLeft: 16 + 1 * 20 }}>
+            <CrearNodoDialog type="objective" parentId={area.id} />
           </div>
         </div>
       ) : null}
@@ -224,19 +283,25 @@ export function OrganizacionTree() {
     const tree = data ?? [];
     let projects = 0;
     let subprojects = 0;
+    let objectives = 0;
+    let goals = 0;
     for (const a of tree) {
       projects += a.proyectos.length;
       for (const p of a.proyectos) subprojects += p.subproyectos.length;
+      objectives += a.objetivos.length;
+      for (const o of a.objetivos) goals += o.metas.length;
     }
-    return { areas: tree.length, projects, subprojects };
+    return { areas: tree.length, projects, subprojects, objectives, goals };
   }, [data]);
 
   return (
     <div className="space-y-4">
-      <section className="flex gap-2">
+      <section className="flex flex-wrap gap-2">
         <Stat label="Áreas" value={stats.areas} />
         <Stat label="Proyectos" value={stats.projects} />
         <Stat label="Etapas" value={stats.subprojects} />
+        <Stat label="Objetivos" value={stats.objectives} />
+        <Stat label="Metas" value={stats.goals} />
       </section>
 
       <div className="flex justify-end">
