@@ -43,6 +43,12 @@ export interface Tarea {
    */
   metaId?: string;
   /**
+   * id del Hábito al que se vincula esta tarea directamente (sin
+   * nivel intermedio, a diferencia de Proyecto/Etapa u Objetivo/Meta).
+   * Mutuamente excluyente con `proyecto`/`subproyecto` y `metaId`.
+   */
+  habitoId?: string;
+  /**
    * Slug de identidad visual del Proyecto padre (paleta CalmApp).
    * Puede ser `null`/`undefined`; los consumidores deben resolverlo
    * con `getProjectColor` para caer al color por defecto.
