@@ -66,6 +66,7 @@ import {
   updateGoal,
   archiveGoal,
 } from "@/services/objectiveService";
+import { updateHabit, archiveHabit } from "@/services/habitService";
 import { invalidateActivityGraph } from "@/lib/queryInvalidation";
 import {
   PROJECT_COLORS,
@@ -73,7 +74,7 @@ import {
   type ProjectColorSlug,
 } from "@/lib/projectIdentity";
 
-export type OrgNodeType = "area" | "project" | "subproject" | "objective" | "goal";
+export type OrgNodeType = "area" | "project" | "subproject" | "objective" | "goal" | "habit";
 
 const LABELS: Record<OrgNodeType, { singular: string; article: string }> = {
   area: { singular: "área", article: "esta" },
@@ -81,6 +82,7 @@ const LABELS: Record<OrgNodeType, { singular: string; article: string }> = {
   subproject: { singular: "etapa", article: "esta" },
   objective: { singular: "objetivo", article: "este" },
   goal: { singular: "meta", article: "esta" },
+  habit: { singular: "hábito", article: "este" },
 };
 
 interface RenamePatch {
@@ -93,7 +95,8 @@ async function updateNode(type: OrgNodeType, id: string, patch: RenamePatch) {
   if (type === "project") return updateProject(id, { name: patch.name });
   if (type === "subproject") return updateSubproject(id, { name: patch.name });
   if (type === "objective") return updateObjective(id, { name: patch.name });
-  return updateGoal(id, { name: patch.name });
+  if (type === "goal") return updateGoal(id, { name: patch.name });
+  return updateHabit(id, { name: patch.name });
 }
 
 async function archiveNode(type: OrgNodeType, id: string) {
@@ -101,7 +104,8 @@ async function archiveNode(type: OrgNodeType, id: string) {
   if (type === "project") return archiveProject(id);
   if (type === "subproject") return archiveSubproject(id);
   if (type === "objective") return archiveObjective(id);
-  return archiveGoal(id);
+  if (type === "goal") return archiveGoal(id);
+  return archiveHabit(id);
 }
 
 interface Props {
