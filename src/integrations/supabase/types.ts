@@ -904,6 +904,7 @@ export type Database = {
           ends_at: string | null
           estimated_duration_min: number | null
           goal_id: string | null
+          habit_id: string | null
           id: string
           priority: Database["public"]["Enums"]["task_priority"]
           source: Database["public"]["Enums"]["task_source"]
@@ -927,6 +928,7 @@ export type Database = {
           ends_at?: string | null
           estimated_duration_min?: number | null
           goal_id?: string | null
+          habit_id?: string | null
           id?: string
           priority?: Database["public"]["Enums"]["task_priority"]
           source?: Database["public"]["Enums"]["task_source"]
@@ -950,6 +952,7 @@ export type Database = {
           ends_at?: string | null
           estimated_duration_min?: number | null
           goal_id?: string | null
+          habit_id?: string | null
           id?: string
           priority?: Database["public"]["Enums"]["task_priority"]
           source?: Database["public"]["Enums"]["task_source"]
@@ -980,6 +983,13 @@ export type Database = {
             columns: ["goal_id"]
             isOneToOne: false
             referencedRelation: "goals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_habit_id_fkey"
+            columns: ["habit_id"]
+            isOneToOne: false
+            referencedRelation: "habits"
             referencedColumns: ["id"]
           },
           {
