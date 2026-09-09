@@ -57,6 +57,7 @@ import type { QueryClient, QueryKey } from "@tanstack/react-query";
  */
 export const ACTIVITY_GRAPH_QUERY_KEYS: readonly QueryKey[] = [
   ["focus"],
+  ["focus", "today-completion"],
   ["calendar"],
   ["tablero"],
   ["areas", "nav"],
