@@ -4,10 +4,12 @@
 //  1. Detectar eventos de prioridad alta que comienzan en ~15 min.
 //  2. Detectar usuarios que están cruzando las 18:00 en su zona local
 //     y enviarles un resumen consolidado de tareas altas pendientes.
-//  3. Enviar Web Push a todas las suscripciones activas del usuario.
-//  4. Registrar cada entrega en notification_deliveries (idempotencia
+//  3. Enviar las alarmas configuradas por el usuario en cada actividad
+//     (tabla task_reminders: "5 min antes", "15 min antes", etc.).
+//  4. Enviar Web Push a todas las suscripciones activas del usuario.
+//  5. Registrar cada entrega en notification_deliveries (idempotencia
 //     garantizada por UNIQUE(dedupe_key)).
-//  5. Desactivar suscripciones expiradas (410 / 404).
+//  6. Desactivar suscripciones expiradas (410 / 404).
 //
 // Autenticación: header `x-dispatch-secret` que debe coincidir con
 // PUSH_DISPATCH_SECRET. No expone service_role al cliente.
@@ -41,7 +43,7 @@ interface PushSub {
 }
 
 interface Payload {
-  type: "event_reminder" | "daily_high_priority_summary";
+  type: "event_reminder" | "daily_high_priority_summary" | "task_reminder";
   title: string;
   body: string;
   url: string;
@@ -174,8 +176,21 @@ async function processEventReminders(): Promise<{ candidates: number; sent: numb
     return { candidates: 0, sent: 0 };
   }
 
+  // Si el usuario configuró su propia alarma para el evento, esa manda:
+  // no enviamos además el aviso automático de 15 min (evita duplicados).
+  const eventIds = (events ?? []).map((e) => e.id);
+  const withCustomReminder = new Set<string>();
+  if (eventIds.length > 0) {
+    const { data: rems } = await admin
+      .from("task_reminders")
+      .select("task_id")
+      .in("task_id", eventIds);
+    for (const r of rems ?? []) withCustomReminder.add(r.task_id);
+  }
+
   let sent = 0;
   for (const ev of events ?? []) {
+    if (withCustomReminder.has(ev.id)) continue;
     const prefs = await fetchPrefs(ev.user_id);
     if (!prefs.notifications_enabled || !prefs.event_reminders_enabled) continue;
 
@@ -234,6 +249,133 @@ async function processEventReminders(): Promise<{ candidates: number; sent: numb
   }
 
   return { candidates: events?.length ?? 0, sent };
+}
+
+// ============================================================
+// TASK REMINDERS (alarmas configuradas por el usuario)
+// ============================================================
+function humanLead(minutes: number): string {
+  if (minutes <= 0) return "Ahora";
+  if (minutes < 60) return `En ${minutes} ${minutes === 1 ? "minuto" : "minutos"}`;
+  if (minutes < 1440) {
+    const h = Math.round(minutes / 60);
+    return `En ${h} ${h === 1 ? "hora" : "horas"}`;
+  }
+  const d = Math.round(minutes / 1440);
+  return d === 1 ? "Mañana" : `En ${d} días`;
+}
+
+async function processTaskReminders(): Promise<{ candidates: number; sent: number }> {
+  const now = new Date();
+  const nowIso = now.toISOString();
+  // Tolerancia: una alarma "a la hora" puede procesarse hasta 5 min
+  // después del inicio (por si un tick del cron se retrasa).
+  const graceMs = 5 * 60 * 1000;
+  // No revisamos alarmas pendientes más antiguas que 2 días.
+  const oldestIso = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString();
+
+  const { data: rows, error } = await admin
+    .from("task_reminders")
+    .select(
+      "id, task_id, remind_at, tasks!inner(id, user_id, title, starts_at, ends_at, status, activity_type, archived_at)",
+    )
+    .is("sent_at", null)
+    .lte("remind_at", nowIso)
+    .gte("remind_at", oldestIso);
+
+  if (error) {
+    console.error("[push-dispatch] task_reminders query error:", error.message);
+    return { candidates: 0, sent: 0 };
+  }
+
+  let sent = 0;
+  for (const row of rows ?? []) {
+    // deno-lint-ignore no-explicit-any
+    const task = (row as any).tasks as {
+      id: string;
+      user_id: string;
+      title: string;
+      starts_at: string | null;
+      ends_at: string | null;
+      status: string;
+      activity_type: string;
+      archived_at: string | null;
+    } | null;
+
+    // "Reclamamos" la alarma de forma atómica: sólo un tick la procesa.
+    const { data: claimed } = await admin
+      .from("task_reminders")
+      .update({ sent_at: nowIso })
+      .eq("id", row.id)
+      .is("sent_at", null)
+      .select("id");
+    if (!claimed || claimed.length === 0) continue;
+
+    if (!task || !task.starts_at) continue;
+    if (task.archived_at || task.status === "completed") continue;
+    const startMs = new Date(task.starts_at).getTime();
+    if (startMs + graceMs < now.getTime()) continue; // ya pasó: no molestar
+
+    const prefs = await fetchPrefs(task.user_id);
+    if (!prefs.notifications_enabled) continue;
+
+    const subs = await fetchActiveSubs(task.user_id);
+    if (subs.length === 0) continue;
+
+    const { data: profile } = await admin
+      .from("profiles")
+      .select("timezone")
+      .eq("id", task.user_id)
+      .maybeSingle();
+    const tz = profile?.timezone ?? "UTC";
+    const hi = fmtHmLocal(task.starts_at, tz);
+    const hf = task.ends_at ? fmtHmLocal(task.ends_at, tz) : "";
+
+    const minutesLeft = Math.max(0, Math.round((startMs - now.getTime()) / 60000));
+    const lead = humanLead(minutesLeft);
+    const isEvent = task.activity_type === "event";
+    const verbo = isEvent ? "comienza" : "toca";
+
+    const payload: Payload = {
+      type: "task_reminder",
+      title: minutesLeft <= 0 ? "Es la hora" : "Recordatorio",
+      body:
+        minutesLeft <= 0
+          ? `Ahora ${verbo} "${task.title}" (${hi}${hf ? ` a ${hf}` : ""}).`
+          : `${lead} ${verbo} "${task.title}" a las ${hi}${hf ? `, hasta las ${hf}` : ""}.`,
+      url: `/calendario?event=${task.id}`,
+      tag: `task-reminder-${task.id}`,
+    };
+
+    for (const sub of subs) {
+      const dedupe = `task_reminder:${row.id}:${row.remind_at}:${sub.id}`;
+      const ok = await recordDelivery({
+        user_id: task.user_id,
+        subscription_id: sub.id,
+        notification_type: "task_reminder",
+        activity_id: task.id,
+        dedupe_key: dedupe,
+        status: "sent",
+      });
+      if (!ok) continue;
+
+      const res = await sendToSubscription(sub, payload);
+      if (res.ok) {
+        sent++;
+      } else {
+        await admin
+          .from("notification_deliveries")
+          .update({
+            status: res.gone ? "expired" : "failed",
+            error_summary: res.error?.slice(0, 200) ?? null,
+          })
+          .eq("dedupe_key", dedupe);
+        if (res.gone) await deactivateSubscription(sub.id, res.error ?? "gone");
+      }
+    }
+  }
+
+  return { candidates: rows?.length ?? 0, sent };
 }
 
 // ============================================================
@@ -415,12 +557,13 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const [events, summaries] = await Promise.all([
+    const [events, reminders, summaries] = await Promise.all([
       processEventReminders(),
+      processTaskReminders(),
       processDailySummaries(),
     ]);
     return new Response(
-      JSON.stringify({ ok: true, events, summaries, ts: new Date().toISOString() }),
+      JSON.stringify({ ok: true, events, reminders, summaries, ts: new Date().toISOString() }),
       { headers: { "content-type": "application/json" } },
     );
   } catch (err) {
