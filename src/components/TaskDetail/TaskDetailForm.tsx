@@ -21,16 +21,20 @@
  * - Archivar es una acción del modo edit. Nunca elimina
  *   físicamente: escribe `archived_at`.
  *
+ * Recordatorio (alarma push): selector dentro de
+ * "Programación". Se persiste vía `reminderService` en
+ * `task_reminders` y lo envía la Edge Function `push-dispatch`.
+ *
  * Extensibilidad futura (NO implementar aún):
  * - Adjuntos, comentarios, historial, IA, Google Calendar,
- *   recordatorios, etiquetas y relaciones se sumarán como
+ *   etiquetas y relaciones se sumarán como
  *   secciones adicionales tras "Programación", con su propio
  *   subcomponente. El contrato de este archivo no cambiará.
  * ========================================================
  */
 import { useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Archive, Copy, Plus } from "lucide-react";
+import { Archive, Bell, Copy, Plus } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -84,6 +88,13 @@ import {
   type TaskStatus,
   type TaskWithHierarchy,
 } from "@/services/taskService";
+import {
+  REMINDER_OPTIONS,
+  getTaskReminderOffset,
+  offsetToValue,
+  setTaskReminder,
+  valueToOffset,
+} from "@/services/reminderService";
 import { invalidateActivityGraph } from "@/lib/queryInvalidation";
 import type { AreaRow, ProjectRow, SubprojectRow } from "@/types/tarea";
 import type { ObjectiveRow, GoalRow } from "@/types/objetivo";
@@ -171,6 +182,34 @@ export function TaskDetailForm({
       ? String(initialTask.task.estimated_duration_min)
       : "",
   );
+
+  // ---------- Recordatorio (alarma push) ----------
+  // "none" | minutos antes como string ("0", "5", "15"...).
+  const [alarma, setAlarma] = useState<string>("none");
+  const [alarmaInicial, setAlarmaInicial] = useState<string>("none");
+
+  useEffect(() => {
+    // En edit y duplicate precargamos la alarma de la actividad original.
+    const srcId = initialTask?.task.id;
+    const srcStart = initialTask?.task.starts_at ?? null;
+    if (!srcId || !srcStart) return;
+    let cancelled = false;
+    getTaskReminderOffset(srcId, srcStart)
+      .then((offset) => {
+        if (cancelled) return;
+        const v = offsetToValue(offset);
+        setAlarma(v);
+        // En duplicate la copia aún no tiene alarma: se considerará cambio.
+        setAlarmaInicial(isDuplicate ? "none" : v);
+      })
+      .catch(() => {
+        // Silencioso: sin alarma precargada.
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialTask?.task.id]);
 
   // ---------- Jerarquía ----------
   const [areas, setAreas] = useState<AreaRow[]>([]);
@@ -672,6 +711,22 @@ export function TaskDetailForm({
           toast.success(isEvento ? "Evento creado." : "Tarea creada.");
         }
       }
+      // Alarma: sólo aplica si la actividad tiene hora de inicio.
+      // En edit sólo tocamos task_reminders si cambió la alarma o el
+      // horario, para no rearmar una alarma ya enviada al editar el título.
+      const offset = hora ? valueToOffset(alarma) : null;
+      const alarmaCambio = offsetToValue(offset) !== alarmaInicial;
+      const horarioCambio = isEdit
+        ? (initialTask?.task.starts_at ?? null) !== saved.starts_at
+        : true;
+      if (!isEdit ? offset != null : alarmaCambio || horarioCambio) {
+        try {
+          await setTaskReminder(saved.id, hora ? saved.starts_at : null, offset);
+        } catch {
+          toast.warning("Se guardó, pero no se pudo programar el recordatorio.");
+        }
+      }
+
       await invalidateAll();
       onSaved?.(saved);
     } catch (err) {
@@ -1191,11 +1246,36 @@ export function TaskDetailForm({
                 </div>
               </>
             )}
+
+            {/* Recordatorio (alarma push) */}
+            <div className="space-y-2 min-w-0">
+              <Label htmlFor="td-alarma" className="flex items-center gap-1.5">
+                <Bell className="h-3.5 w-3.5" aria-hidden="true" />
+                Recordatorio
+              </Label>
+              <Select value={hora ? alarma : "none"} onValueChange={setAlarma} disabled={!hora}>
+                <SelectTrigger id="td-alarma" className="w-full">
+                  <SelectValue placeholder="Sin recordatorio" />
+                </SelectTrigger>
+                <SelectContent>
+                  {REMINDER_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                {hora
+                  ? "Te llegará como notificación en los dispositivos donde activaste las notificaciones."
+                  : "Agrega una hora para poder programar un recordatorio."}
+              </p>
+            </div>
           </section>
 
           {/* Placeholder de secciones futuras — NO implementar aún.
               Adjuntos · Comentarios · Historial · IA · Google Calendar ·
-              Recordatorios · Etiquetas · Relaciones. Se sumarán como
+              Etiquetas · Relaciones. Se sumarán como
               secciones adicionales sin cambiar el contrato del formulario. */}
         </div>
       </div>
