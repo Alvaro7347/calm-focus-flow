@@ -40,6 +40,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import type { CategoriaFoco, Tarea } from "@/types/tarea";
 import { mapDbPriorityToUi } from "@/services/mappers/priorityMapper";
+import { shiftTaskReminder } from "@/services/reminderService";
 
 export type TaskRow = Database["public"]["Tables"]["tasks"]["Row"];
 export type TaskInsert = Database["public"]["Tables"]["tasks"]["Insert"];
@@ -148,6 +149,18 @@ export async function createTask(input: CreateTaskInput): Promise<TaskRow> {
 }
 
 export async function updateTask(id: string, patch: TaskUpdate): Promise<TaskRow> {
+  // Si cambia la hora de inicio, leemos la anterior para poder mover
+  // la alarma (task_reminders) manteniendo la misma anticipación.
+  let previousStartsAt: string | null | undefined;
+  if (patch.starts_at !== undefined) {
+    const { data: prev } = await supabase
+      .from("tasks")
+      .select("starts_at")
+      .eq("id", id)
+      .maybeSingle();
+    previousStartsAt = prev?.starts_at ?? null;
+  }
+
   const { data, error } = await supabase
     .from("tasks")
     .update(patch)
@@ -155,6 +168,15 @@ export async function updateTask(id: string, patch: TaskUpdate): Promise<TaskRow
     .select("*")
     .single();
   if (error) throw error;
+
+  if (previousStartsAt !== undefined && previousStartsAt !== data.starts_at) {
+    try {
+      await shiftTaskReminder(id, previousStartsAt, data.starts_at);
+    } catch (err) {
+      // Nunca bloquear el guardado de la tarea por la alarma.
+      console.warn("[taskService] no se pudo mover la alarma", err);
+    }
+  }
   return data;
 }
 
