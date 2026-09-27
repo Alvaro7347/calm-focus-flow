@@ -149,17 +149,21 @@ export async function createTask(input: CreateTaskInput): Promise<TaskRow> {
 }
 
 export async function updateTask(id: string, patch: TaskUpdate): Promise<TaskRow> {
-  // Si cambia la hora de inicio, leemos la anterior para poder mover
-  // la alarma (task_reminders) manteniendo la misma anticipación.
-  let previousStartsAt: string | null | undefined;
-  if (patch.starts_at !== undefined) {
+  // Leemos el estado anterior cuando cambia la fecha o el estado:
+  //  - para mover la alarma (task_reminders) con la misma anticipación;
+  //  - para registrar reprogramaciones y completadas en activity_log
+  //    (historial que usa el Copiloto reflexivo).
+  let previous: { starts_at: string | null; status: string } | null | undefined;
+  if (patch.starts_at !== undefined || patch.status !== undefined) {
     const { data: prev } = await supabase
       .from("tasks")
-      .select("starts_at")
+      .select("starts_at, status")
       .eq("id", id)
       .maybeSingle();
-    previousStartsAt = prev?.starts_at ?? null;
+    previous = prev ?? null;
   }
+  const previousStartsAt =
+    patch.starts_at !== undefined ? (previous?.starts_at ?? null) : undefined;
 
   const { data, error } = await supabase
     .from("tasks")
@@ -177,7 +181,59 @@ export async function updateTask(id: string, patch: TaskUpdate): Promise<TaskRow
       console.warn("[taskService] no se pudo mover la alarma", err);
     }
   }
+
+  if (previous) {
+    await logTaskActivity(id, previous, data);
+  }
   return data;
+}
+
+/** Misma fecha/hora aunque el texto ISO venga con distinto formato. */
+function sameInstant(a: string | null, b: string | null): boolean {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  return new Date(a).getTime() === new Date(b).getTime();
+}
+
+/**
+ * Registro en activity_log (tabla existente, sin cambios de esquema):
+ *  - "rescheduled": la tarea tenía fecha y se movió a otra o se quitó.
+ *  - "completed":   la tarea pasó a completada.
+ * Nunca bloquea el guardado.
+ */
+async function logTaskActivity(
+  id: string,
+  previous: { starts_at: string | null; status: string },
+  current: TaskRow,
+): Promise<void> {
+  const rows: {
+    task_id: string;
+    action: string;
+    old_value: Record<string, string | null>;
+    new_value: Record<string, string | null>;
+  }[] = [];
+  if (previous.starts_at && !sameInstant(previous.starts_at, current.starts_at)) {
+    rows.push({
+      task_id: id,
+      action: "rescheduled",
+      old_value: { starts_at: previous.starts_at },
+      new_value: { starts_at: current.starts_at },
+    });
+  }
+  if (previous.status !== "completed" && current.status === "completed") {
+    rows.push({
+      task_id: id,
+      action: "completed",
+      old_value: { status: previous.status },
+      new_value: { status: current.status },
+    });
+  }
+  if (rows.length === 0) return;
+  try {
+    await supabase.from("activity_log").insert(rows);
+  } catch (err) {
+    console.warn("[taskService] no se pudo registrar la actividad", err);
+  }
 }
 
 export async function completeTask(id: string): Promise<TaskRow> {
