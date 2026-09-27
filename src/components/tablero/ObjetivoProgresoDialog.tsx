@@ -38,6 +38,11 @@ import {
   resetGoalProgressToAuto,
 } from "@/services/objectiveService";
 import { invalidateActivityGraph } from "@/lib/queryInvalidation";
+import { CheckCircle2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { isMetaCompletada } from "@/services/tableroService";
+import { reopenGoal } from "@/services/completionService";
+import { CompletarDialog } from "./CompletarDialog";
 import type { ProgressMode } from "@/types/tarea";
 
 interface Props {
@@ -47,31 +52,54 @@ interface Props {
 }
 
 export function ObjetivoProgresoDialog({ objetivo, open, onOpenChange }: Props) {
+  const [completarOpen, setCompletarOpen] = useState(false);
   if (!objetivo) return null;
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{objetivo.nombre}</DialogTitle>
-          <DialogDescription>Fecha objetivo, visión y progreso del Objetivo.</DialogDescription>
-        </DialogHeader>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{objetivo.nombre}</DialogTitle>
+            <DialogDescription>Fecha objetivo, visión y progreso del Objetivo.</DialogDescription>
+          </DialogHeader>
 
-        <ObjetivoCampos objetivo={objetivo} />
+          <ObjetivoCampos objetivo={objetivo} />
 
-        {objetivo.metas.length > 0 && (
-          <div className="mt-4 pt-4 border-t border-slate-100">
-            <h4 className="text-sm font-semibold text-slate-700 mb-3">
-              Metas ({objetivo.metas.length})
-            </h4>
-            <div className="space-y-4">
-              {objetivo.metas.map((meta) => (
-                <MetaCampos key={meta.id} meta={meta} />
-              ))}
+          {objetivo.metas.length > 0 && (
+            <div className="mt-4 pt-4 border-t border-slate-100">
+              <h4 className="text-sm font-semibold text-slate-700 mb-3">
+                Metas ({objetivo.metas.length})
+              </h4>
+              <div className="space-y-4">
+                {objetivo.metas.map((meta) => (
+                  <MetaCampos key={meta.id} meta={meta} />
+                ))}
+              </div>
             </div>
+          )}
+
+          {/* Cierre del objetivo */}
+          <div className="mt-4 pt-4 border-t border-slate-100">
+            <Button variant="outline" className="w-full" onClick={() => setCompletarOpen(true)}>
+              <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+              Completar objetivo
+            </Button>
+            <p className="mt-2 text-xs text-slate-500">
+              Completa también todas sus metas. Sale de los activos y queda en tu historial.
+            </p>
           </div>
-        )}
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+      <CompletarDialog
+        kind="objective"
+        id={objetivo.id}
+        nombre={objetivo.nombre}
+        vision={objetivo.visionTexto}
+        open={completarOpen}
+        onOpenChange={setCompletarOpen}
+        onCompleted={() => onOpenChange(false)}
+      />
+    </>
   );
 }
 
@@ -150,6 +178,7 @@ function MetaCampos({ meta }: { meta: MetaNode }) {
   const qc = useQueryClient();
   const [fecha, setFecha] = useState(meta.fechaObjetivo ?? "");
   const [vision, setVision] = useState(meta.visionTexto ?? "");
+  const [completarOpen, setCompletarOpen] = useState(false);
 
   useEffect(() => {
     setFecha(meta.fechaObjetivo ?? "");
@@ -168,9 +197,29 @@ function MetaCampos({ meta }: { meta: MetaNode }) {
     }
   }
 
+  const completada = isMetaCompletada(meta);
+
+  async function reabrir() {
+    try {
+      await reopenGoal(meta.id);
+      await invalidateActivityGraph(qc);
+      toast.success("Meta reabierta.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "No se pudo reabrir la meta.");
+    }
+  }
+
   return (
     <div className="rounded-md border border-slate-100 p-3 space-y-2">
-      <p className="text-sm font-medium text-slate-700">{meta.nombre}</p>
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-sm font-medium text-slate-700 truncate">{meta.nombre}</p>
+        {completada ? (
+          <span className="inline-flex items-center gap-1 text-xs text-emerald-700 shrink-0">
+            <CheckCircle2 className="h-3.5 w-3.5" />
+            Completada
+          </span>
+        ) : null}
+      </div>
       <ProgresoControl
         progresoPct={meta.progresoPct}
         modoProgreso={meta.modoProgreso}
@@ -198,6 +247,34 @@ function MetaCampos({ meta }: { meta: MetaNode }) {
         placeholder="Visión de esta Meta (opcional)"
         rows={2}
         className="text-xs"
+      />
+      {completada ? (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 px-2 text-xs"
+          onClick={() => void reabrir()}
+        >
+          Reabrir meta
+        </Button>
+      ) : (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 px-2 text-xs text-emerald-700"
+          onClick={() => setCompletarOpen(true)}
+        >
+          <CheckCircle2 className="h-3.5 w-3.5" />
+          Completar meta
+        </Button>
+      )}
+      <CompletarDialog
+        kind="goal"
+        id={meta.id}
+        nombre={meta.nombre}
+        vision={meta.visionTexto}
+        open={completarOpen}
+        onOpenChange={setCompletarOpen}
       />
     </div>
   );
