@@ -33,6 +33,7 @@ import {
 import { ProyectoAccordion } from "@/components/tablero/ProyectoAccordion";
 import { ObjetivoAccordion } from "@/components/tablero/ObjetivoAccordion";
 import { HabitoRow } from "@/components/tablero/HabitoRow";
+import { CompletadosSection } from "@/components/tablero/CompletadosSection";
 
 interface TableroSearch {
   area?: string;
@@ -79,7 +80,8 @@ function TableroPage() {
     return (
       <div className="max-w-3xl mx-auto px-4 md:px-10 py-10">
         <p className="text-sm text-rose-600">
-          No pudimos cargar el Tablero: {error instanceof Error ? error.message : "error desconocido"}.
+          No pudimos cargar el Tablero:{" "}
+          {error instanceof Error ? error.message : "error desconocido"}.
         </p>
       </div>
     );
@@ -167,6 +169,9 @@ function TableroPage() {
           ))}
         </div>
       )}
+
+      {/* Historial: Proyectos y Objetivos completados del Área. */}
+      <CompletadosSection areaId={area.id} />
     </div>
   );
 }
@@ -176,16 +181,12 @@ function AreaPicker({ tree }: { tree: AreaNode[] }) {
   const areas = toAreaSummaries(tree);
   return (
     <div className="max-w-3xl mx-auto px-4 md:px-10 py-10 pb-32 md:pb-16">
-      <h1 className="text-2xl md:text-3xl font-semibold text-slate-900 tracking-tight">
-        Tablero
-      </h1>
+      <h1 className="text-2xl md:text-3xl font-semibold text-slate-900 tracking-tight">Tablero</h1>
       <p className="text-sm text-slate-500 mt-1 mb-8">
         Elige un área para ver sus proyectos, subproyectos y tareas.
       </p>
       {areas.length === 0 ? (
-        <p className="text-sm text-slate-500">
-          Todavía no hay áreas creadas.
-        </p>
+        <p className="text-sm text-slate-500">Todavía no hay áreas creadas.</p>
       ) : (
         <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {areas.map((a) => (
