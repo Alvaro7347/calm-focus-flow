@@ -96,6 +96,7 @@ import {
   valueToOffset,
 } from "@/services/reminderService";
 import { invalidateActivityGraph } from "@/lib/queryInvalidation";
+import type { TaskCreateDefaults } from "@/services/weeklyRitualService";
 import type { AreaRow, ProjectRow, SubprojectRow } from "@/types/tarea";
 import type { ObjectiveRow, GoalRow } from "@/types/objetivo";
 import type { HabitRow } from "@/types/habito";
@@ -121,6 +122,12 @@ export interface TaskDetailFormProps {
   onCancel?: () => void;
   /** El usuario pide duplicar la actividad actual (sólo en modo edit). */
   onRequestDuplicate?: () => void;
+  /**
+   * Valores iniciales opcionales en modo `create` (p. ej. "Agregar
+   * acción" desde Preparar mi semana preselecciona Proyecto o Meta).
+   * Ignorado en `edit` y `duplicate`.
+   */
+  createDefaults?: TaskCreateDefaults;
 }
 
 type InlineKind = "area" | "project" | "subproject" | null;
@@ -149,10 +156,12 @@ export function TaskDetailForm({
   onSaved,
   onCancel,
   onRequestDuplicate,
+  createDefaults,
 }: TaskDetailFormProps) {
   const queryClient = useQueryClient();
   const isEdit = mode === "edit";
   const isDuplicate = mode === "duplicate";
+  const defaults = mode === "create" ? createDefaults : undefined;
 
   // ---------- Estado del formulario ----------
   const initialSplit = splitIsoToLocalDateTime(initialTask?.task.starts_at ?? null);
@@ -174,7 +183,7 @@ export function TaskDetailForm({
     return src;
   })();
   const [status, setStatus] = useState<TaskStatus>(initialStatus);
-  const [fecha, setFecha] = useState(initialSplit.fecha);
+  const [fecha, setFecha] = useState(initialSplit.fecha || defaults?.fecha || "");
   const [hora, setHora] = useState(initialSplit.hora);
   const [horaFin, setHoraFin] = useState(initialEndSplit.hora);
   const [duracion, setDuracion] = useState<string>(
@@ -216,9 +225,15 @@ export function TaskDetailForm({
   const [projects, setProjects] = useState<ProjectRow[]>([]);
   const [subprojects, setSubprojects] = useState<SubprojectRow[]>([]);
   const [areasLoading, setAreasLoading] = useState(true);
-  const [areaId, setAreaId] = useState<string>(initialTask?.areaId ?? "");
-  const [projectId, setProjectId] = useState<string>(initialTask?.projectId ?? "");
-  const [subprojectId, setSubprojectId] = useState<string>(initialTask?.subprojectId ?? "");
+  const [areaId, setAreaId] = useState<string>(
+    initialTask?.areaId ?? defaults?.areaId ?? "",
+  );
+  const [projectId, setProjectId] = useState<string>(
+    initialTask?.projectId ?? defaults?.projectId ?? "",
+  );
+  const [subprojectId, setSubprojectId] = useState<string>(
+    initialTask?.subprojectId ?? defaults?.subprojectId ?? "",
+  );
 
   /**
    * Vínculo alternativo de la tarea: como mucho UNO de Proyecto→Etapa,
@@ -227,19 +242,22 @@ export function TaskDetailForm({
    * intermedio: se vincula directo (`tasks.habit_id`).
    */
   type VinculoTipo = "ninguno" | "proyecto" | "objetivo" | "habito";
-  const initialVinculo: VinculoTipo = initialTask?.subprojectId
-    ? "proyecto"
-    : initialTask?.goalId
-      ? "objetivo"
-      : initialTask?.habitId
-        ? "habito"
-        : "ninguno";
+  const initialVinculo: VinculoTipo =
+    initialTask?.subprojectId || defaults?.projectId
+      ? "proyecto"
+      : initialTask?.goalId || defaults?.goalId
+        ? "objetivo"
+        : initialTask?.habitId
+          ? "habito"
+          : "ninguno";
   const [vinculo, setVinculo] = useState<VinculoTipo>(initialVinculo);
 
   const [objectives, setObjectives] = useState<ObjectiveRow[]>([]);
   const [goals, setGoals] = useState<GoalRow[]>([]);
-  const [objectiveId, setObjectiveId] = useState<string>(initialTask?.objectiveId ?? "");
-  const [goalId, setGoalId] = useState<string>(initialTask?.goalId ?? "");
+  const [objectiveId, setObjectiveId] = useState<string>(
+    initialTask?.objectiveId ?? defaults?.objectiveId ?? "",
+  );
+  const [goalId, setGoalId] = useState<string>(initialTask?.goalId ?? defaults?.goalId ?? "");
   const [userTouchedObjective, setUserTouchedObjective] = useState(false);
 
   const [habits, setHabits] = useState<HabitRow[]>([]);
