@@ -28,6 +28,14 @@ export interface EventConflict {
   title: string;
   startsAt: string; // ISO
   endsAt: string; // ISO
+  /**
+   * true si el evento que choca NO se ve en el Calendario porque su
+   * Proyecto, Etapa o Área está archivado/completado. La base de datos
+   * igual lo considera al validar el horario.
+   */
+  hidden?: boolean;
+  /** Nombre del Proyecto del evento que choca, si tiene. */
+  projectName?: string | null;
 }
 
 /**
@@ -45,7 +53,9 @@ export async function findEventConflict(
 ): Promise<EventConflict | null> {
   let query = supabase
     .from("tasks")
-    .select("id, title, starts_at, ends_at")
+    .select(
+      "id, title, starts_at, ends_at, areas(archived_at), subprojects(archived_at, projects(name, archived_at))",
+    )
     .eq("activity_type", "event")
     .is("archived_at", null)
     .not("starts_at", "is", null)
@@ -61,13 +71,31 @@ export async function findEventConflict(
 
   const { data, error } = await query;
   if (error) throw error;
-  const row = data?.[0];
+  const row = data?.[0] as unknown as
+    | {
+        id: string;
+        title: string;
+        starts_at: string | null;
+        ends_at: string | null;
+        areas: { archived_at: string | null } | null;
+        subprojects: {
+          archived_at: string | null;
+          projects: { name: string; archived_at: string | null } | null;
+        } | null;
+      }
+    | undefined;
   if (!row || !row.starts_at || !row.ends_at) return null;
+  const hidden =
+    !!row.areas?.archived_at ||
+    !!row.subprojects?.archived_at ||
+    !!row.subprojects?.projects?.archived_at;
   return {
     id: row.id,
     title: row.title,
     startsAt: row.starts_at,
     endsAt: row.ends_at,
+    hidden,
+    projectName: row.subprojects?.projects?.name ?? null,
   };
 }
 
