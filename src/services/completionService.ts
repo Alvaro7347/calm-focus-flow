@@ -5,6 +5,9 @@
  * Sin cambios en Supabase. "Completado" se representa con lo que
  * ya existe:
  *
+ *  (Proyecto y Objetivo: además, sus eventos FUTUROS se archivan para
+ *   que no sigan ocupando horario sin verse en el Calendario.)
+ *
  *  - Proyecto:  tareas pendientes → completadas, progreso fijo en
  *               100 % (manual) y archivado. Archivado + 100 % =
  *               completado (archivado sin 100 % = archivado a secas).
@@ -128,8 +131,29 @@ async function completePendingTasks(scope: Scope): Promise<number> {
   return data?.length ?? 0;
 }
 
+/**
+ * Archiva los eventos FUTUROS del alcance. Al completar un Proyecto u
+ * Objetivo esos eventos dejan de verse en el Calendario; si no se
+ * archivan, seguirían ocupando su horario (la validación de choques
+ * de la base de datos los considera) sin que el usuario los vea.
+ * Los eventos pasados se conservan como historial.
+ */
+async function archiveFutureEvents(scope: Scope): Promise<void> {
+  if (scope.ids.length === 0) return;
+  const { error } = await supabase
+    .from("tasks")
+    .update({ archived_at: new Date().toISOString() })
+    .in(scope.column, scope.ids)
+    .eq("activity_type", "event")
+    .gt("starts_at", new Date().toISOString())
+    .is("archived_at", null);
+  if (error) throw error;
+}
+
 export async function completeProject(id: string): Promise<void> {
-  await completePendingTasks(await resolveScope("project", id));
+  const scope = await resolveScope("project", id);
+  await completePendingTasks(scope);
+  await archiveFutureEvents(scope);
   await setProjectProgressManual(id, 100);
   await archiveProject(id);
 }
@@ -142,6 +166,7 @@ export async function completeGoal(id: string): Promise<void> {
 export async function completeObjective(id: string): Promise<void> {
   const scope = await resolveScope("objective", id);
   await completePendingTasks(scope);
+  await archiveFutureEvents(scope);
   for (const goalId of scope.ids) {
     await setGoalProgressManual(goalId, 100);
   }
