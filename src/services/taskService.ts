@@ -579,24 +579,40 @@ function rowToScheduledTarea(row: JoinedTaskRow): Tarea {
 export async function fetchScheduledTasks(): Promise<Tarea[]> {
   // Ver `fetchFocusTasks`: mismo criterio (área vía `area_id` con
   // `!inner`; Etapa/Proyecto como LEFT join, filtrado de archivado en JS).
-  const { data, error } = await supabase
-    .from("tasks")
-    .select(
-      "*, areas!inner(name, color, archived_at), subprojects(name, archived_at, projects(name, archived_at))",
-    )
-    .is("archived_at", null)
-    .is("areas.archived_at", null)
-    .not("starts_at", "is", null)
-    .order("starts_at", { ascending: true });
+  //
+  // Paginado: Supabase entrega como máximo 1000 filas por consulta.
+  // Con muchas actividades (p. ej. clases semanales), sin paginar se
+  // perderían las más recientes/futuras del Calendario.
+  const PAGE = 1000;
+  const all: JoinedTaskRow[] = [];
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await supabase
+      .from("tasks")
+      .select(
+        "*, areas!inner(name, color, archived_at), subprojects(name, archived_at, projects(name, archived_at))",
+      )
+      .is("archived_at", null)
+      .is("areas.archived_at", null)
+      .not("starts_at", "is", null)
+      .order("starts_at", { ascending: true })
+      .order("id", { ascending: true })
+      .range(from, from + PAGE - 1);
+    if (error) throw error;
+    const page = (data ?? []) as unknown as JoinedTaskRow[];
+    all.push(...page);
+    if (page.length < PAGE) break;
+  }
 
-  if (error) throw error;
-
-  const rows = ((data ?? []) as unknown as JoinedTaskRow[]).filter((r) => {
+  // Proyecto/Etapa archivado (o completado): se conserva su HISTORIAL
+  // (actividades pasadas) y se ocultan las futuras.
+  const nowMs = Date.now();
+  const rows = all.filter((r) => {
     const sub = r.subprojects;
     if (!sub) return true;
-    if (sub.archived_at !== null) return false;
-    if (sub.projects && sub.projects.archived_at !== null) return false;
-    return true;
+    const archivedParent =
+      sub.archived_at !== null || (sub.projects != null && sub.projects.archived_at !== null);
+    if (!archivedParent) return true;
+    return r.starts_at != null && new Date(r.starts_at).getTime() < nowMs;
   });
   return rows.map(rowToScheduledTarea);
 }
