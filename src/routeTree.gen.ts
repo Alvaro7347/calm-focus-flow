@@ -29,6 +29,7 @@ import { Route as AjustesIndexRouteImport } from './routes/ajustes.index'
 import { Route as LegalTerminosRouteImport } from './routes/legal.terminos'
 import { Route as LegalPrivacidadRouteImport } from './routes/legal.privacidad'
 import { Route as LegalLicenciasRouteImport } from './routes/legal.licencias'
+import { Route as AjustesSemanaRouteImport } from './routes/ajustes.semana'
 import { Route as AjustesProductividadRouteImport } from './routes/ajustes.productividad'
 import { Route as AjustesOrganizacionRouteImport } from './routes/ajustes.organizacion'
 import { Route as AjustesNotificacionesRouteImport } from './routes/ajustes.notificaciones'
@@ -137,6 +138,11 @@ const LegalLicenciasRoute = LegalLicenciasRouteImport.update({
   path: '/licencias',
   getParentRoute: () => LegalRoute,
 } as any)
+const AjustesSemanaRoute = AjustesSemanaRouteImport.update({
+  id: '/semana',
+  path: '/semana',
+  getParentRoute: () => AjustesRoute,
+} as any)
 const AjustesProductividadRoute = AjustesProductividadRouteImport.update({
   id: '/productividad',
   path: '/productividad',
@@ -195,6 +201,7 @@ export interface FileRoutesByFullPath {
   '/ajustes/ia': typeof AjustesIaRoute
   '/ajustes/notificaciones': typeof AjustesNotificacionesRoute
   '/ajustes/organizacion': typeof AjustesOrganizacionRoute
+  '/ajustes/semana': typeof AjustesSemanaRoute
   '/ajustes/productividad': typeof AjustesProductividadRoute
   '/legal/licencias': typeof LegalLicenciasRoute
   '/legal/privacidad': typeof LegalPrivacidadRoute
@@ -222,6 +229,7 @@ export interface FileRoutesByTo {
   '/ajustes/ia': typeof AjustesIaRoute
   '/ajustes/notificaciones': typeof AjustesNotificacionesRoute
   '/ajustes/organizacion': typeof AjustesOrganizacionRoute
+  '/ajustes/semana': typeof AjustesSemanaRoute
   '/ajustes/productividad': typeof AjustesProductividadRoute
   '/legal/licencias': typeof LegalLicenciasRoute
   '/legal/privacidad': typeof LegalPrivacidadRoute
@@ -252,6 +260,7 @@ export interface FileRoutesById {
   '/ajustes/ia': typeof AjustesIaRoute
   '/ajustes/notificaciones': typeof AjustesNotificacionesRoute
   '/ajustes/organizacion': typeof AjustesOrganizacionRoute
+  '/ajustes/semana': typeof AjustesSemanaRoute
   '/ajustes/productividad': typeof AjustesProductividadRoute
   '/legal/licencias': typeof LegalLicenciasRoute
   '/legal/privacidad': typeof LegalPrivacidadRoute
@@ -283,6 +292,7 @@ export interface FileRouteTypes {
     | '/ajustes/ia'
     | '/ajustes/notificaciones'
     | '/ajustes/organizacion'
+    | '/ajustes/semana'
     | '/ajustes/productividad'
     | '/legal/licencias'
     | '/legal/privacidad'
@@ -310,6 +320,7 @@ export interface FileRouteTypes {
     | '/ajustes/ia'
     | '/ajustes/notificaciones'
     | '/ajustes/organizacion'
+    | '/ajustes/semana'
     | '/ajustes/productividad'
     | '/legal/licencias'
     | '/legal/privacidad'
@@ -339,6 +350,7 @@ export interface FileRouteTypes {
     | '/ajustes/ia'
     | '/ajustes/notificaciones'
     | '/ajustes/organizacion'
+    | '/ajustes/semana'
     | '/ajustes/productividad'
     | '/legal/licencias'
     | '/legal/privacidad'
@@ -507,6 +519,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LegalLicenciasRouteImport
       parentRoute: typeof LegalRoute
     }
+    '/ajustes/semana': {
+      id: '/ajustes/semana'
+      path: '/semana'
+      fullPath: '/ajustes/semana'
+      preLoaderRoute: typeof AjustesSemanaRouteImport
+      parentRoute: typeof AjustesRoute
+    }
     '/ajustes/productividad': {
       id: '/ajustes/productividad'
       path: '/productividad'
@@ -566,6 +585,7 @@ interface AjustesRouteChildren {
   AjustesIaRoute: typeof AjustesIaRoute
   AjustesNotificacionesRoute: typeof AjustesNotificacionesRoute
   AjustesOrganizacionRoute: typeof AjustesOrganizacionRoute
+  AjustesSemanaRoute: typeof AjustesSemanaRoute
   AjustesProductividadRoute: typeof AjustesProductividadRoute
   AjustesIndexRoute: typeof AjustesIndexRoute
 }
@@ -577,6 +597,7 @@ const AjustesRouteChildren: AjustesRouteChildren = {
   AjustesIaRoute: AjustesIaRoute,
   AjustesNotificacionesRoute: AjustesNotificacionesRoute,
   AjustesOrganizacionRoute: AjustesOrganizacionRoute,
+  AjustesSemanaRoute: AjustesSemanaRoute,
   AjustesProductividadRoute: AjustesProductividadRoute,
   AjustesIndexRoute: AjustesIndexRoute,
 }
