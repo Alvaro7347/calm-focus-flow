@@ -30,6 +30,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { fetchTaskForEdit, type TaskWithHierarchy } from "@/services/taskService";
 
 import { TaskDetailForm, type TaskDetailMode } from "./TaskDetailForm";
+import type { TaskCreateDefaults } from "@/services/weeklyRitualService";
 
 export interface TaskDetailSheetProps {
   open: boolean;
@@ -37,6 +38,8 @@ export interface TaskDetailSheetProps {
   mode: TaskDetailMode;
   /** Requerido cuando mode = "edit" o "duplicate". */
   taskId?: string;
+  /** Valores iniciales opcionales en modo "create". */
+  createDefaults?: TaskCreateDefaults;
 }
 
 export function TaskDetailSheet({
@@ -44,6 +47,7 @@ export function TaskDetailSheet({
   onOpenChange,
   mode,
   taskId,
+  createDefaults,
 }: TaskDetailSheetProps) {
   const isMobile = useIsMobile();
   const [loadedTask, setLoadedTask] = useState<TaskWithHierarchy | null>(null);
@@ -135,6 +139,7 @@ export function TaskDetailSheet({
             <TaskDetailForm
               mode={effectiveMode}
               initialTask={loadedTask}
+              createDefaults={createDefaults}
               onSaved={() => onOpenChange(false)}
               onCancel={() => onOpenChange(false)}
               onRequestDuplicate={
