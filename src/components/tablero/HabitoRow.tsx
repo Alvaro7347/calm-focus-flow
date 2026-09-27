@@ -14,7 +14,7 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Check } from "lucide-react";
 import { toast } from "sonner";
-import type { HabitoNode } from "@/services/tableroService";
+import { habitWeekStats, mondayOf, type HabitoNode } from "@/services/tableroService";
 import { toggleHabitLog } from "@/services/habitService";
 import { invalidateActivityGraph } from "@/lib/queryInvalidation";
 import { HabitoDetalleDialog } from "./HabitoDetalleDialog";
@@ -27,6 +27,7 @@ function todayIso(): string {
 export function HabitoRow({ habito }: { habito: HabitoNode }) {
   const qc = useQueryClient();
   const [detalleOpen, setDetalleOpen] = useState(false);
+  const semana = habitWeekStats(habito, mondayOf());
 
   const marcar = useMutation({
     mutationFn: (done: boolean) => toggleHabitLog(habito.id, todayIso(), done),
@@ -62,9 +63,35 @@ export function HabitoRow({ habito }: { habito: HabitoNode }) {
           className="flex-1 min-w-0 text-left"
         >
           <p className="text-sm font-medium text-slate-800 truncate">{habito.nombre}</p>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Esta semana: {semana.cumplidos} de {semana.esperados}{" "}
+            {semana.esperados === 1 ? "día" : "días"}
+          </p>
         </button>
 
-        <span className="text-xs text-slate-400 shrink-0">{habito.cumplimientoPct}% este mes</span>
+        {/* Semana de un vistazo: un punto por día (lunes a domingo). */}
+        <div
+          className="flex items-end gap-1 shrink-0"
+          aria-label={`Esta semana: ${semana.cumplidos} de ${semana.esperados} días`}
+        >
+          {semana.dias.map((d) => (
+            <div key={d.fecha} className="flex flex-col items-center gap-0.5">
+              <span
+                className={`h-2.5 w-2.5 rounded-full ${
+                  d.cumplido
+                    ? "bg-emerald-500"
+                    : !d.esperado
+                      ? "bg-transparent border border-dashed border-slate-200"
+                      : d.futuro
+                        ? "bg-slate-100"
+                        : "bg-slate-200"
+                }`}
+                title={d.fecha}
+              />
+              <span className="text-[9px] leading-none text-slate-400">{d.inicial}</span>
+            </div>
+          ))}
+        </div>
       </div>
 
       <HabitoDetalleDialog habito={habito} open={detalleOpen} onOpenChange={setDetalleOpen} />
