@@ -46,6 +46,7 @@ import {
 import { TaskDetailSheet } from "@/components/TaskDetail";
 import { updateTask } from "@/services/taskService";
 import { invalidateActivityGraph } from "@/lib/queryInvalidation";
+import { getReflectionsBetween } from "@/services/copilotService";
 import {
   dayLabel,
   getSkippedKeys,
@@ -475,6 +476,8 @@ function StepCerrar({ data, actions }: { data: WeeklyRitualData; actions: TaskAc
         />
       </section>
 
+      <ReflexionesSemana from={data.prevStart} to={data.prevEnd} />
+
       {data.habits.length > 0 ? (
         <section className="space-y-3">
           <SectionTitle>Tus hábitos esta semana</SectionTitle>
@@ -512,6 +515,33 @@ function StepCerrar({ data, actions }: { data: WeeklyRitualData; actions: TaskAc
         )}
       </section>
     </div>
+  );
+}
+
+/** Lo que el Copiloto observó en la semana y lo que respondiste. */
+function ReflexionesSemana({ from, to }: { from: Date; to: Date }) {
+  const items = getReflectionsBetween(from, to);
+  if (items.length === 0) return null;
+  return (
+    <section className="space-y-3">
+      <SectionTitle>Lo que observaste esta semana</SectionTitle>
+      <Card>
+        <ul className="space-y-4">
+          {items.map((r) => (
+            <li key={r.id}>
+              <p className="text-sm text-foreground/85">{r.evidence}</p>
+              {r.answer ? (
+                <p className="mt-1.5 border-l-2 border-[color:var(--brand-violet)]/40 pl-3 text-sm italic text-muted-foreground">
+                  “{r.answer}”
+                </p>
+              ) : (
+                <p className="mt-1 text-xs text-muted-foreground">{r.question}</p>
+              )}
+            </li>
+          ))}
+        </ul>
+      </Card>
+    </section>
   );
 }
 
