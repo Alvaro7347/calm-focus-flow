@@ -11,11 +11,15 @@
  *
  * Visión Activa: como máximo una visión del día (proyecto o meta
  * detenidos con tareas importantes), vía `visionService`.
+ *
+ * Copiloto reflexivo: como máximo una reflexión al día (dato +
+ * pregunta), vía `ReflexionCard` / `copilotService`.
  * ========================================================
  */
 import { useEffect, useState } from "react";
 import type { DailyBrief } from "@/services/dailyAiBriefService";
 import { getVisionDelDia, type VisionItem } from "@/services/visionService";
+import { ReflexionCard } from "@/components/copiloto/ReflexionCard";
 
 interface Props {
   open: boolean;
@@ -274,6 +278,13 @@ export function TuDiaScreen({
               {vision.name} · lleva unos días sin movimiento.
             </p>
           </section>
+        ) : null}
+
+        {/* Copiloto reflexivo: sólo si hay un patrón con evidencia suficiente */}
+        {!loading ? (
+          <div className="tudia-reveal" style={{ animationDelay: "660ms" }}>
+            <ReflexionCard active={open} />
+          </div>
         ) : null}
 
         {/* Botón: inicio del día */}
