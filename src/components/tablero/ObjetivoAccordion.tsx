@@ -10,8 +10,8 @@
  */
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { ChevronRight, Gauge, Target } from "lucide-react";
-import type { ObjetivoNode } from "@/services/tableroService";
+import { CheckCircle2, ChevronRight, Gauge, Target } from "lucide-react";
+import { isMetaCompletada, type ObjetivoNode } from "@/services/tableroService";
 import { MetaAccordion } from "./MetaAccordion";
 import { ObjetivoProgresoDialog } from "./ObjetivoProgresoDialog";
 
@@ -24,6 +24,10 @@ interface Props {
 
 export function ObjetivoAccordion({ areaSlug, objetivo, open, openMetaSlug }: Props) {
   const [progresoOpen, setProgresoOpen] = useState(false);
+  const [verCompletadas, setVerCompletadas] = useState(false);
+  // Las Metas completadas (100 % manual) no se archivan: se muestran aparte.
+  const metasActivas = objetivo.metas.filter((m) => !isMetaCompletada(m));
+  const metasCompletadas = objetivo.metas.filter((m) => isMetaCompletada(m));
 
   return (
     <section>
@@ -64,7 +68,7 @@ export function ObjetivoAccordion({ areaSlug, objetivo, open, openMetaSlug }: Pr
 
       {open && (
         <div className="pl-6 pr-3 pb-2 border-l border-slate-100 ml-5 mb-2">
-          {objetivo.metas.map((meta) => (
+          {metasActivas.map((meta) => (
             <MetaAccordion
               key={meta.slug}
               areaSlug={areaSlug}
@@ -73,6 +77,36 @@ export function ObjetivoAccordion({ areaSlug, objetivo, open, openMetaSlug }: Pr
               open={openMetaSlug === meta.slug}
             />
           ))}
+          {metasActivas.length === 0 && metasCompletadas.length > 0 ? (
+            <p className="py-2 text-xs text-slate-500">Todas las metas están completadas.</p>
+          ) : null}
+          {metasCompletadas.length > 0 ? (
+            <div className="mt-2">
+              <button
+                type="button"
+                onClick={() => setVerCompletadas((v) => !v)}
+                className="flex items-center gap-1.5 py-2 text-xs text-slate-500 hover:text-slate-700"
+              >
+                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                Metas completadas ({metasCompletadas.length})
+                <ChevronRight
+                  className={`h-3 w-3 transition-transform ${verCompletadas ? "rotate-90" : ""}`}
+                />
+              </button>
+              {verCompletadas ? (
+                <ul className="space-y-1 pb-1 pl-5">
+                  {metasCompletadas.map((m) => (
+                    <li
+                      key={m.id}
+                      className="text-sm text-slate-500 line-through decoration-slate-300"
+                    >
+                      {m.nombre}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       )}
 
