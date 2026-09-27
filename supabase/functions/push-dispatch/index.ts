@@ -2,8 +2,8 @@
 // Ejecutada por Supabase Cron cada minuto (via pg_cron + pg_net).
 // Responsable de:
 //  1. Detectar eventos de prioridad alta que comienzan en ~15 min.
-//  2. Detectar usuarios que están cruzando las 18:00 en su zona local
-//     y enviarles un resumen consolidado de tareas altas pendientes.
+//  2. Resúmenes del día ("secretaria"), a la hora local de cada usuario:
+//     matutino (agenda de hoy), mediodía (avance) y vespertino (cierre).
 //  3. Enviar las alarmas configuradas por el usuario en cada actividad
 //     (tabla task_reminders: "5 min antes", "15 min antes", etc.).
 //  4. Enviar Web Push a todas las suscripciones activas del usuario.
@@ -43,7 +43,13 @@ interface PushSub {
 }
 
 interface Payload {
-  type: "event_reminder" | "daily_high_priority_summary" | "task_reminder";
+  type:
+    | "event_reminder"
+    | "daily_high_priority_summary"
+    | "task_reminder"
+    | "summary_morning"
+    | "summary_midday"
+    | "summary_evening";
   title: string;
   body: string;
   url: string;
@@ -113,18 +119,27 @@ async function fetchActiveSubs(userId: string): Promise<PushSub[]> {
 }
 
 async function fetchPrefs(userId: string) {
+  // select("*"): tolera que las columnas de resúmenes aún no existan.
   const { data } = await admin
     .from("notification_preferences")
-    .select("notifications_enabled, event_reminders_enabled, daily_summary_enabled, daily_summary_hour, daily_summary_minute")
+    .select("*")
     .eq("user_id", userId)
     .maybeSingle();
-  // Defaults si no existe fila.
+  // deno-lint-ignore no-explicit-any
+  const d = (data ?? {}) as Record<string, any>;
+  // Defaults si no existe fila o columna.
   return {
-    notifications_enabled: data?.notifications_enabled ?? true,
-    event_reminders_enabled: data?.event_reminders_enabled ?? true,
-    daily_summary_enabled: data?.daily_summary_enabled ?? true,
-    daily_summary_hour: data?.daily_summary_hour ?? 18,
-    daily_summary_minute: data?.daily_summary_minute ?? 0,
+    notifications_enabled: d.notifications_enabled ?? true,
+    event_reminders_enabled: d.event_reminders_enabled ?? true,
+    daily_summary_enabled: d.daily_summary_enabled ?? true,
+    daily_summary_hour: d.daily_summary_hour ?? 18,
+    daily_summary_minute: d.daily_summary_minute ?? 0,
+    morning_summary_enabled: d.morning_summary_enabled ?? true,
+    morning_summary_hour: d.morning_summary_hour ?? 8,
+    morning_summary_minute: d.morning_summary_minute ?? 0,
+    midday_summary_enabled: d.midday_summary_enabled ?? true,
+    midday_summary_hour: d.midday_summary_hour ?? 13,
+    midday_summary_minute: d.midday_summary_minute ?? 0,
   };
 }
 
@@ -435,6 +450,131 @@ function getTzOffsetMinutes(when: Date, tz: string): number {
   return Math.round((asUtc - when.getTime()) / 60000);
 }
 
+// ------------------------------------------------------------
+// Resúmenes del día ("secretaria"): matutino, mediodía, vespertino
+// ------------------------------------------------------------
+
+type SummarySlot = "morning" | "midday" | "evening";
+
+function startOfLocalDayUtc(ymd: string, tz: string): string {
+  const d = new Date(`${ymd}T00:00:00Z`);
+  const tzOffsetMin = getTzOffsetMinutes(d, tz);
+  return new Date(d.getTime() - tzOffsetMin * 60 * 1000).toISOString();
+}
+
+function plural(n: number, one: string, many: string): string {
+  return `${n} ${n === 1 ? one : many}`;
+}
+
+type DayItem = {
+  title: string;
+  status: string;
+  activity_type: string;
+  priority: string;
+  starts_at: string | null;
+  completed_at: string | null;
+  areas: { archived_at: string | null } | null;
+};
+
+/**
+ * Arma el mensaje de un resumen. Devuelve null si no hay nada que
+ * decir (evita notificaciones vacías).
+ */
+async function buildSummary(
+  slot: SummarySlot,
+  userId: string,
+  ymd: string,
+  tz: string,
+  now: Date,
+): Promise<{ title: string; body: string } | null> {
+  const dayStart = startOfLocalDayUtc(ymd, tz);
+  const dayEnd = endOfLocalDayUtc(ymd, tz);
+
+  const { data, error } = await admin
+    .from("tasks")
+    .select("title, status, activity_type, priority, starts_at, completed_at, areas(archived_at)")
+    .eq("user_id", userId)
+    .is("archived_at", null)
+    .or(
+      `and(starts_at.gte.${dayStart},starts_at.lte.${dayEnd}),and(completed_at.gte.${dayStart},completed_at.lte.${dayEnd})`,
+    );
+  if (error) {
+    console.warn("[push-dispatch] summary query error:", error.message);
+    return null;
+  }
+  const items = ((data ?? []) as unknown as DayItem[]).filter((t) => !t.areas?.archived_at);
+
+  const startMs = new Date(dayStart).getTime();
+  const endMs = new Date(dayEnd).getTime();
+  const inDay = (iso: string | null) => {
+    if (!iso) return false;
+    const t = new Date(iso).getTime();
+    return t >= startMs && t <= endMs;
+  };
+  const scheduled = items.filter((t) => inDay(t.starts_at));
+  const tasksToday = scheduled.filter((t) => t.activity_type === "task");
+  const events = scheduled
+    .filter((t) => t.activity_type === "event")
+    .sort((a, b) => new Date(a.starts_at!).getTime() - new Date(b.starts_at!).getTime());
+  const pending = tasksToday.filter((t) => t.status !== "completed");
+  const doneToday = items.filter(
+    (t) => t.activity_type === "task" && t.status === "completed" && inDay(t.completed_at),
+  );
+
+  if (slot === "morning") {
+    if (tasksToday.length === 0 && events.length === 0) {
+      return {
+        title: "Buenos días",
+        body: "Hoy no tienes nada agendado. Un buen día para avanzar en lo importante.",
+      };
+    }
+    const parts = [
+      `Hoy tienes ${plural(pending.length, "tarea", "tareas")} y ${plural(events.length, "evento", "eventos")} agendados.`,
+    ];
+    if (events[0]?.starts_at) {
+      parts.push(`Primero: ${fmtHmLocal(events[0].starts_at, tz)} · ${events[0].title}.`);
+    }
+    const main = pending.find((t) => t.priority === "high");
+    if (main) parts.push(`Lo principal: ${main.title}.`);
+    return { title: "Buenos días", body: parts.join(" ") };
+  }
+
+  if (slot === "midday") {
+    if (tasksToday.length === 0 && events.length === 0 && doneToday.length === 0) return null;
+    const parts: string[] = [];
+    if (tasksToday.length > 0) {
+      const doneOfToday = tasksToday.length - pending.length;
+      parts.push(`Llevas ${doneOfToday} de ${plural(tasksToday.length, "tarea", "tareas")} de hoy.`);
+    } else if (doneToday.length > 0) {
+      parts.push(`Llevas ${plural(doneToday.length, "tarea completada", "tareas completadas")}.`);
+    }
+    const next = events.find((e) => e.starts_at && new Date(e.starts_at).getTime() > now.getTime());
+    if (next?.starts_at) {
+      parts.push(`Esta tarde: ${fmtHmLocal(next.starts_at, tz)} · ${next.title}.`);
+    }
+    if (pending.length > 0) {
+      parts.push(`${pending.length === 1 ? "Queda 1 pendiente" : `Quedan ${pending.length} pendientes`}.`);
+    }
+    if (parts.length === 0) return null;
+    return { title: "Mitad del día", body: parts.join(" ") };
+  }
+
+  // evening
+  if (doneToday.length === 0 && pending.length === 0) return null;
+  const parts: string[] = [];
+  if (doneToday.length > 0) {
+    parts.push(`Hoy completaste ${plural(doneToday.length, "tarea", "tareas")}.`);
+  }
+  if (pending.length > 0) {
+    parts.push(
+      `${pending.length === 1 ? "Queda 1 pendiente" : `Quedan ${pending.length} pendientes`} de hoy; puedes pasarl${pending.length === 1 ? "a" : "as"} a mañana con calma.`,
+    );
+  } else {
+    parts.push("No quedan pendientes de hoy. Buen cierre.");
+  }
+  return { title: "Cierre del día", body: parts.join(" ") };
+}
+
 async function processDailySummaries(): Promise<{ users: number; sent: number }> {
   const now = new Date();
 
@@ -452,7 +592,7 @@ async function processDailySummaries(): Promise<{ users: number; sent: number }>
   let sent = 0;
   for (const userId of uniqueUsers) {
     const prefs = await fetchPrefs(userId);
-    if (!prefs.notifications_enabled || !prefs.daily_summary_enabled) continue;
+    if (!prefs.notifications_enabled) continue;
 
     const { data: profile } = await admin
       .from("profiles")
@@ -462,72 +602,76 @@ async function processDailySummaries(): Promise<{ users: number; sent: number }>
     const tz = profile?.timezone ?? "UTC";
     const local = localHmDate(now, tz);
     if (!local) continue;
-
-    // Ventana: [H:MM, H:MM+4min]. Cron corre cada minuto; el UNIQUE por fecha
-    // local evita duplicados si el proceso dura más de un minuto.
-    const targetH = prefs.daily_summary_hour;
-    const targetM = prefs.daily_summary_minute;
     const localMinutes = local.hour * 60 + local.minute;
-    const targetMinutes = targetH * 60 + targetM;
-    if (localMinutes < targetMinutes || localMinutes > targetMinutes + 4) continue;
 
-    // Contar tareas relevantes: prioridad alta, no archivadas, no completadas,
-    // (sin fecha o con starts_at <= fin del día local).
-    const endOfDayIso = endOfLocalDayUtc(local.ymd, tz);
-    const { data: tasks, error: te } = await admin
-      .from("tasks")
-      .select("id, starts_at, status")
-      .eq("user_id", userId)
-      .eq("activity_type", "task")
-      .eq("priority", "high")
-      .is("archived_at", null)
-      .in("status", ["pending", "waiting"])
-      .or(`starts_at.is.null,starts_at.lte.${endOfDayIso}`);
-    if (te) {
-      console.warn("[push-dispatch] task summary query error:", te.message);
-      continue;
-    }
-    const count = tasks?.length ?? 0;
-    if (count === 0) continue;
+    const slots: { slot: SummarySlot; enabled: boolean; h: number; m: number }[] = [
+      {
+        slot: "morning",
+        enabled: prefs.morning_summary_enabled,
+        h: prefs.morning_summary_hour,
+        m: prefs.morning_summary_minute,
+      },
+      {
+        slot: "midday",
+        enabled: prefs.midday_summary_enabled,
+        h: prefs.midday_summary_hour,
+        m: prefs.midday_summary_minute,
+      },
+      {
+        slot: "evening",
+        enabled: prefs.daily_summary_enabled,
+        h: prefs.daily_summary_hour,
+        m: prefs.daily_summary_minute,
+      },
+    ];
 
-    const subs = await fetchActiveSubs(userId);
-    if (subs.length === 0) continue;
+    for (const s of slots) {
+      if (!s.enabled) continue;
+      // Ventana: [H:MM, H:MM+4min]. Cron corre cada minuto; el UNIQUE
+      // (dedupe_key) por fecha local evita duplicados.
+      const target = s.h * 60 + s.m;
+      if (localMinutes < target || localMinutes > target + 4) continue;
 
-    const payload: Payload = {
-      type: "daily_high_priority_summary",
-      title: "Antes de cerrar el día",
-      body:
-        count === 1
-          ? "Antes de cerrar el día, tienes una tarea importante pendiente."
-          : `Antes de cerrar el día, tienes ${count} tareas importantes pendientes.`,
-      url: "/foco?filter=high",
-      tag: `daily-${local.ymd}`,
-    };
+      const message = await buildSummary(s.slot, userId, local.ymd, tz, now);
+      if (!message) continue;
 
-    for (const sub of subs) {
-      const dedupe = `daily_high_priority_summary:${userId}:${local.ymd}:${sub.id}`;
-      const claimed = await recordDelivery({
-        user_id: userId,
-        subscription_id: sub.id,
-        notification_type: "daily_high_priority_summary",
-        logical_date: local.ymd,
-        dedupe_key: dedupe,
-        status: "sent",
-      });
-      if (!claimed) continue;
+      const subs = await fetchActiveSubs(userId);
+      if (subs.length === 0) continue;
 
-      const res = await sendToSubscription(sub, payload);
-      if (res.ok) {
-        sent++;
-      } else {
-        await admin
-          .from("notification_deliveries")
-          .update({
-            status: res.gone ? "expired" : "failed",
-            error_summary: res.error?.slice(0, 200) ?? null,
-          })
-          .eq("dedupe_key", dedupe);
-        if (res.gone) await deactivateSubscription(sub.id, res.error ?? "gone");
+      const type = `summary_${s.slot}` as Payload["type"];
+      const payload: Payload = {
+        type,
+        title: message.title,
+        body: message.body,
+        url: "/foco",
+        tag: `${type}-${local.ymd}`,
+      };
+
+      for (const sub of subs) {
+        const dedupe = `${type}:${userId}:${local.ymd}:${sub.id}`;
+        const claimed = await recordDelivery({
+          user_id: userId,
+          subscription_id: sub.id,
+          notification_type: type,
+          logical_date: local.ymd,
+          dedupe_key: dedupe,
+          status: "sent",
+        });
+        if (!claimed) continue;
+
+        const res = await sendToSubscription(sub, payload);
+        if (res.ok) {
+          sent++;
+        } else {
+          await admin
+            .from("notification_deliveries")
+            .update({
+              status: res.gone ? "expired" : "failed",
+              error_summary: res.error?.slice(0, 200) ?? null,
+            })
+            .eq("dedupe_key", dedupe);
+          if (res.gone) await deactivateSubscription(sub.id, res.error ?? "gone");
+        }
       }
     }
   }
