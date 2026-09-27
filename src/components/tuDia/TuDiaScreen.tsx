@@ -8,10 +8,14 @@
  * destacada, motivo, estado general y nota positiva opcional.
  *
  * Este componente NO llama al modelo ni modifica servicios.
+ *
+ * Visión Activa: como máximo una visión del día (proyecto o meta
+ * detenidos con tareas importantes), vía `visionService`.
  * ========================================================
  */
 import { useEffect, useState } from "react";
 import type { DailyBrief } from "@/services/dailyAiBriefService";
+import { getVisionDelDia, type VisionItem } from "@/services/visionService";
 
 interface Props {
   open: boolean;
@@ -66,9 +70,26 @@ export function TuDiaScreen({
   onClose,
 }: Props) {
   const [closing, setClosing] = useState(false);
+  const [vision, setVision] = useState<VisionItem | null>(null);
 
   useEffect(() => {
     if (open) setClosing(false);
+  }, [open]);
+
+  // Visión del día: se consulta una vez al abrir el ritual.
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    getVisionDelDia()
+      .then((v) => {
+        if (!cancelled) setVision(v);
+      })
+      .catch(() => {
+        // Sin visión: Tu Día sigue igual.
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [open]);
 
   if (!open) return null;
@@ -235,6 +256,25 @@ export function TuDiaScreen({
             ) : null}
           </div>
         )}
+
+        {/* Visión Activa: para qué, sólo cuando algo importante está detenido */}
+        {vision && !loading ? (
+          <section
+            className="tudia-reveal mt-12"
+            style={{ animationDelay: "620ms" }}
+            aria-label="Para qué"
+          >
+            <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
+              Para qué
+            </p>
+            <p className="mt-3 text-[15px] italic leading-relaxed text-foreground/80">
+              “{vision.vision}”
+            </p>
+            <p className="mt-2 text-xs text-muted-foreground">
+              {vision.name} · lleva unos días sin movimiento.
+            </p>
+          </section>
+        ) : null}
 
         {/* Botón: inicio del día */}
         <div
