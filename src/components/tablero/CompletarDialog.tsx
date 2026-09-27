@@ -191,8 +191,9 @@ export function CompletarDialog({
                 {preview.futureEvents > 0 ? (
                   <p className="rounded-lg bg-amber-50 px-3 py-2 text-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
                     Tiene {plural(preview.futureEvents, "evento agendado", "eventos agendados")} a
-                    futuro. Al completarlo, dejará{preview.futureEvents === 1 ? "" : "n"} de verse
-                    en el Calendario.
+                    futuro. Al completarlo, se archivará{preview.futureEvents === 1 ? "" : "n"} y
+                    dejará{preview.futureEvents === 1 ? "" : "n"} de ocupar ese horario en tu
+                    Calendario.
                   </p>
                 ) : null}
 
