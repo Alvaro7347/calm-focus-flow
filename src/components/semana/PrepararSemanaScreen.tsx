@@ -463,7 +463,7 @@ function StepCerrar({ data, actions }: { data: WeeklyRitualData; actions: TaskAc
         <SectionTitle>Proyectos con movimiento</SectionTitle>
         <Chips
           items={data.projectsMoved.map((p) => p.name)}
-          empty="Esta semana ningún proyecto tuvo tareas completadas."
+          empty="Esta semana ningún proyecto tuvo tareas completadas ni eventos."
         />
       </section>
 
