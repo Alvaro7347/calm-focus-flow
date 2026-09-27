@@ -475,6 +475,24 @@ function StepCerrar({ data, actions }: { data: WeeklyRitualData; actions: TaskAc
         />
       </section>
 
+      {data.habits.length > 0 ? (
+        <section className="space-y-3">
+          <SectionTitle>Tus hábitos esta semana</SectionTitle>
+          <Card>
+            <ul className="space-y-2">
+              {data.habits.map((h) => (
+                <li key={h.id} className="flex items-baseline justify-between gap-3">
+                  <span className="truncate text-sm text-foreground">{h.name}</span>
+                  <span className="shrink-0 text-xs text-muted-foreground">
+                    {h.weekDone} de {h.weekExpected} {h.weekExpected === 1 ? "día" : "días"}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        </section>
+      ) : null}
+
       <section className="space-y-3">
         <SectionTitle>Esto sigue pendiente</SectionTitle>
         {toDecide.length === 0 ? (
