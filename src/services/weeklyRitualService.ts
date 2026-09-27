@@ -353,7 +353,7 @@ interface BuildInput {
 }
 
 export function buildWeeklyRitual(input: BuildInput): WeeklyRitualData {
-  const { tree, rows, prevStart, prevEnd, nextStart, nextEnd, weekKey } = input;
+  const { tree, rows, now, prevStart, prevEnd, nextStart, nextEnd, weekKey } = input;
 
   // ---------- Índices de la estructura activa ----------
   const areaById = new Map<string, AreaNode>();
@@ -474,8 +474,19 @@ export function buildWeeklyRitual(input: BuildInput): WeeklyRitualData {
     )
     .sort(byStart);
 
+  // "Movimiento" de un proyecto en la semana que se cierra:
+  //  a) una tarea completada en esa semana, o
+  //  b) un evento que ocurrió en esa semana (p. ej. una clase).
+  //     Los eventos no se marcan como completados: basta con que
+  //     su inicio haya quedado en la semana y ya haya pasado.
+  const heldUntil = new Date(Math.min(now.getTime(), prevEnd.getTime()));
+  const heldEventsPrev = tasks.filter(
+    (t) => t.activityType === "event" && inRange(t.startsAt, prevStart, heldUntil),
+  );
   const movedProjectIds = new Set(
-    completedPrev.map((t) => t.projectId).filter((id): id is string => !!id),
+    [...completedPrev, ...heldEventsPrev]
+      .map((t) => t.projectId)
+      .filter((id): id is string => !!id),
   );
   const projectsMoved = projects.filter((p) => movedProjectIds.has(p.id));
   const projectsStill = projects.filter((p) => !movedProjectIds.has(p.id));
