@@ -97,6 +97,7 @@ import {
 } from "@/services/reminderService";
 import { invalidateActivityGraph } from "@/lib/queryInvalidation";
 import type { TaskCreateDefaults } from "@/services/weeklyRitualService";
+import { VisionActivaBanner } from "@/components/vision/VisionActivaBanner";
 import type { AreaRow, ProjectRow, SubprojectRow } from "@/types/tarea";
 import type { ObjectiveRow, GoalRow } from "@/types/objetivo";
 import type { HabitRow } from "@/types/habito";
@@ -808,6 +809,9 @@ export function TaskDetailForm({
       {/* Contenido con scroll */}
       <div className="flex-1 overflow-y-auto px-1 pb-4">
         <div className="space-y-6">
+          {/* Visión Activa: qué mueve esta tarea y, a veces, para qué. */}
+          {isEdit && initialTask ? <VisionActivaBanner task={initialTask} /> : null}
+
           {/* 0. Tipo de actividad — Tarea vs Evento */}
           <section aria-label="Tipo de actividad">
             <div
