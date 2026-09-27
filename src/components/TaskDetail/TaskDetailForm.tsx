@@ -288,6 +288,9 @@ export function TaskDetailForm({
   const [archiving, setArchiving] = useState(false);
   const [confirmArchive, setConfirmArchive] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  // Evento con el que choca el horario (se muestra bajo las horas).
+  const [conflictInfo, setConflictInfo] = useState<EventConflict | null>(null);
+  const [releasing, setReleasing] = useState(false);
 
   // ---------- Creación inline ----------
   const [inlineOpen, setInlineOpen] = useState<InlineKind>(null);
@@ -654,6 +657,7 @@ export function TaskDetailForm({
 
   async function handleSave() {
     if (!validate()) return;
+    setConflictInfo(null);
     setSaving(true);
     try {
       const startsAt = buildStartsAt();
@@ -770,6 +774,7 @@ export function TaskDetailForm({
   function showConflict(conflict: EventConflict | null) {
     const message = buildConflictMessage(conflict);
     const fieldHint = "Este horario coincide con otro evento.";
+    setConflictInfo(conflict);
     setErrors((prev) => ({
       ...prev,
       hora: fieldHint,
@@ -777,6 +782,32 @@ export function TaskDetailForm({
       conflict: message,
     }));
     toast.error(message, { duration: 8000 });
+  }
+
+  /**
+   * Libera el horario ocupado por un evento que no se ve en el
+   * Calendario (su Proyecto/Etapa/Área está completado o archivado):
+   * archiva ese evento para que deje de bloquear.
+   */
+  async function handleReleaseConflict() {
+    if (!conflictInfo) return;
+    setReleasing(true);
+    try {
+      await archiveTask(conflictInfo.id);
+      setConflictInfo(null);
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next.hora;
+        delete next.horaFin;
+        delete next.conflict;
+        return next;
+      });
+      toast.success("Horario liberado. Ya puedes guardar.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "No se pudo liberar el horario.");
+    } finally {
+      setReleasing(false);
+    }
   }
 
   async function handleArchive() {
@@ -1223,6 +1254,31 @@ export function TaskDetailForm({
                     )}
                   </div>
                 </div>
+                {conflictInfo ? (
+                  <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 space-y-2">
+                    <p className="text-xs text-foreground">{buildConflictMessage(conflictInfo)}</p>
+                    {conflictInfo.hidden ? (
+                      <>
+                        <p className="text-xs text-muted-foreground">
+                          Ese evento no aparece en tu Calendario porque pertenece a
+                          {conflictInfo.projectName
+                            ? ` "${conflictInfo.projectName}", que está completado o archivado.`
+                            : " un proyecto completado o archivado."}{" "}
+                          Si ya no corresponde, puedes liberar el horario.
+                        </p>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => void handleReleaseConflict()}
+                          disabled={releasing}
+                        >
+                          {releasing ? "Liberando…" : "Liberar este horario"}
+                        </Button>
+                      </>
+                    ) : null}
+                  </div>
+                ) : null}
               </>
             ) : (
               <>
