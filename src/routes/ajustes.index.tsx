@@ -11,6 +11,7 @@ import {
   Bell,
   Brain,
   Info,
+  CalendarHeart,
 } from "lucide-react";
 import { SettingsRow } from "@/components/settings/SettingsRow";
 
@@ -31,6 +32,14 @@ function AjustesIndex() {
       </header>
 
       <section className="rounded-xl border border-slate-200 bg-white overflow-hidden divide-y divide-slate-100">
+        <SettingsRow
+          to="/ajustes/semana"
+          icon={CalendarHeart}
+          title="Preparar mi semana"
+          description="Ritual semanal: cerrar, mirar lo importante y planificar"
+          iconColor="text-violet-600"
+          iconBg="bg-violet-50"
+        />
         <SettingsRow
           to="/ajustes/organizacion"
           icon={FolderTree}
