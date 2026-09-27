@@ -1,6 +1,17 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Loader2, Bell, BellOff, Smartphone, ShieldAlert, CheckCircle2 } from "lucide-react";
+import {
+  Loader2,
+  Bell,
+  BellOff,
+  Smartphone,
+  ShieldAlert,
+  CheckCircle2,
+  Sun,
+  CloudSun,
+  Moon,
+  type LucideIcon,
+} from "lucide-react";
 
 import { SettingsSubpage } from "@/components/settings/SettingsSubpage";
 import { Button } from "@/components/ui/button";
@@ -151,23 +162,52 @@ function NotificacionesAjustes() {
               onChange={(v) => persist({ event_reminders_enabled: v })}
               disabled={saving || !prefs.notifications_enabled}
             />
-            <PrefRow
-              title="Resumen de tareas importantes"
-              description="Un recordatorio consolidado al cierre del día."
-              checked={prefs.daily_summary_enabled}
-              onChange={(v) => persist({ daily_summary_enabled: v })}
-              disabled={saving || !prefs.notifications_enabled}
-            />
-            <div className="flex items-center justify-between p-4">
-              <div>
-                <p className="text-sm font-medium text-foreground">Hora del resumen</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">Se envía en tu hora local.</p>
-              </div>
-              <div className="text-sm font-medium text-foreground tabular-nums">
-                {String(prefs.daily_summary_hour).padStart(2, "0")}:
-                {String(prefs.daily_summary_minute).padStart(2, "0")}
-              </div>
+          </section>
+
+          {/* Resúmenes diarios: la "secretaria" */}
+          <section className="space-y-2">
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">Resúmenes del día</h3>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Como una secretaria: cuántas tareas tienes agendadas y cómo va tu día.
+              </p>
             </div>
+            <div className="rounded-xl border border-border bg-card divide-y divide-border">
+              <SummaryRow
+                icon={Sun}
+                title="Resumen matutino"
+                description="Lo que tienes agendado para hoy."
+                enabled={prefs.morning_summary_enabled}
+                hour={prefs.morning_summary_hour}
+                minute={prefs.morning_summary_minute}
+                disabled={saving || !prefs.notifications_enabled}
+                onToggle={(v) => persist({ morning_summary_enabled: v })}
+                onTime={(h, m) => persist({ morning_summary_hour: h, morning_summary_minute: m })}
+              />
+              <SummaryRow
+                icon={CloudSun}
+                title="Resumen de mediodía"
+                description="Cuánto llevas y qué viene en la tarde."
+                enabled={prefs.midday_summary_enabled}
+                hour={prefs.midday_summary_hour}
+                minute={prefs.midday_summary_minute}
+                disabled={saving || !prefs.notifications_enabled}
+                onToggle={(v) => persist({ midday_summary_enabled: v })}
+                onTime={(h, m) => persist({ midday_summary_hour: h, midday_summary_minute: m })}
+              />
+              <SummaryRow
+                icon={Moon}
+                title="Resumen vespertino"
+                description="Qué completaste y qué quedó pendiente."
+                enabled={prefs.daily_summary_enabled}
+                hour={prefs.daily_summary_hour}
+                minute={prefs.daily_summary_minute}
+                disabled={saving || !prefs.notifications_enabled}
+                onToggle={(v) => persist({ daily_summary_enabled: v })}
+                onTime={(h, m) => persist({ daily_summary_hour: h, daily_summary_minute: m })}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">Se envían en tu hora local.</p>
           </section>
 
           <p className="text-xs text-muted-foreground">
@@ -203,6 +243,54 @@ function PrefRow({
         <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
       </div>
       <Switch checked={checked} onCheckedChange={onChange} disabled={disabled} />
+    </div>
+  );
+}
+
+function SummaryRow({
+  icon: Icon,
+  title,
+  description,
+  enabled,
+  hour,
+  minute,
+  disabled,
+  onToggle,
+  onTime,
+}: {
+  icon: LucideIcon;
+  title: string;
+  description: string;
+  enabled: boolean;
+  hour: number;
+  minute: number;
+  disabled?: boolean;
+  onToggle: (v: boolean) => void;
+  onTime: (hour: number, minute: number) => void;
+}) {
+  const value = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+  return (
+    <div className="flex items-center gap-3 p-4">
+      <Icon className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden="true" />
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium text-foreground">{title}</p>
+        <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
+      </div>
+      <input
+        type="time"
+        aria-label={`Hora del ${title.toLowerCase()}`}
+        defaultValue={value}
+        key={value}
+        disabled={disabled || !enabled}
+        onBlur={(e) => {
+          const [h, m] = e.target.value.split(":").map(Number);
+          if (Number.isFinite(h) && Number.isFinite(m) && (h !== hour || m !== minute)) {
+            onTime(h, m);
+          }
+        }}
+        className="w-[5.5rem] shrink-0 rounded-md border border-border bg-background px-2 py-1 text-sm tabular-nums text-foreground disabled:opacity-50"
+      />
+      <Switch checked={enabled} onCheckedChange={onToggle} disabled={disabled} />
     </div>
   );
 }
