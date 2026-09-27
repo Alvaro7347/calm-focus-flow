@@ -40,11 +40,10 @@ import {
   setProjectProgressManual,
   resetProjectProgressToAuto,
 } from "@/services/projectService";
-import {
-  setStageProgressManual,
-  resetStageProgressToAuto,
-} from "@/services/subprojectService";
+import { setStageProgressManual, resetStageProgressToAuto } from "@/services/subprojectService";
 import { invalidateActivityGraph } from "@/lib/queryInvalidation";
+import { CheckCircle2 } from "lucide-react";
+import { CompletarDialog } from "./CompletarDialog";
 
 interface Props {
   proyecto: ProyectoNode | null;
@@ -53,31 +52,55 @@ interface Props {
 }
 
 export function ProyectoProgresoDialog({ proyecto, open, onOpenChange }: Props) {
+  const [completarOpen, setCompletarOpen] = useState(false);
   if (!proyecto) return null;
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{proyecto.nombre}</DialogTitle>
-          <DialogDescription>Fecha objetivo, visión y progreso del Proyecto.</DialogDescription>
-        </DialogHeader>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{proyecto.nombre}</DialogTitle>
+            <DialogDescription>Fecha objetivo, visión y progreso del Proyecto.</DialogDescription>
+          </DialogHeader>
 
-        <ProyectoCampos proyecto={proyecto} />
+          <ProyectoCampos proyecto={proyecto} />
 
-        {proyecto.subproyectos.length > 0 && (
-          <div className="mt-4 pt-4 border-t border-slate-100">
-            <h4 className="text-sm font-semibold text-slate-700 mb-3">
-              Etapas ({proyecto.subproyectos.length})
-            </h4>
-            <div className="space-y-4">
-              {proyecto.subproyectos.map((etapa) => (
-                <EtapaProgreso key={etapa.id} etapa={etapa} />
-              ))}
+          {proyecto.subproyectos.length > 0 && (
+            <div className="mt-4 pt-4 border-t border-slate-100">
+              <h4 className="text-sm font-semibold text-slate-700 mb-3">
+                Etapas ({proyecto.subproyectos.length})
+              </h4>
+              <div className="space-y-4">
+                {proyecto.subproyectos.map((etapa) => (
+                  <EtapaProgreso key={etapa.id} etapa={etapa} />
+                ))}
+              </div>
             </div>
+          )}
+
+          {/* Cierre del proyecto */}
+          <div className="mt-4 pt-4 border-t border-slate-100">
+            <Button variant="outline" className="w-full" onClick={() => setCompletarOpen(true)}>
+              <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+              Completar proyecto
+            </Button>
+            <p className="mt-2 text-xs text-slate-500">
+              Para cuando el proyecto ya está terminado: sale de los activos y queda en tu
+              historial.
+            </p>
           </div>
-        )}
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+      <CompletarDialog
+        kind="project"
+        id={proyecto.id}
+        nombre={proyecto.nombre}
+        vision={proyecto.visionTexto}
+        open={completarOpen}
+        onOpenChange={setCompletarOpen}
+        onCompleted={() => onOpenChange(false)}
+      />
+    </>
   );
 }
 
@@ -138,9 +161,7 @@ function ProyectoCampos({ proyecto }: { proyecto: ProyectoNode }) {
       </div>
 
       <div>
-        <Label htmlFor="proyecto-vision">
-          Visión — ¿cómo se ve/siente llegar a este Proyecto?
-        </Label>
+        <Label htmlFor="proyecto-vision">Visión — ¿cómo se ve/siente llegar a este Proyecto?</Label>
         <Textarea
           id="proyecto-vision"
           value={vision}
