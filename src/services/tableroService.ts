@@ -130,6 +130,11 @@ export interface HabitoNode {
    * asume "esperado todos los días" del mes transcurrido.
    */
   cumplimientoPct: number;
+  /**
+   * Fechas (YYYY-MM-DD) en que el hábito se marcó cumplido. Base para
+   * medir cualquier semana con `habitWeekStats` sin volver a la base.
+   */
+  diasCumplidos: string[];
 }
 
 export interface AreaNode {
@@ -282,7 +287,88 @@ function mapHabit(h: RawHabit): HabitoNode {
     frecuencia,
     hoyCumplido: doneDates.has(todayIso()),
     cumplimientoPct: esperados > 0 ? Math.round((cumplidosEsteMes / esperados) * 100) : 0,
+    diasCumplidos: [...doneDates],
   };
+}
+
+// ------------------------------------------------------------
+// Medición semanal de hábitos
+// ------------------------------------------------------------
+
+const DIAS_CORTOS = ["D", "L", "M", "M", "J", "V", "S"];
+
+export interface HabitWeekDay {
+  fecha: string;
+  /** Inicial del día (L, M, M, J, V, S, D). */
+  inicial: string;
+  /** Según la frecuencia del hábito, ¿se esperaba ese día? */
+  esperado: boolean;
+  cumplido: boolean;
+  /** Día posterior a hoy (aún no llega). */
+  futuro: boolean;
+}
+
+export interface HabitWeekStats {
+  /** Días esperados que se cumplieron. */
+  cumplidos: number;
+  /** Días esperados en la semana completa. */
+  esperados: number;
+  dias: HabitWeekDay[];
+}
+
+/**
+ * Cumplimiento de un hábito en la semana que empieza en `weekStart`
+ * (fecha local, 00:00). Cuenta sólo los días esperados según su
+ * frecuencia (si no tiene días definidos, los 7 días).
+ */
+export function habitWeekStats(
+  habito: Pick<HabitoNode, "frecuencia" | "diasCumplidos">,
+  weekStart: Date,
+  now: Date = new Date(),
+): HabitWeekStats {
+  const done = new Set(habito.diasCumplidos);
+  const diasSemana = habito.frecuencia?.diasSemana;
+  const hoy = isoDate(now.toISOString());
+  const dias: HabitWeekDay[] = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + i);
+    const fecha = isoDate(d.toISOString());
+    const esperado = !diasSemana || diasSemana.length === 0 || diasSemana.includes(d.getDay());
+    dias.push({
+      fecha,
+      inicial: DIAS_CORTOS[d.getDay()],
+      esperado,
+      cumplido: done.has(fecha),
+      futuro: fecha > hoy,
+    });
+  }
+  const esperadosDias = dias.filter((d) => d.esperado);
+  return {
+    cumplidos: esperadosDias.filter((d) => d.cumplido).length,
+    esperados: esperadosDias.length,
+    dias,
+  };
+}
+
+/** Lunes (00:00 local) de la semana que contiene `date`. */
+export function mondayOf(date: Date = new Date()): Date {
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const diff = (d.getDay() + 6) % 7;
+  d.setDate(d.getDate() - diff);
+  return d;
+}
+
+// ------------------------------------------------------------
+// Metas completadas
+// ------------------------------------------------------------
+
+/**
+ * Una Meta se considera COMPLETADA cuando su progreso está fijado a
+ * mano en 100 %. Las Metas completadas no se archivan (seguirían
+ * fuera del promedio del Objetivo); sólo se muestran aparte.
+ */
+export function isMetaCompletada(meta: Pick<MetaNode, "modoProgreso" | "progresoPct">): boolean {
+  return meta.modoProgreso === "manual" && meta.progresoPct >= 100;
 }
 
 function mapTask(
