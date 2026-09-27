@@ -24,7 +24,7 @@
  * ========================================================
  */
 import { supabase } from "@/integrations/supabase/client";
-import { fetchAreaTree, type AreaNode } from "@/services/tableroService";
+import { fetchAreaTree, habitWeekStats, type AreaNode } from "@/services/tableroService";
 import { getCurrentProfile } from "@/services/profileService";
 
 // ============================================================
@@ -95,6 +95,9 @@ export interface RitualHabit {
   areaName: string;
   reason: string | null;
   compliancePct: number;
+  /** Cumplimiento en la semana que se cierra (días esperados). */
+  weekDone: number;
+  weekExpected: number;
 }
 
 export type OmissionKind = "project" | "goal";
@@ -415,6 +418,10 @@ export function buildWeeklyRitual(input: BuildInput): WeeklyRitualData {
         areaName: area.nombre,
         reason: h.razon?.trim() || null,
         compliancePct: h.cumplimientoPct,
+        ...(() => {
+          const st = habitWeekStats(h, prevStart, input.now);
+          return { weekDone: st.cumplidos, weekExpected: st.esperados };
+        })(),
       });
       habitNameById.set(h.id, h.nombre);
     }
