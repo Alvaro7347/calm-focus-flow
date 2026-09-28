@@ -131,8 +131,9 @@ export interface HabitoNode {
    */
   cumplimientoPct: number;
   /**
-   * Fechas (YYYY-MM-DD) en que el hábito se marcó cumplido. Base para
-   * medir cualquier semana con `habitWeekStats` sin volver a la base.
+   * Fechas (YYYY-MM-DD) en que el hábito se cumplió: check del hábito
+   * o tarea vinculada completada ese día. Base para medir cualquier
+   * semana con `habitWeekStats` sin volver a la base.
    */
   diasCumplidos: string[];
 }
@@ -220,6 +221,12 @@ type RawHabitLog = {
   done: boolean;
 };
 
+type RawHabitTask = {
+  status: string;
+  completed_at: string | null;
+  archived_at: string | null;
+};
+
 type RawHabit = {
   id: string;
   name: string;
@@ -228,6 +235,8 @@ type RawHabit = {
   desired_future_text: string | null;
   frequency_rule: unknown;
   habit_logs: RawHabitLog[] | null;
+  /** Tareas vinculadas al hábito (completarlas también cuenta como hecho). */
+  tasks?: RawHabitTask[] | null;
 };
 
 type RawArea = {
@@ -268,13 +277,21 @@ function diasEsperados(frecuencia: RecurrenceRule | null, desde: Date, hasta: Da
 function mapHabit(h: RawHabit): HabitoNode {
   const frecuencia = (h.frequency_rule as RecurrenceRule | null) ?? null;
   const logs = (h.habit_logs ?? []).filter((l) => l.done);
-  const doneDates = new Set(logs.map((l) => l.log_date));
+  // "Hoy cumplido" refleja el check del hábito (lo que se puede desmarcar).
+  const loggedDates = new Set(logs.map((l) => l.log_date));
+  // Para medir, un día cuenta como hecho si se marcó el check del hábito
+  // O si se completó ese día una tarea vinculada al hábito.
+  const doneDates = new Set(loggedDates);
+  for (const t of h.tasks ?? []) {
+    if (t.archived_at || t.status !== "completed" || !t.completed_at) continue;
+    doneDates.add(isoDate(t.completed_at));
+  }
 
   const hoy = new Date();
   const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
   const esperados = diasEsperados(frecuencia, inicioMes, hoy);
-  const cumplidosEsteMes = logs.filter((l) => {
-    const d = new Date(l.log_date + "T00:00:00");
+  const cumplidosEsteMes = [...doneDates].filter((fecha) => {
+    const d = new Date(fecha + "T00:00:00");
     return d >= inicioMes && d <= hoy;
   }).length;
 
@@ -285,7 +302,7 @@ function mapHabit(h: RawHabit): HabitoNode {
     razon: h.reason_text,
     futuroDeseado: h.desired_future_text,
     frecuencia,
-    hoyCumplido: doneDates.has(todayIso()),
+    hoyCumplido: loggedDates.has(todayIso()),
     cumplimientoPct: esperados > 0 ? Math.round((cumplidosEsteMes / esperados) * 100) : 0,
     diasCumplidos: [...doneDates],
   };
@@ -465,7 +482,8 @@ export async function fetchAreaTree(): Promise<AreaNode[]> {
        ),
        habits (
          id, name, archived_at, reason_text, desired_future_text, frequency_rule,
-         habit_logs ( log_date, done )
+         habit_logs ( log_date, done ),
+         tasks ( status, completed_at, archived_at )
        )`,
     )
     .is("archived_at", null)
