@@ -482,16 +482,26 @@ function StepCerrar({ data, actions }: { data: WeeklyRitualData; actions: TaskAc
         <section className="space-y-3">
           <SectionTitle>Tus hábitos esta semana</SectionTitle>
           <Card>
-            <ul className="space-y-2">
+            <ul className="space-y-3">
               {data.habits.map((h) => (
-                <li key={h.id} className="flex items-baseline justify-between gap-3">
-                  <span className="truncate text-sm text-foreground">{h.name}</span>
-                  <span className="shrink-0 text-xs text-muted-foreground">
-                    {h.weekDone} de {h.weekExpected} {h.weekExpected === 1 ? "día" : "días"}
-                  </span>
+                <li key={h.id}>
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="truncate text-sm text-foreground">{h.name}</span>
+                    <span className="shrink-0 text-xs font-medium text-foreground/80">
+                      {h.weekDone} de {h.weekExpected} {h.weekExpected === 1 ? "día" : "días"}
+                    </span>
+                  </div>
+                  <p className="mt-0.5 text-[11px] text-muted-foreground">
+                    Semanas anteriores:{" "}
+                    {h.history.map((w) => `${w.done}/${w.expected}`).join(" · ")}
+                  </p>
                 </li>
               ))}
             </ul>
+            <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
+              Cuenta los días en que marcaste el hábito en el Tablero o completaste una tarea
+              vinculada a él.
+            </p>
           </Card>
         </section>
       ) : null}
