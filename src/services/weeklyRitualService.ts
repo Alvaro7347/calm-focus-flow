@@ -98,6 +98,8 @@ export interface RitualHabit {
   /** Cumplimiento en la semana que se cierra (días esperados). */
   weekDone: number;
   weekExpected: number;
+  /** Las 3 semanas anteriores, de la más reciente a la más antigua. */
+  history: { done: number; expected: number }[];
 }
 
 export type OmissionKind = "project" | "goal";
@@ -420,7 +422,16 @@ export function buildWeeklyRitual(input: BuildInput): WeeklyRitualData {
         compliancePct: h.cumplimientoPct,
         ...(() => {
           const st = habitWeekStats(h, prevStart, input.now);
-          return { weekDone: st.cumplidos, weekExpected: st.esperados };
+          const history = [1, 2, 3].map((k) => {
+            const ws = new Date(
+              prevStart.getFullYear(),
+              prevStart.getMonth(),
+              prevStart.getDate() - 7 * k,
+            );
+            const w = habitWeekStats(h, ws, input.now);
+            return { done: w.cumplidos, expected: w.esperados };
+          });
+          return { weekDone: st.cumplidos, weekExpected: st.esperados, history };
         })(),
       });
       habitNameById.set(h.id, h.nombre);
