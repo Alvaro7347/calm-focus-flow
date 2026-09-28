@@ -476,9 +476,28 @@ type DayItem = {
   areas: { archived_at: string | null } | null;
 };
 
+/** Máximo de actividades listadas en el cuerpo de un resumen. */
+const MAX_LINES = 5;
+
+/** "09:00 Título" si tiene hora; "• Título" si es de todo el día. */
+function itemLine(t: DayItem, tz: string): string {
+  if (!t.starts_at) return `• ${t.title}`;
+  const hm = fmtHmLocal(t.starts_at, tz);
+  const isAllDay = hm === "00:00";
+  const mark = t.priority === "high" && t.activity_type === "task" ? " (importante)" : "";
+  return isAllDay ? `• ${t.title}${mark}` : `${hm} ${t.title}${mark}`;
+}
+
+function listLines(items: DayItem[], tz: string, max = MAX_LINES): string[] {
+  const lines = items.slice(0, max).map((t) => itemLine(t, tz));
+  if (items.length > max) lines.push(`+${items.length - max} más`);
+  return lines;
+}
+
 /**
- * Arma el mensaje de un resumen. Devuelve null si no hay nada que
- * decir (evita notificaciones vacías).
+ * Arma el mensaje de un resumen, estilo "secretaria": título con el
+ * panorama y cuerpo con el detalle de las actividades (una por línea).
+ * Devuelve null si no hay nada que decir (evita notificaciones vacías).
  */
 async function buildSummary(
   slot: SummarySlot,
@@ -490,19 +509,30 @@ async function buildSummary(
   const dayStart = startOfLocalDayUtc(ymd, tz);
   const dayEnd = endOfLocalDayUtc(ymd, tz);
 
-  const { data, error } = await admin
-    .from("tasks")
-    .select("title, status, activity_type, priority, starts_at, completed_at, areas(archived_at)")
-    .eq("user_id", userId)
-    .is("archived_at", null)
-    .or(
-      `and(starts_at.gte.${dayStart},starts_at.lte.${dayEnd}),and(completed_at.gte.${dayStart},completed_at.lte.${dayEnd})`,
-    );
-  if (error) {
-    console.warn("[push-dispatch] summary query error:", error.message);
+  const [dayRes, overdueRes] = await Promise.all([
+    admin
+      .from("tasks")
+      .select("title, status, activity_type, priority, starts_at, completed_at, areas(archived_at)")
+      .eq("user_id", userId)
+      .is("archived_at", null)
+      .or(
+        `and(starts_at.gte.${dayStart},starts_at.lte.${dayEnd}),and(completed_at.gte.${dayStart},completed_at.lte.${dayEnd})`,
+      ),
+    admin
+      .from("tasks")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .eq("activity_type", "task")
+      .in("status", ["pending", "waiting"])
+      .is("archived_at", null)
+      .lt("starts_at", dayStart),
+  ]);
+  if (dayRes.error) {
+    console.warn("[push-dispatch] summary query error:", dayRes.error.message);
     return null;
   }
-  const items = ((data ?? []) as unknown as DayItem[]).filter((t) => !t.areas?.archived_at);
+  const overdue = overdueRes.count ?? 0;
+  const items = ((dayRes.data ?? []) as unknown as DayItem[]).filter((t) => !t.areas?.archived_at);
 
   const startMs = new Date(dayStart).getTime();
   const endMs = new Date(dayEnd).getTime();
@@ -511,68 +541,87 @@ async function buildSummary(
     const t = new Date(iso).getTime();
     return t >= startMs && t <= endMs;
   };
-  const scheduled = items.filter((t) => inDay(t.starts_at));
+  const byTime = (a: DayItem, b: DayItem) =>
+    new Date(a.starts_at ?? 0).getTime() - new Date(b.starts_at ?? 0).getTime();
+  // Importantes primero dentro de la misma hora (todo el día queda al inicio).
+  const scheduled = items.filter((t) => inDay(t.starts_at)).sort(byTime);
   const tasksToday = scheduled.filter((t) => t.activity_type === "task");
-  const events = scheduled
-    .filter((t) => t.activity_type === "event")
-    .sort((a, b) => new Date(a.starts_at!).getTime() - new Date(b.starts_at!).getTime());
+  const events = scheduled.filter((t) => t.activity_type === "event");
   const pending = tasksToday.filter((t) => t.status !== "completed");
   const doneToday = items.filter(
     (t) => t.activity_type === "task" && t.status === "completed" && inDay(t.completed_at),
   );
+  const overdueLine =
+    overdue > 0
+      ? `Además, ${plural(overdue, "pendiente", "pendientes")} de días anteriores.`
+      : null;
 
   if (slot === "morning") {
-    if (tasksToday.length === 0 && events.length === 0) {
+    const agenda = scheduled.filter((t) => t.activity_type === "event" || t.status !== "completed");
+    if (agenda.length === 0) {
       return {
-        title: "Buenos días",
-        body: "Hoy no tienes nada agendado. Un buen día para avanzar en lo importante.",
+        title: "Buenos días · Día libre de agenda",
+        body: [
+          "Hoy no tienes actividades agendadas. Un buen día para avanzar en lo importante.",
+          overdueLine,
+        ]
+          .filter(Boolean)
+          .join("\n"),
       };
     }
-    const parts = [
-      `Hoy tienes ${plural(pending.length, "tarea", "tareas")} y ${plural(events.length, "evento", "eventos")} agendados.`,
-    ];
-    if (events[0]?.starts_at) {
-      parts.push(`Primero: ${fmtHmLocal(events[0].starts_at, tz)} · ${events[0].title}.`);
-    }
-    const main = pending.find((t) => t.priority === "high");
-    if (main) parts.push(`Lo principal: ${main.title}.`);
-    return { title: "Buenos días", body: parts.join(" ") };
+    const summary = [
+      pending.length > 0 ? plural(pending.length, "tarea", "tareas") : null,
+      events.length > 0 ? plural(events.length, "evento", "eventos") : null,
+    ]
+      .filter(Boolean)
+      .join(" y ");
+    return {
+      title: `Buenos días · Hoy: ${summary}`,
+      body: [...listLines(agenda, tz), overdueLine].filter(Boolean).join("\n"),
+    };
   }
 
   if (slot === "midday") {
+    const upcoming = scheduled.filter(
+      (t) =>
+        t.status !== "completed" &&
+        (t.activity_type === "event"
+          ? new Date(t.starts_at!).getTime() > now.getTime()
+          : true),
+    );
     if (tasksToday.length === 0 && events.length === 0 && doneToday.length === 0) return null;
-    const parts: string[] = [];
-    if (tasksToday.length > 0) {
-      const doneOfToday = tasksToday.length - pending.length;
-      parts.push(`Llevas ${doneOfToday} de ${plural(tasksToday.length, "tarea", "tareas")} de hoy.`);
-    } else if (doneToday.length > 0) {
-      parts.push(`Llevas ${plural(doneToday.length, "tarea completada", "tareas completadas")}.`);
-    }
-    const next = events.find((e) => e.starts_at && new Date(e.starts_at).getTime() > now.getTime());
-    if (next?.starts_at) {
-      parts.push(`Esta tarde: ${fmtHmLocal(next.starts_at, tz)} · ${next.title}.`);
-    }
-    if (pending.length > 0) {
-      parts.push(`${pending.length === 1 ? "Queda 1 pendiente" : `Quedan ${pending.length} pendientes`}.`);
-    }
-    if (parts.length === 0) return null;
-    return { title: "Mitad del día", body: parts.join(" ") };
+    const title =
+      tasksToday.length > 0
+        ? `Mitad del día · ${tasksToday.length - pending.length} de ${tasksToday.length} hechas`
+        : `Mitad del día · ${plural(doneToday.length, "completada", "completadas")}`;
+    const lines =
+      upcoming.length > 0
+        ? ["Lo que queda:", ...listLines(upcoming, tz)]
+        : ["No queda nada agendado para la tarde."];
+    return { title, body: lines.join("\n") };
   }
 
   // evening
   if (doneToday.length === 0 && pending.length === 0) return null;
-  const parts: string[] = [];
-  if (doneToday.length > 0) {
-    parts.push(`Hoy completaste ${plural(doneToday.length, "tarea", "tareas")}.`);
-  }
+  const lines: string[] = [];
+  for (const t of doneToday.slice(0, 3)) lines.push(`✓ ${t.title}`);
+  if (doneToday.length > 3) lines.push(`✓ +${doneToday.length - 3} más`);
   if (pending.length > 0) {
-    parts.push(
-      `${pending.length === 1 ? "Queda 1 pendiente" : `Quedan ${pending.length} pendientes`} de hoy; puedes pasarl${pending.length === 1 ? "a" : "as"} a mañana con calma.`,
+    lines.push(
+      `Quedan ${pending.length}: ${pending
+        .slice(0, 3)
+        .map((t) => t.title)
+        .join(", ")}${pending.length > 3 ? "…" : ""}`,
     );
+    lines.push("Puedes pasarlas a mañana con calma.");
   } else {
-    parts.push("No quedan pendientes de hoy. Buen cierre.");
+    lines.push("No quedan pendientes de hoy. Buen cierre.");
   }
-  return { title: "Cierre del día", body: parts.join(" ") };
+  const title =
+    doneToday.length > 0
+      ? `Cierre del día · ${plural(doneToday.length, "completada", "completadas")}`
+      : "Cierre del día";
+  return { title, body: lines.join("\n") };
 }
 
 async function processDailySummaries(): Promise<{ users: number; sent: number }> {
