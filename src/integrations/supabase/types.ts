@@ -580,12 +580,6 @@ export type Database = {
           daily_summary_hour: number
           daily_summary_minute: number
           event_reminders_enabled: boolean
-          midday_summary_enabled: boolean
-          midday_summary_hour: number
-          midday_summary_minute: number
-          morning_summary_enabled: boolean
-          morning_summary_hour: number
-          morning_summary_minute: number
           notifications_enabled: boolean
           updated_at: string
           user_id: string
@@ -596,12 +590,6 @@ export type Database = {
           daily_summary_hour?: number
           daily_summary_minute?: number
           event_reminders_enabled?: boolean
-          midday_summary_enabled?: boolean
-          midday_summary_hour?: number
-          midday_summary_minute?: number
-          morning_summary_enabled?: boolean
-          morning_summary_hour?: number
-          morning_summary_minute?: number
           notifications_enabled?: boolean
           updated_at?: string
           user_id: string
@@ -612,12 +600,6 @@ export type Database = {
           daily_summary_hour?: number
           daily_summary_minute?: number
           event_reminders_enabled?: boolean
-          midday_summary_enabled?: boolean
-          midday_summary_hour?: number
-          midday_summary_minute?: number
-          morning_summary_enabled?: boolean
-          morning_summary_hour?: number
-          morning_summary_minute?: number
           notifications_enabled?: boolean
           updated_at?: string
           user_id?: string
