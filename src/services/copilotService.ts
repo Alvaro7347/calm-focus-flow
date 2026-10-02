@@ -228,7 +228,13 @@ async function detectCandidates(now: Date): Promise<Candidate[]> {
   // ---------- 1. Reprogramada varias veces ----------
   const reschedCount = new Map<string, { n: number; title: string }>();
   for (const l of logs) {
-    if (!l.tasks || l.tasks.archived_at || l.tasks.status === "completed") continue;
+    if (
+      !l.tasks ||
+      l.tasks.archived_at ||
+      l.tasks.status === "completed" ||
+      l.tasks.status === "not_done"
+    )
+      continue;
     const cur = reschedCount.get(l.task_id) ?? { n: 0, title: l.tasks.title };
     cur.n += 1;
     reschedCount.set(l.task_id, cur);
