@@ -98,6 +98,7 @@ import {
 import { invalidateActivityGraph } from "@/lib/queryInvalidation";
 import type { TaskCreateDefaults } from "@/services/weeklyRitualService";
 import { VisionActivaBanner } from "@/components/vision/VisionActivaBanner";
+import { DimensionSelect } from "@/components/dimensiones/DimensionSelect";
 import type { AreaRow, ProjectRow, SubprojectRow } from "@/types/tarea";
 import type { ObjectiveRow, GoalRow } from "@/types/objetivo";
 import type { HabitRow } from "@/types/habito";
@@ -259,6 +260,13 @@ export function TaskDetailForm({
     initialTask?.objectiveId ?? defaults?.objectiveId ?? "",
   );
   const [goalId, setGoalId] = useState<string>(initialTask?.goalId ?? defaults?.goalId ?? "");
+  // Dimensión: sólo para tareas DIRECTAS (sin Proyecto, Meta ni Hábito).
+  // Las demás heredan la Dimensión de su Proyecto/Objetivo/Hábito.
+  const [dimensionId, setDimensionId] = useState<string | null>(
+    (initialTask?.task as { dimension_id?: string | null } | undefined)?.dimension_id ??
+      defaults?.dimensionId ??
+      null,
+  );
   const [userTouchedObjective, setUserTouchedObjective] = useState(false);
 
   const [habits, setHabits] = useState<HabitRow[]>([]);
@@ -432,6 +440,7 @@ export function TaskDetailForm({
       setObjectiveId("");
       setGoalId("");
       setHabitId("");
+      setDimensionId(null);
     }
     setUserTouchedArea(true);
   }
@@ -677,6 +686,17 @@ export function TaskDetailForm({
             : vinculo === "habito"
               ? { subproject_id: null, goal_id: null, habit_id: habitId }
               : { subproject_id: null, goal_id: null, habit_id: null };
+      // Sólo las tareas directas guardan Dimensión (constraint en la base).
+      // Se envía el campo sólo si hay algo que guardar o limpiar, para no
+      // depender de la migración de Dimensiones en tareas que no la usan.
+      const hadDimension = !!(initialTask?.task as { dimension_id?: string | null } | undefined)
+        ?.dimension_id;
+      const dimensionFields =
+        vinculo === "ninguno" && dimensionId
+          ? { dimension_id: dimensionId }
+          : hadDimension && isEdit
+            ? { dimension_id: null }
+            : {};
 
       // Pre-chequeo de conflicto para dar un mensaje concreto al usuario.
       // La garantía real vive en el trigger de Supabase (SQLSTATE CA001),
@@ -702,6 +722,7 @@ export function TaskDetailForm({
         saved = await updateTask(initialTask.task.id, {
           area_id: areaId,
           ...linkFields,
+          ...dimensionFields,
           title: title.trim(),
           description: description.trim() || null,
           priority,
@@ -717,6 +738,7 @@ export function TaskDetailForm({
         const input: CreateTaskInput = {
           area_id: areaId,
           ...linkFields,
+          ...dimensionFields,
           title: title.trim(),
           description: description.trim() || null,
           priority,
@@ -1165,6 +1187,16 @@ export function TaskDetailForm({
               </p>
             </div>
             )}
+
+            {/* Tarea directa: puede vivir en una Dimensión del Área. */}
+            {vinculo === "ninguno" && (
+              <DimensionSelect
+                areaId={areaId || null}
+                value={dimensionId}
+                onChange={setDimensionId}
+                hint="Una tarea directa puede pertenecer a una parte permanente del área."
+              />
+            )}
           </section>
 
           {/* 3. Estado + Prioridad */}
@@ -1178,6 +1210,9 @@ export function TaskDetailForm({
                 <SelectContent>
                   <SelectItem value="pending">Pendiente</SelectItem>
                   <SelectItem value="waiting">Esperando</SelectItem>
+                  <SelectItem value="not_done">
+                    {isEvento ? "No fui" : "No la hice"}
+                  </SelectItem>
                   <SelectItem value="completed">Completada</SelectItem>
                 </SelectContent>
               </Select>
