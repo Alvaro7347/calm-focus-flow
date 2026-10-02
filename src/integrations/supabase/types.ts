@@ -1090,7 +1090,7 @@ export type Database = {
       progress_mode: "auto" | "manual"
       task_priority: "high" | "medium" | "low"
       task_source: "text" | "voice" | "manual" | "import" | "api"
-      task_status: "pending" | "completed" | "waiting"
+      task_status: "pending" | "completed" | "waiting" | "not_done"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1223,7 +1223,7 @@ export const Constants = {
       progress_mode: ["auto", "manual"],
       task_priority: ["high", "medium", "low"],
       task_source: ["text", "voice", "manual", "import", "api"],
-      task_status: ["pending", "completed", "waiting"],
+      task_status: ["pending", "completed", "waiting", "not_done"],
     },
   },
 } as const
