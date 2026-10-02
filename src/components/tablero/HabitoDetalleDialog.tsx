@@ -24,6 +24,7 @@ import { Textarea } from "@/components/ui/textarea";
 import type { HabitoNode } from "@/services/tableroService";
 import { updateHabit } from "@/services/habitService";
 import { invalidateActivityGraph } from "@/lib/queryInvalidation";
+import { ElementDimensionField } from "@/components/dimensiones/ElementDimensionField";
 import type { RecurrenceRule } from "@/types/tarea";
 import type { Json } from "@/integrations/supabase/types";
 
@@ -101,6 +102,16 @@ export function HabitoDetalleDialog({ habito, open, onOpenChange }: Props) {
             {habito.cumplimientoPct}% de cumplimiento este mes.
           </DialogDescription>
         </DialogHeader>
+        {habito ? (
+          <div className="mb-2">
+            <ElementDimensionField
+              table="habits"
+              id={habito.id}
+              areaId={habito.areaId}
+              dimensionId={habito.dimensionId}
+            />
+          </div>
+        ) : null}
 
         <div className="space-y-4">
           <div className="space-y-2">
