@@ -44,6 +44,7 @@ import { setStageProgressManual, resetStageProgressToAuto } from "@/services/sub
 import { invalidateActivityGraph } from "@/lib/queryInvalidation";
 import { CheckCircle2 } from "lucide-react";
 import { CompletarDialog } from "./CompletarDialog";
+import { ElementDimensionField } from "@/components/dimensiones/ElementDimensionField";
 
 interface Props {
   proyecto: ProyectoNode | null;
@@ -62,6 +63,14 @@ export function ProyectoProgresoDialog({ proyecto, open, onOpenChange }: Props) 
             <DialogTitle>{proyecto.nombre}</DialogTitle>
             <DialogDescription>Fecha objetivo, visión y progreso del Proyecto.</DialogDescription>
           </DialogHeader>
+          <div className="mb-4">
+            <ElementDimensionField
+              table="projects"
+              id={proyecto.id}
+              areaId={proyecto.areaId}
+              dimensionId={proyecto.dimensionId}
+            />
+          </div>
 
           <ProyectoCampos proyecto={proyecto} />
 
