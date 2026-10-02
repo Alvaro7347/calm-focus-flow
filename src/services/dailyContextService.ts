@@ -373,7 +373,10 @@ export function buildDailyContext(input: DailyContextInput): DailyContext {
     t.subprojects?.projects?.id ?? null;
 
   // ---- Buckets de estado ----
-  const activeTasks = tasks.filter((t) => !t.archived_at && t.status !== "completed");
+  // Activas = abiertas (fuera completadas y "No la hice").
+  const activeTasks = tasks.filter(
+    (t) => !t.archived_at && t.status !== "completed" && t.status !== "not_done",
+  );
 
   let overdue = 0;
   let todayCount = 0;
@@ -830,7 +833,7 @@ export async function getDailyContext(
       .is("subprojects.archived_at", null)
       .is("subprojects.projects.archived_at", null)
       .is("subprojects.projects.areas.archived_at", null)
-      .neq("status", "completed"),
+      .in("status", ["pending", "waiting"]),
     // Tareas "recientes" (completadas/creadas/archivadas dentro de la ventana
     // semana-actual) para contadores derivados. Se piden separadas para no
     // inflar el payload principal.
