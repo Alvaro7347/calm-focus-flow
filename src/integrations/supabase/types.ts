@@ -262,6 +262,44 @@ export type Database = {
           },
         ]
       }
+      dimensions: {
+        Row: {
+          archived_at: string | null
+          area_id: string
+          created_at: string
+          display_order: number
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          archived_at?: string | null
+          area_id: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          archived_at?: string | null
+          area_id?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dimensions_area_id_fkey"
+            columns: ["area_id"]
+            isOneToOne: false
+            referencedRelation: "areas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       experiment_assignments: {
         Row: {
           assigned_at: string
@@ -425,6 +463,7 @@ export type Database = {
           area_id: string
           created_at: string
           desired_future_text: string | null
+          dimension_id: string | null
           frequency_rule: Json
           id: string
           name: string
@@ -436,6 +475,7 @@ export type Database = {
           area_id: string
           created_at?: string
           desired_future_text?: string | null
+          dimension_id?: string | null
           frequency_rule?: Json
           id?: string
           name: string
@@ -447,6 +487,7 @@ export type Database = {
           area_id?: string
           created_at?: string
           desired_future_text?: string | null
+          dimension_id?: string | null
           frequency_rule?: Json
           id?: string
           name?: string
@@ -459,6 +500,13 @@ export type Database = {
             columns: ["area_id"]
             isOneToOne: false
             referencedRelation: "areas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "habits_dimension_id_fkey"
+            columns: ["dimension_id"]
+            isOneToOne: false
+            referencedRelation: "dimensions"
             referencedColumns: ["id"]
           },
         ]
@@ -629,6 +677,7 @@ export type Database = {
           archived_at: string | null
           area_id: string
           created_at: string
+          dimension_id: string | null
           display_order: number
           id: string
           name: string
@@ -643,6 +692,7 @@ export type Database = {
           archived_at?: string | null
           area_id: string
           created_at?: string
+          dimension_id?: string | null
           display_order?: number
           id?: string
           name: string
@@ -657,6 +707,7 @@ export type Database = {
           archived_at?: string | null
           area_id?: string
           created_at?: string
+          dimension_id?: string | null
           display_order?: number
           id?: string
           name?: string
@@ -673,6 +724,13 @@ export type Database = {
             columns: ["area_id"]
             isOneToOne: false
             referencedRelation: "areas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "objectives_dimension_id_fkey"
+            columns: ["dimension_id"]
+            isOneToOne: false
+            referencedRelation: "dimensions"
             referencedColumns: ["id"]
           },
         ]
@@ -726,6 +784,7 @@ export type Database = {
           color: string | null
           created_at: string
           description: string | null
+          dimension_id: string | null
           display_order: number
           id: string
           name: string
@@ -742,6 +801,7 @@ export type Database = {
           color?: string | null
           created_at?: string
           description?: string | null
+          dimension_id?: string | null
           display_order?: number
           id?: string
           name: string
@@ -758,6 +818,7 @@ export type Database = {
           color?: string | null
           created_at?: string
           description?: string | null
+          dimension_id?: string | null
           display_order?: number
           id?: string
           name?: string
@@ -774,6 +835,13 @@ export type Database = {
             columns: ["area_id"]
             isOneToOne: false
             referencedRelation: "areas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projects_dimension_id_fkey"
+            columns: ["dimension_id"]
+            isOneToOne: false
+            referencedRelation: "dimensions"
             referencedColumns: ["id"]
           },
         ]
@@ -919,6 +987,7 @@ export type Database = {
           completed_at: string | null
           created_at: string
           description: string | null
+          dimension_id: string | null
           ends_at: string | null
           estimated_duration_min: number | null
           goal_id: string | null
@@ -943,6 +1012,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           description?: string | null
+          dimension_id?: string | null
           ends_at?: string | null
           estimated_duration_min?: number | null
           goal_id?: string | null
@@ -967,6 +1037,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           description?: string | null
+          dimension_id?: string | null
           ends_at?: string | null
           estimated_duration_min?: number | null
           goal_id?: string | null
@@ -994,6 +1065,13 @@ export type Database = {
             columns: ["capture_session_id"]
             isOneToOne: false
             referencedRelation: "capture_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_dimension_id_fkey"
+            columns: ["dimension_id"]
+            isOneToOne: false
+            referencedRelation: "dimensions"
             referencedColumns: ["id"]
           },
           {
