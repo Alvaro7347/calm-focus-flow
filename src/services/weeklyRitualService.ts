@@ -34,7 +34,7 @@ import { getCurrentProfile } from "@/services/profileService";
 export interface RitualTask {
   id: string;
   title: string;
-  status: "pending" | "completed" | "waiting";
+  status: "pending" | "completed" | "waiting" | "not_done";
   activityType: "task" | "event";
   priority: "high" | "medium" | "low";
   startsAt: string | null;
@@ -130,6 +130,8 @@ export interface TaskCreateDefaults {
   subprojectId?: string;
   objectiveId?: string;
   goalId?: string;
+  /** Dimensión (sólo tareas directas). */
+  dimensionId?: string;
   /** YYYY-MM-DD local. */
   fecha?: string;
 }
@@ -162,6 +164,8 @@ export interface WeeklyRitualData {
   // Paso 1
   completedPrev: RitualTask[];
   pendingPrev: RitualTask[];
+  /** Marcadas como "No la hice" / "No fui" en la semana que se cierra. */
+  notDonePrev: RitualTask[];
   overdueOlder: RitualTask[];
   projectsMoved: RitualProject[];
   projectsStill: RitualProject[];
@@ -227,6 +231,11 @@ const DAY_NAMES = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 
 export function dayLabel(d: Date): string {
   return `${DAY_NAMES[d.getDay()]} ${d.getDate()}`;
+}
+
+/** Abierta = pendiente o en espera (no completada ni "No la hice"). */
+function isOpen(t: { status: string }): boolean {
+  return t.status === "pending" || t.status === "waiting";
 }
 
 function inRange(iso: string | null, from: Date, to: Date): boolean {
@@ -481,12 +490,15 @@ export function buildWeeklyRitual(input: BuildInput): WeeklyRitualData {
     .filter((t) => t.status === "completed" && inRange(t.completedAt, prevStart, prevEnd))
     .sort((a, b) => (a.completedAt ?? "").localeCompare(b.completedAt ?? ""));
   const pendingPrev = onlyTasks
-    .filter((t) => t.status !== "completed" && inRange(t.startsAt, prevStart, prevEnd))
+    .filter((t) => isOpen(t) && inRange(t.startsAt, prevStart, prevEnd))
+    .sort(byStart);
+  const notDonePrev = tasks
+    .filter((t) => t.status === "not_done" && inRange(t.startsAt, prevStart, prevEnd))
     .sort(byStart);
   const overdueOlder = onlyTasks
     .filter(
       (t) =>
-        t.status !== "completed" &&
+        isOpen(t) &&
         t.startsAt != null &&
         new Date(t.startsAt).getTime() < prevStart.getTime(),
     )
@@ -577,7 +589,7 @@ export function buildWeeklyRitual(input: BuildInput): WeeklyRitualData {
     const from = addDays(nextStart, i);
     const to = addDays(nextStart, i + 1);
     const items = nextItems
-      .filter((t) => t.status !== "completed" && inRange(t.startsAt, from, to))
+      .filter((t) => isOpen(t) && inRange(t.startsAt, from, to))
       .sort(byStart);
     const totalMin = items.reduce((acc, t) => acc + itemMinutes(t), 0);
     const highCount = items.filter((t) => t.priority === "high").length;
@@ -616,7 +628,7 @@ export function buildWeeklyRitual(input: BuildInput): WeeklyRitualData {
   const projectsWithActions = projects.filter((p) => plannedProjectIds.has(p.id));
   const goalsWithActions = goals.filter((g) => plannedGoalIds.has(g.id));
   const mainTasks = nextItems
-    .filter((t) => t.activityType === "task" && t.status !== "completed" && t.priority === "high")
+    .filter((t) => t.activityType === "task" && isOpen(t) && t.priority === "high")
     .sort(byStart);
 
   return {
@@ -627,6 +639,7 @@ export function buildWeeklyRitual(input: BuildInput): WeeklyRitualData {
     weekKey,
     completedPrev,
     pendingPrev,
+    notDonePrev,
     overdueOlder,
     projectsMoved,
     projectsStill,
