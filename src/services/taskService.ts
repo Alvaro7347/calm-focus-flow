@@ -28,7 +28,9 @@
  *   `objetivos_metas_habitos_etapas`).
  * - No existe eliminación física: usar `archiveTask()` que
  *   escribe `archived_at`.
- * - Estados válidos: 'pending' | 'waiting' | 'completed'.
+ * - Estados válidos: 'pending' | 'waiting' | 'completed' | 'not_done'.
+ *   `not_done` = "No la hice" / "No fui": registro de que no ocurrió.
+ *   Sale de los pendientes y no cuenta para el progreso.
  *   `waiting` = detenida a la espera de un tercero. El
  *   archivado NO es un estado: sigue viviendo en `archived_at`.
  * - Las columnas de FOCO NO se almacenan: se calculan en
@@ -360,6 +362,7 @@ function toTarea(row: JoinedTaskRow, categoria: CategoriaFoco): Tarea {
     vencida: vencida || undefined,
     diasSinActividad,
     completada: row.status === "completed",
+    noHecha: row.status === "not_done" || undefined,
     priority: mapDbPriorityToUi(row.priority),
     tipo: row.activity_type === "event" ? "evento" : "tarea",
   };
@@ -408,7 +411,8 @@ export async function fetchTodayCompletion(): Promise<TodayCompletion> {
 
   if (error) throw error;
 
-  const rows = (data ?? []) as Array<{ status: string }>;
+  // "No la hice" no cuenta: no suma al total ni a las completadas.
+  const rows = ((data ?? []) as Array<{ status: string }>).filter((r) => r.status !== "not_done");
   const total = rows.length;
   const completadas = rows.filter((r) => r.status === "completed").length;
   return { total, completadas, pct: total > 0 ? Math.round((completadas / total) * 100) : 0 };
@@ -428,7 +432,8 @@ export async function fetchFocusTasks(): Promise<FocusTasks> {
     )
     .is("archived_at", null)
     .is("areas.archived_at", null)
-    .neq("status", "completed")
+    // Sólo abiertas: fuera completadas y "No la hice".
+    .in("status", ["pending", "waiting"])
     .order("starts_at", { ascending: true, nullsFirst: false });
 
   if (error) throw error;
@@ -558,6 +563,7 @@ function rowToScheduledTarea(row: JoinedTaskRow): Tarea {
     // sólo porque `Tarea` la exige. No confiar en este valor.
     categoriaFoco: "hoy",
     completada: row.status === "completed",
+    noHecha: row.status === "not_done" || undefined,
     priority: mapDbPriorityToUi(row.priority),
     tipo: row.activity_type === "event" ? "evento" : "tarea",
   };
@@ -616,4 +622,3 @@ export async function fetchScheduledTasks(): Promise<Tarea[]> {
   });
   return rows.map(rowToScheduledTarea);
 }
-
