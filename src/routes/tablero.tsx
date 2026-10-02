@@ -34,6 +34,7 @@ import { ProyectoAccordion } from "@/components/tablero/ProyectoAccordion";
 import { ObjetivoAccordion } from "@/components/tablero/ObjetivoAccordion";
 import { HabitoRow } from "@/components/tablero/HabitoRow";
 import { CompletadosSection } from "@/components/tablero/CompletadosSection";
+import { DimensionesSection } from "@/components/dimensiones/DimensionesSection";
 
 interface TableroSearch {
   area?: string;
@@ -106,6 +107,10 @@ function TableroPage() {
     );
   }
 
+  const proyectosSinDimension = area.proyectos.filter((p) => !p.dimensionId);
+  const objetivosSinDimension = area.objetivos.filter((o) => !o.dimensionId);
+  const habitosSinDimension = area.habitos.filter((h) => !h.dimensionId);
+
   return (
     <div className="max-w-4xl mx-auto px-4 md:px-10 py-8 md:py-10 pb-32 md:pb-16">
       <header className="mb-8">
@@ -117,14 +122,34 @@ function TableroPage() {
         </p>
       </header>
 
+      {/* Dimensiones: partes permanentes del Área (creadas por el usuario). */}
+      <DimensionesSection
+        area={area}
+        proyecto={proyecto}
+        subproyecto={subproyecto}
+        objetivo={objetivo}
+        meta={meta}
+      />
+
+      {/* Lo que no tiene Dimensión: se ve exactamente como antes. */}
+      {area.dimensiones.length > 0 && (
+        <p className="text-xs font-medium uppercase tracking-[0.14em] text-slate-400 mb-4 pt-2 border-t border-slate-100">
+          Sin dimensión
+        </p>
+      )}
+
       <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">
         Proyectos
       </h2>
-      {area.proyectos.length === 0 ? (
-        <p className="text-sm text-slate-500">Esta área todavía no tiene proyectos.</p>
+      {proyectosSinDimension.length === 0 ? (
+        <p className="text-sm text-slate-500">
+          {area.dimensiones.length > 0
+            ? "No hay proyectos sin dimensión."
+            : "Esta área todavía no tiene proyectos."}
+        </p>
       ) : (
         <div className="rounded-xl border border-slate-200 bg-white divide-y divide-slate-100 overflow-hidden">
-          {area.proyectos.map((p) => (
+          {proyectosSinDimension.map((p) => (
             <ProyectoAccordion
               key={p.slug}
               areaSlug={area.slug}
@@ -140,11 +165,15 @@ function TableroPage() {
       <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mt-8 mb-3">
         Objetivos
       </h2>
-      {area.objetivos.length === 0 ? (
-        <p className="text-sm text-slate-500">Esta área todavía no tiene objetivos.</p>
+      {objetivosSinDimension.length === 0 ? (
+        <p className="text-sm text-slate-500">
+          {area.dimensiones.length > 0
+            ? "No hay objetivos sin dimensión."
+            : "Esta área todavía no tiene objetivos."}
+        </p>
       ) : (
         <div className="rounded-xl border border-slate-200 bg-white divide-y divide-slate-100 overflow-hidden">
-          {area.objetivos.map((o) => (
+          {objetivosSinDimension.map((o) => (
             <ObjetivoAccordion
               key={o.slug}
               areaSlug={area.slug}
@@ -160,11 +189,15 @@ function TableroPage() {
       <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mt-8 mb-3">
         Hábitos
       </h2>
-      {area.habitos.length === 0 ? (
-        <p className="text-sm text-slate-500">Esta área todavía no tiene hábitos.</p>
+      {habitosSinDimension.length === 0 ? (
+        <p className="text-sm text-slate-500">
+          {area.dimensiones.length > 0
+            ? "No hay hábitos sin dimensión."
+            : "Esta área todavía no tiene hábitos."}
+        </p>
       ) : (
         <div className="rounded-xl border border-slate-200 bg-white divide-y divide-slate-100 overflow-hidden">
-          {area.habitos.map((h) => (
+          {habitosSinDimension.map((h) => (
             <HabitoRow key={h.id} habito={h} />
           ))}
         </div>
