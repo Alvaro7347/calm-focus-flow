@@ -43,6 +43,7 @@ import { Button } from "@/components/ui/button";
 import { isMetaCompletada } from "@/services/tableroService";
 import { reopenGoal } from "@/services/completionService";
 import { CompletarDialog } from "./CompletarDialog";
+import { ElementDimensionField } from "@/components/dimensiones/ElementDimensionField";
 import type { ProgressMode } from "@/types/tarea";
 
 interface Props {
@@ -62,6 +63,14 @@ export function ObjetivoProgresoDialog({ objetivo, open, onOpenChange }: Props) 
             <DialogTitle>{objetivo.nombre}</DialogTitle>
             <DialogDescription>Fecha objetivo, visión y progreso del Objetivo.</DialogDescription>
           </DialogHeader>
+          <div className="mb-4">
+            <ElementDimensionField
+              table="objectives"
+              id={objetivo.id}
+              areaId={objetivo.areaId}
+              dimensionId={objetivo.dimensionId}
+            />
+          </div>
 
           <ObjetivoCampos objetivo={objetivo} />
 
