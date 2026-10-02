@@ -20,7 +20,7 @@
  * ========================================================
  */
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -40,6 +40,14 @@ import { createProject } from "@/services/projectService";
 import { createSubproject } from "@/services/subprojectService";
 import { createObjective, createGoal } from "@/services/objectiveService";
 import { createHabit } from "@/services/habitService";
+import { fetchDimensions } from "@/services/dimensionService";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { invalidateActivityGraph } from "@/lib/queryInvalidation";
 import {
   PROJECT_COLORS,
@@ -65,9 +73,16 @@ interface Props {
   /** Texto del botón disparador. Por defecto usa el título del tipo. */
   triggerLabel?: string;
   className?: string;
+  /**
+   * Dimensión preseleccionada (Proyecto/Objetivo/Hábito). Se usa al
+   * crear desde dentro de una Dimensión en el Tablero.
+   */
+  dimensionId?: string;
 }
 
-export function CrearNodoDialog({ type, parentId, triggerLabel, className }: Props) {
+const SIN_DIMENSION = "__none__";
+
+export function CrearNodoDialog({ type, parentId, triggerLabel, className, dimensionId }: Props) {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [nombre, setNombre] = useState("");
@@ -76,6 +91,16 @@ export function CrearNodoDialog({ type, parentId, triggerLabel, className }: Pro
   const [vision, setVision] = useState("");
   const [razon, setRazon] = useState("");
   const [futuro, setFuturo] = useState("");
+  const [dimension, setDimension] = useState<string>(dimensionId ?? SIN_DIMENSION);
+
+  // Dimensiones del Área (sólo para Proyecto, Objetivo y Hábito).
+  const admiteDimension = type === "project" || type === "objective" || type === "habit";
+  const { data: dimensiones = [] } = useQuery({
+    queryKey: ["dimensions", parentId],
+    queryFn: () => fetchDimensions(parentId!).catch(() => []),
+    enabled: open && admiteDimension && !!parentId,
+  });
+  const dimensionValue = dimension === SIN_DIMENSION ? null : dimension;
 
   function reset() {
     setNombre("");
@@ -84,6 +109,7 @@ export function CrearNodoDialog({ type, parentId, triggerLabel, className }: Pro
     setVision("");
     setRazon("");
     setFuturo("");
+    setDimension(dimensionId ?? SIN_DIMENSION);
   }
 
   const crear = useMutation({
@@ -101,6 +127,7 @@ export function CrearNodoDialog({ type, parentId, triggerLabel, className }: Pro
           name: trimmed,
           target_date: fecha || null,
           vision_text: vision.trim() || null,
+          ...(dimensionValue ? { dimension_id: dimensionValue } : {}),
         });
       }
       if (type === "subproject") {
@@ -118,6 +145,7 @@ export function CrearNodoDialog({ type, parentId, triggerLabel, className }: Pro
           name: trimmed,
           target_date: fecha || null,
           vision_text: vision.trim() || null,
+          ...(dimensionValue ? { dimension_id: dimensionValue } : {}),
         });
       }
       if (type === "goal") {
@@ -135,6 +163,7 @@ export function CrearNodoDialog({ type, parentId, triggerLabel, className }: Pro
         name: trimmed,
         reason_text: razon.trim() || null,
         desired_future_text: futuro.trim() || null,
+        ...(dimensionValue ? { dimension_id: dimensionValue } : {}),
       });
     },
     onSuccess: async () => {
@@ -216,6 +245,25 @@ export function CrearNodoDialog({ type, parentId, triggerLabel, className }: Pro
                 }
               />
             </div>
+
+            {admiteDimension && dimensiones.length > 0 && (
+              <div className="space-y-2">
+                <Label>Dimensión (opcional)</Label>
+                <Select value={dimension} onValueChange={setDimension}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={SIN_DIMENSION}>Sin dimensión</SelectItem>
+                    {dimensiones.map((d) => (
+                      <SelectItem key={d.id} value={d.id}>
+                        {d.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             {type === "area" && (
               <div className="space-y-2">
