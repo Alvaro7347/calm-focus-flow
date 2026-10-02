@@ -73,6 +73,11 @@ function Body({ event, onClose }: { event: CalendarEvent; onClose: () => void })
       <h2 className={`mt-3 text-lg font-semibold leading-snug ${event.completada ? "text-slate-400 line-through" : "text-slate-900"}`}>
         {event.titulo}
       </h2>
+      {event.noHecha ? (
+        <p className="mt-1 text-xs font-medium text-rose-600">
+          {event.tarea?.tipo === "evento" ? "No fui" : "No la hice"}
+        </p>
+      ) : null}
 
       <dl className="mt-5 space-y-3 text-sm">
         <Row label="Cuándo">{cuando}</Row>
