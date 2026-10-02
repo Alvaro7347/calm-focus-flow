@@ -26,7 +26,8 @@
  */
 import { useEffect, useState, type ReactNode } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { MoreHorizontal, Pencil, Archive, Check } from "lucide-react";
+import { MoreHorizontal, Pencil, Archive, Check, Layers } from "lucide-react";
+import { ElementDimensionField } from "@/components/dimensiones/ElementDimensionField";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -117,6 +118,9 @@ interface Props {
    * Los otros tipos lo ignoran (heredan visualmente el color del Área).
    */
   color?: string | null;
+  /** Proyecto/Objetivo/Hábito: Área y Dimensión actual (para "Dimensión…"). */
+  areaId?: string;
+  dimensionId?: string | null;
   triggerClassName?: string;
   children?: ReactNode;
 }
@@ -126,10 +130,21 @@ export function OrganizacionActions({
   type,
   name,
   color,
+  areaId,
+  dimensionId,
   triggerClassName,
 }: Props) {
   const qc = useQueryClient();
   const [editOpen, setEditOpen] = useState(false);
+  const [dimensionOpen, setDimensionOpen] = useState(false);
+  const dimensionTable =
+    type === "project"
+      ? ("projects" as const)
+      : type === "objective"
+        ? ("objectives" as const)
+        : type === "habit"
+          ? ("habits" as const)
+          : null;
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [draft, setDraft] = useState(name);
   const initialColor = (color as ProjectColorSlug | null | undefined) ?? DEFAULT_PROJECT_COLOR;
@@ -213,6 +228,17 @@ export function OrganizacionActions({
             <Pencil className="h-4 w-4 mr-2" aria-hidden />
             Editar
           </DropdownMenuItem>
+          {dimensionTable && areaId ? (
+            <DropdownMenuItem
+              onSelect={(e) => {
+                e.preventDefault();
+                setDimensionOpen(true);
+              }}
+            >
+              <Layers className="h-4 w-4 mr-2" aria-hidden />
+              Dimensión…
+            </DropdownMenuItem>
+          ) : null}
           <DropdownMenuItem
             onSelect={(e) => {
               e.preventDefault();
@@ -225,6 +251,32 @@ export function OrganizacionActions({
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      {dimensionTable && areaId ? (
+        <Dialog open={dimensionOpen} onOpenChange={setDimensionOpen}>
+          <DialogContent className="sm:max-w-md" onClick={(e) => e.stopPropagation()}>
+            <DialogHeader>
+              <DialogTitle>Dimensión</DialogTitle>
+              <DialogDescription>
+                {name}. Elige a qué parte permanente del área pertenece.
+              </DialogDescription>
+            </DialogHeader>
+            <ElementDimensionField
+              table={dimensionTable}
+              id={id}
+              areaId={areaId}
+              dimensionId={dimensionId}
+            />
+            <p className="text-xs text-slate-500">
+              Si no ves el selector, esta área todavía no tiene dimensiones: créalas con
+              "+ Dimensión".
+            </p>
+            <DialogFooter>
+              <Button onClick={() => setDimensionOpen(false)}>Listo</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      ) : null}
 
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent
