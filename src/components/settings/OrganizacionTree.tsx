@@ -2,7 +2,10 @@
  * OrganizacionTree
  * ---------------------------------------------------------------------------
  * Vista jerárquica de la estructura organizacional del usuario:
- * Área → Proyecto → Subproyecto.
+ * Área → Dimensión (opcional) → Proyecto / Objetivo / Hábito
+ * (y lo que no tiene Dimensión, bajo "Sin dimensión"), igual que el
+ * Tablero. Crear, renombrar y archivar Dimensiones usa los mismos
+ * componentes que el Tablero (DimensionActions).
  *
  * Alcance actual:
  *  - Mostrar la jerarquía completa cargada desde Supabase.
@@ -33,6 +36,8 @@ import {
   type OrgNodeType,
 } from "@/components/settings/OrganizacionActions";
 import { CrearNodoDialog } from "@/components/settings/CrearNodoDialog";
+import { DimensionMenu, NewDimensionButton } from "@/components/dimensiones/DimensionActions";
+import type { DimensionNode } from "@/services/tableroService";
 import { getProjectColor } from "@/lib/projectIdentity";
 
 export const ORGANIZACION_QUERY_KEY = ["organizacion"] as const;
@@ -48,6 +53,9 @@ interface RowProps {
   count?: number;
   /** Sólo aplica a `type === "area"`: slug de la paleta CalmApp. */
   color?: string | null;
+  /** Proyecto/Objetivo/Hábito: para la acción "Dimensión…". */
+  areaId?: string;
+  dimensionId?: string | null;
 }
 
 function NodeRow({
@@ -60,6 +68,8 @@ function NodeRow({
   onToggle,
   count,
   color,
+  areaId,
+  dimensionId,
 }: RowProps) {
   // Para áreas, el icono se reemplaza por un punto de color
   // que representa la identidad visual del Área (heredada por sus
@@ -138,7 +148,14 @@ function NodeRow({
           {inner}
         </div>
       )}
-      <OrganizacionActions id={id} type={type} name={label} color={color} />
+      <OrganizacionActions
+        id={id}
+        type={type}
+        name={label}
+        color={color}
+        areaId={areaId}
+        dimensionId={dimensionId}
+      />
     </div>
   );
 }
@@ -152,7 +169,16 @@ function GoalRow({ goal, depth }: { goal: MetaNode; depth: number }) {
 }
 
 function HabitRow({ habit, depth }: { habit: HabitoNode; depth: number }) {
-  return <NodeRow id={habit.id} label={habit.nombre} type="habit" depth={depth} />;
+  return (
+    <NodeRow
+      id={habit.id}
+      label={habit.nombre}
+      type="habit"
+      depth={depth}
+      areaId={habit.areaId}
+      dimensionId={habit.dimensionId}
+    />
+  );
 }
 
 function ObjectiveRow({ objective, depth }: { objective: ObjetivoNode; depth: number }) {
@@ -164,6 +190,8 @@ function ObjectiveRow({ objective, depth }: { objective: ObjetivoNode; depth: nu
         label={objective.nombre}
         type="objective"
         depth={depth}
+        areaId={objective.areaId}
+        dimensionId={objective.dimensionId}
         expandable
         expanded={open}
         onToggle={() => setOpen((v) => !v)}
@@ -194,6 +222,8 @@ function ProjectRow({ project, depth }: { project: ProyectoNode; depth: number }
         label={project.nombre}
         type="project"
         depth={depth}
+        areaId={project.areaId}
+        dimensionId={project.dimensionId}
         expandable
         expanded={open}
         onToggle={() => setOpen((v) => !v)}
@@ -214,8 +244,123 @@ function ProjectRow({ project, depth }: { project: ProyectoNode; depth: number }
   );
 }
 
+function SectionLabel({ children, depth, first }: { children: string; depth: number; first?: boolean }) {
+  return (
+    <p
+      className={`${first ? "pt-2" : "pt-3"} pb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400`}
+      style={{ paddingLeft: 16 + depth * 20 }}
+    >
+      {children}
+    </p>
+  );
+}
+
+/**
+ * Proyectos, Objetivos y Hábitos de un contenedor (Dimensión o
+ * "Sin dimensión"), con sus botones de creación.
+ */
+function ElementGroups({
+  area,
+  dimensionId,
+  depth,
+}: {
+  area: AreaNode;
+  dimensionId: string | null;
+  depth: number;
+}) {
+  const match = (d: string | null | undefined) => (d ?? null) === dimensionId;
+  const proyectos = area.proyectos.filter((p) => match(p.dimensionId));
+  const objetivos = area.objetivos.filter((o) => match(o.dimensionId));
+  const habitos = area.habitos.filter((h) => match(h.dimensionId));
+  const dimProp = dimensionId ?? undefined;
+  return (
+    <>
+      <SectionLabel depth={depth} first>
+        Proyectos
+      </SectionLabel>
+      {proyectos.map((p) => (
+        <ProjectRow key={p.id} project={p} depth={depth} />
+      ))}
+      <div style={{ paddingLeft: 16 + depth * 20 }}>
+        <CrearNodoDialog type="project" parentId={area.id} dimensionId={dimProp} />
+      </div>
+
+      <SectionLabel depth={depth}>Objetivos</SectionLabel>
+      {objetivos.map((o) => (
+        <ObjectiveRow key={o.id} objective={o} depth={depth} />
+      ))}
+      <div style={{ paddingLeft: 16 + depth * 20 }}>
+        <CrearNodoDialog type="objective" parentId={area.id} dimensionId={dimProp} />
+      </div>
+
+      <SectionLabel depth={depth}>Hábitos</SectionLabel>
+      {habitos.map((h) => (
+        <HabitRow key={h.id} habit={h} depth={depth} />
+      ))}
+      <div style={{ paddingLeft: 16 + depth * 20 }}>
+        <CrearNodoDialog type="habit" parentId={area.id} dimensionId={dimProp} />
+      </div>
+    </>
+  );
+}
+
+function DimensionRow({ area, dim }: { area: AreaNode; dim: DimensionNode }) {
+  const [open, setOpen] = useState(false);
+  const count =
+    area.proyectos.filter((p) => p.dimensionId === dim.id).length +
+    area.objetivos.filter((o) => o.dimensionId === dim.id).length +
+    area.habitos.filter((h) => h.dimensionId === dim.id).length;
+  return (
+    <>
+      <div
+        className="group flex items-center pr-2 hover:bg-slate-50 transition-colors"
+        style={{ paddingLeft: 16 + 1 * 20 }}
+      >
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          aria-expanded={open}
+          className="flex flex-1 min-w-0 items-center gap-2.5 py-2.5 pr-2 text-left"
+        >
+          <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center text-slate-400" aria-hidden>
+            <ChevronRight
+              className={`h-4 w-4 transition-transform duration-200 ${open ? "rotate-90" : ""}`}
+            />
+          </span>
+          <Layers className="h-4 w-4 shrink-0 text-violet-500" aria-hidden />
+          <span className="min-w-0 flex-1 truncate text-sm font-medium text-slate-900">
+            {dim.nombre}
+          </span>
+          {count > 0 || dim.tareasPendientes > 0 ? (
+            <span className="shrink-0 text-xs text-slate-400 tabular-nums">
+              {count}
+              {dim.tareasPendientes > 0 ? ` · ${dim.tareasPendientes} tareas` : ""}
+            </span>
+          ) : null}
+        </button>
+        <DimensionMenu
+          dimension={dim}
+          areaName={area.nombre}
+          triggerClassName="shrink-0 inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+        />
+      </div>
+      {open ? (
+        <div className="animate-in fade-in slide-in-from-top-1 duration-200">
+          <ElementGroups area={area} dimensionId={dim.id} depth={2} />
+          {dim.tareasPendientes > 0 ? (
+            <p className="py-2 text-xs text-slate-400" style={{ paddingLeft: 16 + 2 * 20 }}>
+              Sus tareas directas se ven y se crean desde el Tablero.
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+    </>
+  );
+}
+
 function AreaRow({ area }: { area: AreaNode }) {
   const [open, setOpen] = useState(true);
+  const dimensiones = area.dimensiones ?? [];
   return (
     <div>
       <NodeRow
@@ -232,44 +377,27 @@ function AreaRow({ area }: { area: AreaNode }) {
 
       {open ? (
         <div className="animate-in fade-in slide-in-from-top-1 duration-200">
-          <p
-            className="pt-2 pb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400"
-            style={{ paddingLeft: 16 + 1 * 20 }}
-          >
-            Proyectos
-          </p>
-          {area.proyectos.map((p) => (
-            <ProjectRow key={p.id} project={p} depth={1} />
+          {/* Dimensiones (mismo modelo que el Tablero) */}
+          <SectionLabel depth={1} first>
+            Dimensiones
+          </SectionLabel>
+          {dimensiones.map((d) => (
+            <DimensionRow key={d.id} area={area} dim={d} />
           ))}
           <div style={{ paddingLeft: 16 + 1 * 20 }}>
-            <CrearNodoDialog type="project" parentId={area.id} />
+            <NewDimensionButton areaId={area.id} />
           </div>
 
-          <p
-            className="pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400"
-            style={{ paddingLeft: 16 + 1 * 20 }}
-          >
-            Objetivos
-          </p>
-          {area.objetivos.map((o) => (
-            <ObjectiveRow key={o.id} objective={o} depth={1} />
-          ))}
-          <div style={{ paddingLeft: 16 + 1 * 20 }}>
-            <CrearNodoDialog type="objective" parentId={area.id} />
-          </div>
-
-          <p
-            className="pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400"
-            style={{ paddingLeft: 16 + 1 * 20 }}
-          >
-            Hábitos
-          </p>
-          {area.habitos.map((h) => (
-            <HabitRow key={h.id} habit={h} depth={1} />
-          ))}
-          <div style={{ paddingLeft: 16 + 1 * 20 }}>
-            <CrearNodoDialog type="habit" parentId={area.id} />
-          </div>
+          {/* Lo que no tiene Dimensión: igual que antes */}
+          {dimensiones.length > 0 ? (
+            <p
+              className="mt-2 border-t border-slate-100 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500"
+              style={{ paddingLeft: 16 + 1 * 20 }}
+            >
+              Sin dimensión
+            </p>
+          ) : null}
+          <ElementGroups area={area} dimensionId={null} depth={1} />
         </div>
       ) : null}
     </div>
@@ -305,20 +433,23 @@ export function OrganizacionTree() {
     let objectives = 0;
     let goals = 0;
     let habits = 0;
+    let dimensions = 0;
     for (const a of tree) {
+      dimensions += (a.dimensiones ?? []).length;
       projects += a.proyectos.length;
       for (const p of a.proyectos) subprojects += p.subproyectos.length;
       objectives += a.objetivos.length;
       for (const o of a.objetivos) goals += o.metas.length;
       habits += a.habitos.length;
     }
-    return { areas: tree.length, projects, subprojects, objectives, goals, habits };
+    return { areas: tree.length, dimensions, projects, subprojects, objectives, goals, habits };
   }, [data]);
 
   return (
     <div className="space-y-4">
       <section className="flex flex-wrap gap-2">
         <Stat label="Áreas" value={stats.areas} />
+        <Stat label="Dimensiones" value={stats.dimensions} />
         <Stat label="Proyectos" value={stats.projects} />
         <Stat label="Etapas" value={stats.subprojects} />
         <Stat label="Objetivos" value={stats.objectives} />
