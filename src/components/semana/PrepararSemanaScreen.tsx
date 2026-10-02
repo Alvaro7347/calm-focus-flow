@@ -454,9 +454,10 @@ function StepCerrar({ data, actions }: { data: WeeklyRitualData; actions: TaskAc
         {fmtRange(data.prevStart, data.prevEnd)}.
       </p>
 
-      <div className="grid grid-cols-3 gap-2 sm:gap-3">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
         <Stat value={data.completedPrev.length} label="Completadas" />
         <Stat value={data.pendingPrev.length} label="Siguen pendientes" />
+        <Stat value={data.notDonePrev.length} label="No hechas" />
         <Stat value={data.overdueOlder.length} label="De semanas anteriores" />
       </div>
 
