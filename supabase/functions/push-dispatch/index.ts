@@ -181,6 +181,7 @@ async function processEventReminders(): Promise<{ candidates: number; sent: numb
     .select("id, user_id, title, starts_at, ends_at, priority, activity_type, archived_at")
     .eq("activity_type", "event")
     .eq("priority", "high")
+    .neq("status", "not_done") // "No fui": no avisar
     .is("archived_at", null)
     .gte("starts_at", nowIso)
     .lte("starts_at", windowEnd)
@@ -327,7 +328,7 @@ async function processTaskReminders(): Promise<{ candidates: number; sent: numbe
     if (!claimed || claimed.length === 0) continue;
 
     if (!task || !task.starts_at) continue;
-    if (task.archived_at || task.status === "completed") continue;
+    if (task.archived_at || task.status === "completed" || task.status === "not_done") continue;
     const startMs = new Date(task.starts_at).getTime();
     if (startMs + graceMs < now.getTime()) continue; // ya pasó: no molestar
 
@@ -545,9 +546,12 @@ async function buildSummary(
     new Date(a.starts_at ?? 0).getTime() - new Date(b.starts_at ?? 0).getTime();
   // Importantes primero dentro de la misma hora (todo el día queda al inicio).
   const scheduled = items.filter((t) => inDay(t.starts_at)).sort(byTime);
-  const tasksToday = scheduled.filter((t) => t.activity_type === "task");
-  const events = scheduled.filter((t) => t.activity_type === "event");
-  const pending = tasksToday.filter((t) => t.status !== "completed");
+  // "No la hice" / "No fui" no cuenta en ningún conteo.
+  const tasksToday = scheduled.filter((t) => t.activity_type === "task" && t.status !== "not_done");
+  const events = scheduled.filter((t) => t.activity_type === "event" && t.status !== "not_done");
+  // Abiertas = pendientes o en espera ("No la hice" no cuenta).
+  const isOpen = (t: DayItem) => t.status === "pending" || t.status === "waiting";
+  const pending = tasksToday.filter(isOpen);
   const doneToday = items.filter(
     (t) => t.activity_type === "task" && t.status === "completed" && inDay(t.completed_at),
   );
@@ -557,7 +561,9 @@ async function buildSummary(
       : null;
 
   if (slot === "morning") {
-    const agenda = scheduled.filter((t) => t.activity_type === "event" || t.status !== "completed");
+    const agenda = scheduled.filter((t) =>
+      t.activity_type === "event" ? t.status !== "not_done" : isOpen(t),
+    );
     if (agenda.length === 0) {
       return {
         title: "Buenos días · Día libre de agenda",
@@ -584,7 +590,7 @@ async function buildSummary(
   if (slot === "midday") {
     const upcoming = scheduled.filter(
       (t) =>
-        t.status !== "completed" &&
+        (t.activity_type === "event" ? t.status !== "not_done" : isOpen(t)) &&
         (t.activity_type === "event"
           ? new Date(t.starts_at!).getTime() > now.getTime()
           : true),
