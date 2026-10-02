@@ -16,7 +16,7 @@
  */
 import { useState } from "react";
 import type { Tarea, Priority } from "@/types/tarea";
-import { Check, Circle } from "lucide-react";
+import { Check, Circle, X } from "lucide-react";
 import { TaskDetailSheet } from "@/components/TaskDetail";
 
 interface Props {
@@ -46,7 +46,9 @@ function formatFecha(iso?: string): string | null {
 
 export function TareaRow({ tarea }: Props) {
   const [open, setOpen] = useState(false);
-  const completada = !!tarea.completada;
+  const noHecha = !!tarea.noHecha;
+  // "Cerrada" = completada o "No la hice": ambas se ven tachadas.
+  const completada = !!tarea.completada || noHecha;
   const priority: Priority = tarea.priority ?? "normal";
   const fecha = formatFecha(tarea.fechaProgramada);
 
@@ -63,7 +65,13 @@ export function TareaRow({ tarea }: Props) {
             completada ? "bg-slate-200 border-slate-200 text-slate-500" : "border-slate-300 text-transparent"
           }`}
         >
-          {completada ? <Check className="h-3 w-3" /> : <Circle className="h-3 w-3" />}
+          {noHecha ? (
+            <X className="h-3 w-3" />
+          ) : completada ? (
+            <Check className="h-3 w-3" />
+          ) : (
+            <Circle className="h-3 w-3" />
+          )}
         </span>
 
         <span
@@ -73,6 +81,8 @@ export function TareaRow({ tarea }: Props) {
         >
           {tarea.titulo}
         </span>
+
+        {noHecha && <span className="text-xs text-rose-500 shrink-0">No la hice</span>}
 
         {priority !== "normal" && !completada && (
           <span className={`text-xs px-2 py-0.5 rounded-md ${PRIORITY_CLASS[priority]}`}>
