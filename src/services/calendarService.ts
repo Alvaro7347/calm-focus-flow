@@ -42,7 +42,10 @@ export interface CalendarEvent {
   start: Date;
   end: Date;
   allDay: boolean;
+  /** true si está completada o marcada "No la hice" (se ve tachada). */
   completada: boolean;
+  /** Marcada como "No la hice" / "No fui". */
+  noHecha?: boolean;
   source: EventSource;
   /**
    * Prioridad propagada desde la Tarea original. Se declara aquí
@@ -86,7 +89,8 @@ function tareaToEvent(t: Tarea): CalendarEvent | null {
     start,
     end,
     allDay,
-    completada: t.completada ?? false,
+    completada: (t.completada || t.noHecha) ?? false,
+    noHecha: t.noHecha,
     priority: t.priority ?? "normal",
     source: "calmapp",
     tarea: t,
