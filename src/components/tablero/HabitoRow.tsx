@@ -80,13 +80,15 @@ export function HabitoRow({ habito }: { habito: HabitoNode }) {
                 className={`h-2.5 w-2.5 rounded-full ${
                   d.cumplido
                     ? "bg-emerald-500"
-                    : !d.esperado
+                    : d.noHecho
+                      ? "bg-rose-300"
+                      : !d.esperado
                       ? "bg-transparent border border-dashed border-slate-200"
                       : d.futuro
                         ? "bg-slate-100"
                         : "bg-slate-200"
                 }`}
-                title={d.fecha}
+                title={d.noHecho ? `${d.fecha} · No lo hice` : d.fecha}
               />
               <span className="text-[9px] leading-none text-slate-400">{d.inicial}</span>
             </div>
