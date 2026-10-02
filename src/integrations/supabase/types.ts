@@ -262,6 +262,44 @@ export type Database = {
           },
         ]
       }
+      dimensions: {
+        Row: {
+          archived_at: string | null
+          area_id: string
+          created_at: string
+          display_order: number
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          archived_at?: string | null
+          area_id: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          archived_at?: string | null
+          area_id?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dimensions_area_id_fkey"
+            columns: ["area_id"]
+            isOneToOne: false
+            referencedRelation: "areas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       experiment_assignments: {
         Row: {
           assigned_at: string
@@ -430,6 +468,7 @@ export type Database = {
           name: string
           reason_text: string | null
           updated_at: string
+          dimension_id: string | null
         }
         Insert: {
           archived_at?: string | null
@@ -441,6 +480,7 @@ export type Database = {
           name: string
           reason_text?: string | null
           updated_at?: string
+          dimension_id?: string | null
         }
         Update: {
           archived_at?: string | null
@@ -452,8 +492,16 @@ export type Database = {
           name?: string
           reason_text?: string | null
           updated_at?: string
+          dimension_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "habits_dimension_id_fkey"
+            columns: ["dimension_id"]
+            isOneToOne: false
+            referencedRelation: "dimensions"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "habits_area_id_fkey"
             columns: ["area_id"]
@@ -638,6 +686,7 @@ export type Database = {
           updated_at: string
           vision_image_url: string | null
           vision_text: string | null
+          dimension_id: string | null
         }
         Insert: {
           archived_at?: string | null
@@ -652,6 +701,7 @@ export type Database = {
           updated_at?: string
           vision_image_url?: string | null
           vision_text?: string | null
+          dimension_id?: string | null
         }
         Update: {
           archived_at?: string | null
@@ -666,8 +716,16 @@ export type Database = {
           updated_at?: string
           vision_image_url?: string | null
           vision_text?: string | null
+          dimension_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "objectives_dimension_id_fkey"
+            columns: ["dimension_id"]
+            isOneToOne: false
+            referencedRelation: "dimensions"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "objectives_area_id_fkey"
             columns: ["area_id"]
@@ -735,6 +793,7 @@ export type Database = {
           updated_at: string
           vision_image_url: string | null
           vision_text: string | null
+          dimension_id: string | null
         }
         Insert: {
           archived_at?: string | null
@@ -751,6 +810,7 @@ export type Database = {
           updated_at?: string
           vision_image_url?: string | null
           vision_text?: string | null
+          dimension_id?: string | null
         }
         Update: {
           archived_at?: string | null
@@ -767,8 +827,16 @@ export type Database = {
           updated_at?: string
           vision_image_url?: string | null
           vision_text?: string | null
+          dimension_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "projects_dimension_id_fkey"
+            columns: ["dimension_id"]
+            isOneToOne: false
+            referencedRelation: "dimensions"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "projects_area_id_fkey"
             columns: ["area_id"]
@@ -932,6 +1000,7 @@ export type Database = {
           title: string
           updated_at: string
           user_id: string
+          dimension_id: string | null
         }
         Insert: {
           activity_type?: Database["public"]["Enums"]["activity_type"]
@@ -956,6 +1025,7 @@ export type Database = {
           title: string
           updated_at?: string
           user_id: string
+          dimension_id?: string | null
         }
         Update: {
           activity_type?: Database["public"]["Enums"]["activity_type"]
@@ -980,8 +1050,16 @@ export type Database = {
           title?: string
           updated_at?: string
           user_id?: string
+          dimension_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "tasks_dimension_id_fkey"
+            columns: ["dimension_id"]
+            isOneToOne: false
+            referencedRelation: "dimensions"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "tasks_area_id_fkey"
             columns: ["area_id"]
@@ -1090,7 +1168,7 @@ export type Database = {
       progress_mode: "auto" | "manual"
       task_priority: "high" | "medium" | "low"
       task_source: "text" | "voice" | "manual" | "import" | "api"
-      task_status: "pending" | "completed" | "waiting"
+      task_status: "pending" | "completed" | "waiting" | "not_done"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1223,7 +1301,7 @@ export const Constants = {
       progress_mode: ["auto", "manual"],
       task_priority: ["high", "medium", "low"],
       task_source: ["text", "voice", "manual", "import", "api"],
-      task_status: ["pending", "completed", "waiting"],
+      task_status: ["pending", "completed", "waiting", "not_done"],
     },
   },
 } as const
