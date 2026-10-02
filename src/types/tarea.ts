@@ -74,6 +74,8 @@ export interface Tarea {
   vencida?: boolean;
   diasSinActividad?: number;
   completada?: boolean;
+  /** Marcada como "No la hice" / "No fui" (status = not_done). */
+  noHecha?: boolean;
   recurrencia?: RecurrenceRule;
   /** Prioridad de la tarea. Si no se define, se asume "normal". */
   priority?: Priority;
