@@ -201,8 +201,8 @@ export interface FileRoutesByFullPath {
   '/ajustes/ia': typeof AjustesIaRoute
   '/ajustes/notificaciones': typeof AjustesNotificacionesRoute
   '/ajustes/organizacion': typeof AjustesOrganizacionRoute
-  '/ajustes/semana': typeof AjustesSemanaRoute
   '/ajustes/productividad': typeof AjustesProductividadRoute
+  '/ajustes/semana': typeof AjustesSemanaRoute
   '/legal/licencias': typeof LegalLicenciasRoute
   '/legal/privacidad': typeof LegalPrivacidadRoute
   '/legal/terminos': typeof LegalTerminosRoute
@@ -229,8 +229,8 @@ export interface FileRoutesByTo {
   '/ajustes/ia': typeof AjustesIaRoute
   '/ajustes/notificaciones': typeof AjustesNotificacionesRoute
   '/ajustes/organizacion': typeof AjustesOrganizacionRoute
-  '/ajustes/semana': typeof AjustesSemanaRoute
   '/ajustes/productividad': typeof AjustesProductividadRoute
+  '/ajustes/semana': typeof AjustesSemanaRoute
   '/legal/licencias': typeof LegalLicenciasRoute
   '/legal/privacidad': typeof LegalPrivacidadRoute
   '/legal/terminos': typeof LegalTerminosRoute
@@ -260,8 +260,8 @@ export interface FileRoutesById {
   '/ajustes/ia': typeof AjustesIaRoute
   '/ajustes/notificaciones': typeof AjustesNotificacionesRoute
   '/ajustes/organizacion': typeof AjustesOrganizacionRoute
-  '/ajustes/semana': typeof AjustesSemanaRoute
   '/ajustes/productividad': typeof AjustesProductividadRoute
+  '/ajustes/semana': typeof AjustesSemanaRoute
   '/legal/licencias': typeof LegalLicenciasRoute
   '/legal/privacidad': typeof LegalPrivacidadRoute
   '/legal/terminos': typeof LegalTerminosRoute
@@ -292,8 +292,8 @@ export interface FileRouteTypes {
     | '/ajustes/ia'
     | '/ajustes/notificaciones'
     | '/ajustes/organizacion'
-    | '/ajustes/semana'
     | '/ajustes/productividad'
+    | '/ajustes/semana'
     | '/legal/licencias'
     | '/legal/privacidad'
     | '/legal/terminos'
@@ -320,8 +320,8 @@ export interface FileRouteTypes {
     | '/ajustes/ia'
     | '/ajustes/notificaciones'
     | '/ajustes/organizacion'
-    | '/ajustes/semana'
     | '/ajustes/productividad'
+    | '/ajustes/semana'
     | '/legal/licencias'
     | '/legal/privacidad'
     | '/legal/terminos'
@@ -350,8 +350,8 @@ export interface FileRouteTypes {
     | '/ajustes/ia'
     | '/ajustes/notificaciones'
     | '/ajustes/organizacion'
-    | '/ajustes/semana'
     | '/ajustes/productividad'
+    | '/ajustes/semana'
     | '/legal/licencias'
     | '/legal/privacidad'
     | '/legal/terminos'
@@ -585,8 +585,8 @@ interface AjustesRouteChildren {
   AjustesIaRoute: typeof AjustesIaRoute
   AjustesNotificacionesRoute: typeof AjustesNotificacionesRoute
   AjustesOrganizacionRoute: typeof AjustesOrganizacionRoute
-  AjustesSemanaRoute: typeof AjustesSemanaRoute
   AjustesProductividadRoute: typeof AjustesProductividadRoute
+  AjustesSemanaRoute: typeof AjustesSemanaRoute
   AjustesIndexRoute: typeof AjustesIndexRoute
 }
 
@@ -597,8 +597,8 @@ const AjustesRouteChildren: AjustesRouteChildren = {
   AjustesIaRoute: AjustesIaRoute,
   AjustesNotificacionesRoute: AjustesNotificacionesRoute,
   AjustesOrganizacionRoute: AjustesOrganizacionRoute,
-  AjustesSemanaRoute: AjustesSemanaRoute,
   AjustesProductividadRoute: AjustesProductividadRoute,
+  AjustesSemanaRoute: AjustesSemanaRoute,
   AjustesIndexRoute: AjustesIndexRoute,
 }
 
