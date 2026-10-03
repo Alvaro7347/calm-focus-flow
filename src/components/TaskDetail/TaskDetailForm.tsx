@@ -99,6 +99,8 @@ import { invalidateActivityGraph } from "@/lib/queryInvalidation";
 import type { TaskCreateDefaults } from "@/services/weeklyRitualService";
 import { VisionActivaBanner } from "@/components/vision/VisionActivaBanner";
 import { DimensionSelect } from "@/components/dimensiones/DimensionSelect";
+import { TagPicker } from "@/components/etiquetas/TagPicker";
+import { fetchTaskTagIds, setTaskTags } from "@/services/tagService";
 import type { AreaRow, ProjectRow, SubprojectRow } from "@/types/tarea";
 import type { ObjectiveRow, GoalRow } from "@/types/objetivo";
 import type { HabitRow } from "@/types/habito";
@@ -216,6 +218,27 @@ export function TaskDetailForm({
       .catch(() => {
         // Silencioso: sin alarma precargada.
       });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialTask?.task.id]);
+
+  // ---------- Etiquetas ----------
+  const [tagIds, setTagIds] = useState<string[]>([]);
+  const [tagIdsInicial, setTagIdsInicial] = useState<string[]>([]);
+
+  useEffect(() => {
+    // En edit y duplicate precargamos las etiquetas de la actividad original.
+    const srcId = initialTask?.task.id;
+    if (!srcId) return;
+    let cancelled = false;
+    fetchTaskTagIds(srcId).then((ids) => {
+      if (cancelled) return;
+      setTagIds(ids);
+      // En duplicate la copia aún no tiene etiquetas: se considerará cambio.
+      setTagIdsInicial(isDuplicate ? [] : ids);
+    });
     return () => {
       cancelled = true;
     };
@@ -772,6 +795,17 @@ export function TaskDetailForm({
         }
       }
 
+      // Etiquetas: sólo si cambiaron (no depende de la migración si no se usan).
+      const tagsCambiaron =
+        tagIds.length !== tagIdsInicial.length || tagIds.some((id) => !tagIdsInicial.includes(id));
+      if (tagsCambiaron) {
+        try {
+          await setTaskTags(saved.id, tagIds);
+        } catch {
+          toast.warning("Se guardó, pero no se pudieron guardar las etiquetas.");
+        }
+      }
+
       await invalidateAll();
       onSaved?.(saved);
     } catch (err) {
@@ -1187,6 +1221,9 @@ export function TaskDetailForm({
               </p>
             </div>
             )}
+
+            {/* Etiquetas: cruzan el árbol (p. ej. Instagram, Contenido). */}
+            <TagPicker value={tagIds} onChange={setTagIds} disabled={saving} />
 
             {/* Tarea directa: puede vivir en una Dimensión del Área. */}
             {vinculo === "ninguno" && (
