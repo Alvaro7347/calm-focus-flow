@@ -17,6 +17,7 @@
 import { useState } from "react";
 import type { Tarea, Priority } from "@/types/tarea";
 import { Check, Circle, X } from "lucide-react";
+import { TagChips } from "@/components/etiquetas/TagChips";
 import { TaskDetailSheet } from "@/components/TaskDetail";
 
 interface Props {
@@ -83,6 +84,8 @@ export function TareaRow({ tarea }: Props) {
         </span>
 
         {noHecha && <span className="text-xs text-rose-500 shrink-0">No la hice</span>}
+
+        <TagChips taskId={tarea.id} />
 
         {priority !== "normal" && !completada && (
           <span className={`text-xs px-2 py-0.5 rounded-md ${PRIORITY_CLASS[priority]}`}>
