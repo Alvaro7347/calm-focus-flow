@@ -16,7 +16,8 @@
 
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
 // deno-lint-ignore no-explicit-any
-import webpush from "npm:web-push@3.6.7";
+// @ts-ignore: módulo remoto resuelto por Deno en runtime
+import webpush from "https://esm.sh/web-push@3.6.7";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
