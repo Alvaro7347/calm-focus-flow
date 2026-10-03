@@ -12,6 +12,7 @@ import {
   Brain,
   Info,
   CalendarHeart,
+  Tag,
 } from "lucide-react";
 import { SettingsRow } from "@/components/settings/SettingsRow";
 
@@ -44,9 +45,17 @@ function AjustesIndex() {
           to="/ajustes/organizacion"
           icon={FolderTree}
           title="Organización"
-          description="Áreas, Proyectos y Etapas"
+          description="Áreas, Dimensiones, Proyectos y más"
           iconColor="text-indigo-600"
           iconBg="bg-indigo-50"
+        />
+        <SettingsRow
+          to="/ajustes/etiquetas"
+          icon={Tag}
+          title="Etiquetas"
+          description="Para medir por canal, función o como prefieras"
+          iconColor="text-fuchsia-600"
+          iconBg="bg-fuchsia-50"
         />
         <SettingsRow
           to="/ajustes/apariencia"
