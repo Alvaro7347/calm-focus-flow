@@ -13,6 +13,15 @@
 -- Se mueven Proyectos (con Etapas), Objetivos (con Metas), Hábitos
 -- (con registros) y Tareas, incluidos los archivados (historial).
 -- Lo que en "Proyectos Profesionales" YA tuviera Dimensión no se toca.
+--
+-- Nombres repetidos (no puede haber dos con el mismo nombre en un Área):
+--  - Proyecto "OperativApp": se FUSIONAN los dos. Se conserva el de
+--    Proyectos Profesionales y recibe las Etapas y Tareas del de la
+--    panadería. Etapas con el mismo nombre se unen (sus tareas pasan a
+--    la Etapa existente). El OperativApp de la panadería queda vacío y
+--    archivado, junto con su Área.
+--  - Cualquier otro Proyecto/Objetivo/Hábito repetido de la panadería
+--    se renombra agregando " (Panadería)".
 -- Nada se borra: el Área de la panadería queda ARCHIVADA y vacía, y
 -- sus Dimensiones (si tenía) quedan archivadas.
 --
@@ -33,6 +42,10 @@ DECLARE
   v_dim_dev UUID;
   v_dim_pan UUID;
   v_count INTEGER;
+  v_src UUID;   -- OperativApp de la panadería (origen de la fusión)
+  v_dst UUID;   -- OperativApp de Proyectos Profesionales (se conserva)
+  r_stage RECORD;
+  v_same_stage UUID;
 BEGIN
   -- 0) Cuenta del usuario dueño de los datos
   SELECT id INTO v_owner FROM auth.users WHERE lower(email) = 'contacto@re-cuerda.cl' LIMIT 1;
@@ -85,9 +98,62 @@ BEGIN
   WHERE area_id = v_pp AND dimension_id IS NULL
     AND subproject_id IS NULL AND goal_id IS NULL AND habit_id IS NULL;
 
-  -- 5) Todo lo de la panadería → Proyectos Profesionales / "Panadería"
+  -- 5a) Fusión de "OperativApp"
+  SELECT id INTO v_src FROM public.projects
+  WHERE area_id = v_pan AND lower(btrim(name)) = 'operativapp' LIMIT 1;
+  SELECT id INTO v_dst FROM public.projects
+  WHERE area_id = v_pp AND lower(btrim(name)) = 'operativapp' LIMIT 1;
+
+  IF v_src IS NOT NULL AND v_dst IS NOT NULL THEN
+    -- Conservar visión y fecha objetivo del origen si el destino no las tiene
+    UPDATE public.projects d
+    SET vision_text = COALESCE(d.vision_text, s.vision_text),
+        target_date = COALESCE(d.target_date, s.target_date)
+    FROM public.projects s
+    WHERE d.id = v_dst AND s.id = v_src;
+
+    FOR r_stage IN SELECT id, name FROM public.subprojects WHERE project_id = v_src LOOP
+      SELECT id INTO v_same_stage FROM public.subprojects
+      WHERE project_id = v_dst AND lower(btrim(name)) = lower(btrim(r_stage.name))
+      LIMIT 1;
+
+      IF v_same_stage IS NOT NULL THEN
+        -- Etapa con el mismo nombre: sus tareas pasan a la Etapa existente
+        UPDATE public.tasks
+        SET subproject_id = v_same_stage, area_id = v_pp, dimension_id = NULL
+        WHERE subproject_id = r_stage.id;
+        UPDATE public.subprojects SET archived_at = COALESCE(archived_at, now())
+        WHERE id = r_stage.id;
+      ELSE
+        -- Etapa distinta: se mueve completa al OperativApp destino
+        UPDATE public.subprojects SET project_id = v_dst WHERE id = r_stage.id;
+      END IF;
+    END LOOP;
+
+    -- El OperativApp de la panadería queda vacío y archivado (no se mueve)
+    UPDATE public.projects SET archived_at = COALESCE(archived_at, now()) WHERE id = v_src;
+  ELSE
+    v_src := NULL;
+  END IF;
+
+  -- 5b) Otros nombres repetidos: se renombran con " (Panadería)"
+  UPDATE public.projects p SET name = p.name || ' (Panadería)'
+  WHERE p.area_id = v_pan AND p.id IS DISTINCT FROM v_src
+    AND EXISTS (SELECT 1 FROM public.projects q
+                WHERE q.area_id = v_pp AND lower(q.name) = lower(p.name));
+  UPDATE public.objectives o SET name = o.name || ' (Panadería)'
+  WHERE o.area_id = v_pan
+    AND EXISTS (SELECT 1 FROM public.objectives q
+                WHERE q.area_id = v_pp AND lower(q.name) = lower(o.name));
+  UPDATE public.habits h SET name = h.name || ' (Panadería)'
+  WHERE h.area_id = v_pan
+    AND EXISTS (SELECT 1 FROM public.habits q
+                WHERE q.area_id = v_pp AND lower(q.name) = lower(h.name));
+
+  -- 5c) Todo lo de la panadería → Proyectos Profesionales / "Panadería"
   --    (Área y Dimensión juntas; Etapas, Metas y registros viajan solos)
-  UPDATE public.projects   SET area_id = v_pp, dimension_id = v_dim_pan WHERE area_id = v_pan;
+  UPDATE public.projects   SET area_id = v_pp, dimension_id = v_dim_pan
+  WHERE area_id = v_pan AND id IS DISTINCT FROM v_src;
   UPDATE public.objectives SET area_id = v_pp, dimension_id = v_dim_pan WHERE area_id = v_pan;
   UPDATE public.habits     SET area_id = v_pp, dimension_id = v_dim_pan WHERE area_id = v_pan;
 
