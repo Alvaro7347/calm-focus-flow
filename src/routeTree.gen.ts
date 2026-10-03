@@ -30,6 +30,7 @@ import { Route as LegalTerminosRouteImport } from './routes/legal.terminos'
 import { Route as LegalPrivacidadRouteImport } from './routes/legal.privacidad'
 import { Route as LegalLicenciasRouteImport } from './routes/legal.licencias'
 import { Route as AjustesSemanaRouteImport } from './routes/ajustes.semana'
+import { Route as AjustesEtiquetasRouteImport } from './routes/ajustes.etiquetas'
 import { Route as AjustesProductividadRouteImport } from './routes/ajustes.productividad'
 import { Route as AjustesOrganizacionRouteImport } from './routes/ajustes.organizacion'
 import { Route as AjustesNotificacionesRouteImport } from './routes/ajustes.notificaciones'
@@ -138,6 +139,11 @@ const LegalLicenciasRoute = LegalLicenciasRouteImport.update({
   path: '/licencias',
   getParentRoute: () => LegalRoute,
 } as any)
+const AjustesEtiquetasRoute = AjustesEtiquetasRouteImport.update({
+  id: '/etiquetas',
+  path: '/etiquetas',
+  getParentRoute: () => AjustesRoute,
+} as any)
 const AjustesSemanaRoute = AjustesSemanaRouteImport.update({
   id: '/semana',
   path: '/semana',
@@ -202,6 +208,7 @@ export interface FileRoutesByFullPath {
   '/ajustes/notificaciones': typeof AjustesNotificacionesRoute
   '/ajustes/organizacion': typeof AjustesOrganizacionRoute
   '/ajustes/productividad': typeof AjustesProductividadRoute
+  '/ajustes/etiquetas': typeof AjustesEtiquetasRoute
   '/ajustes/semana': typeof AjustesSemanaRoute
   '/legal/licencias': typeof LegalLicenciasRoute
   '/legal/privacidad': typeof LegalPrivacidadRoute
@@ -230,6 +237,7 @@ export interface FileRoutesByTo {
   '/ajustes/notificaciones': typeof AjustesNotificacionesRoute
   '/ajustes/organizacion': typeof AjustesOrganizacionRoute
   '/ajustes/productividad': typeof AjustesProductividadRoute
+  '/ajustes/etiquetas': typeof AjustesEtiquetasRoute
   '/ajustes/semana': typeof AjustesSemanaRoute
   '/legal/licencias': typeof LegalLicenciasRoute
   '/legal/privacidad': typeof LegalPrivacidadRoute
@@ -261,6 +269,7 @@ export interface FileRoutesById {
   '/ajustes/notificaciones': typeof AjustesNotificacionesRoute
   '/ajustes/organizacion': typeof AjustesOrganizacionRoute
   '/ajustes/productividad': typeof AjustesProductividadRoute
+  '/ajustes/etiquetas': typeof AjustesEtiquetasRoute
   '/ajustes/semana': typeof AjustesSemanaRoute
   '/legal/licencias': typeof LegalLicenciasRoute
   '/legal/privacidad': typeof LegalPrivacidadRoute
@@ -293,6 +302,7 @@ export interface FileRouteTypes {
     | '/ajustes/notificaciones'
     | '/ajustes/organizacion'
     | '/ajustes/productividad'
+    | '/ajustes/etiquetas'
     | '/ajustes/semana'
     | '/legal/licencias'
     | '/legal/privacidad'
@@ -321,6 +331,7 @@ export interface FileRouteTypes {
     | '/ajustes/notificaciones'
     | '/ajustes/organizacion'
     | '/ajustes/productividad'
+    | '/ajustes/etiquetas'
     | '/ajustes/semana'
     | '/legal/licencias'
     | '/legal/privacidad'
@@ -351,6 +362,7 @@ export interface FileRouteTypes {
     | '/ajustes/notificaciones'
     | '/ajustes/organizacion'
     | '/ajustes/productividad'
+    | '/ajustes/etiquetas'
     | '/ajustes/semana'
     | '/legal/licencias'
     | '/legal/privacidad'
@@ -519,6 +531,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LegalLicenciasRouteImport
       parentRoute: typeof LegalRoute
     }
+    '/ajustes/etiquetas': {
+      id: '/ajustes/etiquetas'
+      path: '/etiquetas'
+      fullPath: '/ajustes/etiquetas'
+      preLoaderRoute: typeof AjustesEtiquetasRouteImport
+      parentRoute: typeof AjustesRoute
+    }
     '/ajustes/semana': {
       id: '/ajustes/semana'
       path: '/semana'
@@ -586,6 +605,7 @@ interface AjustesRouteChildren {
   AjustesNotificacionesRoute: typeof AjustesNotificacionesRoute
   AjustesOrganizacionRoute: typeof AjustesOrganizacionRoute
   AjustesProductividadRoute: typeof AjustesProductividadRoute
+  AjustesEtiquetasRoute: typeof AjustesEtiquetasRoute
   AjustesSemanaRoute: typeof AjustesSemanaRoute
   AjustesIndexRoute: typeof AjustesIndexRoute
 }
@@ -598,6 +618,7 @@ const AjustesRouteChildren: AjustesRouteChildren = {
   AjustesNotificacionesRoute: AjustesNotificacionesRoute,
   AjustesOrganizacionRoute: AjustesOrganizacionRoute,
   AjustesProductividadRoute: AjustesProductividadRoute,
+  AjustesEtiquetasRoute: AjustesEtiquetasRoute,
   AjustesSemanaRoute: AjustesSemanaRoute,
   AjustesIndexRoute: AjustesIndexRoute,
 }
