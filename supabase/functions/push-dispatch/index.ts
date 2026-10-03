@@ -14,7 +14,7 @@
 // Autenticación: header `x-dispatch-secret` que debe coincidir con
 // PUSH_DISPATCH_SECRET. No expone service_role al cliente.
 
-import { createClient } from "npm:@supabase/supabase-js@2.45.4";
+import { createClient } from "npm:@supabase/supabase-js@2.110.0";
 // deno-lint-ignore no-explicit-any
 // Especificador npm: (soportado oficialmente por Supabase Edge Functions).
 // Es el que venía funcionando; el @ts-ignore sólo silencia al chequeo de
