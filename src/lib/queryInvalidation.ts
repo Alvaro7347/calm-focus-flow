@@ -64,6 +64,8 @@ export const ACTIVITY_GRAPH_QUERY_KEYS: readonly QueryKey[] = [
   ["organizacion"],
   ["weekly-ritual"],
   ["dimensions"],
+  ["tags"],
+  ["task-tags-map"],
 ] as const;
 
 export interface InvalidateActivityGraphOptions {
