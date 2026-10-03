@@ -16,8 +16,11 @@
 
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
 // deno-lint-ignore no-explicit-any
-// @ts-ignore: módulo remoto resuelto por Deno en runtime
-import webpush from "https://esm.sh/web-push@3.6.7";
+// Especificador npm: (soportado oficialmente por Supabase Edge Functions).
+// Es el que venía funcionando; el @ts-ignore sólo silencia al chequeo de
+// TypeScript del frontend, que no entiende "npm:" (Deno sí).
+// @ts-ignore: especificador npm: resuelto por Deno en runtime
+import webpush from "npm:web-push@3.6.7";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
