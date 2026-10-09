@@ -4,7 +4,8 @@
  *
  *   ÁREA
  *   └── DIMENSIÓN (desplegable)
- *         ├── Proyectos  ├── Objetivos  ├── Hábitos  └── Tareas directas
+ *         ├── Proyectos  ├── Objetivos  ├── Hábitos  ├── Rutinas
+ *         └── Tareas directas
  *
  * - "+ Dimensión" crea una Dimensión (sólo el usuario las crea).
  * - Menú de cada Dimensión: Renombrar · Archivar (DimensionActions,
@@ -23,6 +24,8 @@ import { HabitoRow } from "@/components/tablero/HabitoRow";
 import { TareaRow } from "@/components/tablero/TareaRow";
 import { CrearNodoDialog } from "@/components/settings/CrearNodoDialog";
 import { TaskDetailSheet } from "@/components/TaskDetail";
+import { RutinaRow } from "@/components/rutinas/RutinaRow";
+import { RutinaDialog } from "@/components/rutinas/RutinaDialog";
 import type { AreaNode, DimensionNode } from "@/services/tableroService";
 import { DimensionMenu, NewDimensionButton } from "./DimensionActions";
 
@@ -89,6 +92,7 @@ function DimensionCard({
   const proyectos = area.proyectos.filter((p) => p.dimensionId === dim.id);
   const objetivos = area.objetivos.filter((o) => o.dimensionId === dim.id);
   const habitos = area.habitos.filter((h) => h.dimensionId === dim.id);
+  const rutinas = (area.rutinas ?? []).filter((r) => r.dimensionId === dim.id);
   const tareas = [...dim.tareas].sort(
     (a, b) => Number(!!a.completada || !!a.noHecha) - Number(!!b.completada || !!b.noHecha),
   );
@@ -99,11 +103,13 @@ function DimensionCard({
   const [open, setOpen] = useState(containsUrlTarget);
   const [newTask, setNewTask] = useState(false);
 
-  const empty = proyectos.length + objetivos.length + habitos.length + tareas.length === 0;
+  const empty =
+    proyectos.length + objetivos.length + habitos.length + rutinas.length + tareas.length === 0;
   const resumen = [
     proyectos.length ? `${proyectos.length} proy.` : null,
     objetivos.length ? `${objetivos.length} obj.` : null,
     habitos.length ? `${habitos.length} háb.` : null,
+    rutinas.length ? `${rutinas.length} rut.` : null,
     dim.tareasPendientes ? `${dim.tareasPendientes} tareas` : null,
   ]
     .filter(Boolean)
@@ -172,6 +178,14 @@ function DimensionCard({
             </Group>
           )}
 
+          {rutinas.length > 0 && (
+            <Group title="Rutinas">
+              {rutinas.map((r) => (
+                <RutinaRow key={r.id} rutina={r} />
+              ))}
+            </Group>
+          )}
+
           {tareas.length > 0 && (
             <Group title="Tareas">
               <ul className="px-1">
@@ -210,6 +224,7 @@ function DimensionCard({
               dimensionId={dim.id}
               triggerLabel="Hábito"
             />
+            <RutinaDialog mode="create" areaId={area.id} dimensionId={dim.id} triggerLabel="Rutina" />
           </div>
         </div>
       ) : null}
