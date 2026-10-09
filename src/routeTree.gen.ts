@@ -9,99 +9,39 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as TableroRouteImport } from './routes/tablero'
-import { Route as ResetPasswordRouteImport } from './routes/reset-password'
-import { Route as RegistroRouteImport } from './routes/registro'
-import { Route as RecuperarContrasenaRouteImport } from './routes/recuperar-contrasena'
-import { Route as PrimeraDescargaRouteImport } from './routes/primera-descarga'
-import { Route as NuevaTareaRouteImport } from './routes/nueva-tarea'
-import { Route as MiCuentaRouteImport } from './routes/mi-cuenta'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as LegalRouteImport } from './routes/legal'
-import { Route as FocoRouteImport } from './routes/foco'
-import { Route as CrearTareaRouteImport } from './routes/crear-tarea'
-import { Route as CalendarioRouteImport } from './routes/calendario'
-import { Route as AjustesRouteImport } from './routes/ajustes'
-import { Route as ActivarNotificacionesRouteImport } from './routes/activar-notificaciones'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as LegalIndexRouteImport } from './routes/legal.index'
+import { Route as ActivarNotificacionesRouteImport } from './routes/activar-notificaciones'
+import { Route as AjustesRouteImport } from './routes/ajustes'
+import { Route as CalendarioRouteImport } from './routes/calendario'
+import { Route as CrearTareaRouteImport } from './routes/crear-tarea'
+import { Route as FocoRouteImport } from './routes/foco'
+import { Route as LegalRouteImport } from './routes/legal'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as MiCuentaRouteImport } from './routes/mi-cuenta'
+import { Route as NuevaTareaRouteImport } from './routes/nueva-tarea'
+import { Route as PrimeraDescargaRouteImport } from './routes/primera-descarga'
+import { Route as RecuperarContrasenaRouteImport } from './routes/recuperar-contrasena'
+import { Route as RegistroRouteImport } from './routes/registro'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as TableroRouteImport } from './routes/tablero'
 import { Route as AjustesIndexRouteImport } from './routes/ajustes.index'
-import { Route as LegalTerminosRouteImport } from './routes/legal.terminos'
-import { Route as LegalPrivacidadRouteImport } from './routes/legal.privacidad'
-import { Route as LegalLicenciasRouteImport } from './routes/legal.licencias'
-import { Route as AjustesSemanaRouteImport } from './routes/ajustes.semana'
-import { Route as AjustesEtiquetasRouteImport } from './routes/ajustes.etiquetas'
-import { Route as AjustesProductividadRouteImport } from './routes/ajustes.productividad'
-import { Route as AjustesOrganizacionRouteImport } from './routes/ajustes.organizacion'
-import { Route as AjustesNotificacionesRouteImport } from './routes/ajustes.notificaciones'
-import { Route as AjustesIaRouteImport } from './routes/ajustes.ia'
-import { Route as AjustesCalendarioRouteImport } from './routes/ajustes.calendario'
-import { Route as AjustesAparienciaRouteImport } from './routes/ajustes.apariencia'
 import { Route as AjustesAcercaDeRouteImport } from './routes/ajustes.acerca-de'
+import { Route as AjustesAparienciaRouteImport } from './routes/ajustes.apariencia'
+import { Route as AjustesCalendarioRouteImport } from './routes/ajustes.calendario'
+import { Route as AjustesEtiquetasRouteImport } from './routes/ajustes.etiquetas'
+import { Route as AjustesIaRouteImport } from './routes/ajustes.ia'
+import { Route as AjustesNotificacionesRouteImport } from './routes/ajustes.notificaciones'
+import { Route as AjustesOrganizacionRouteImport } from './routes/ajustes.organizacion'
+import { Route as AjustesProductividadRouteImport } from './routes/ajustes.productividad'
+import { Route as AjustesSemanaRouteImport } from './routes/ajustes.semana'
+import { Route as LegalIndexRouteImport } from './routes/legal.index'
+import { Route as LegalLicenciasRouteImport } from './routes/legal.licencias'
+import { Route as LegalPrivacidadRouteImport } from './routes/legal.privacidad'
+import { Route as LegalTerminosRouteImport } from './routes/legal.terminos'
 
-const TableroRoute = TableroRouteImport.update({
-  id: '/tablero',
-  path: '/tablero',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ResetPasswordRoute = ResetPasswordRouteImport.update({
-  id: '/reset-password',
-  path: '/reset-password',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const RegistroRoute = RegistroRouteImport.update({
-  id: '/registro',
-  path: '/registro',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const RecuperarContrasenaRoute = RecuperarContrasenaRouteImport.update({
-  id: '/recuperar-contrasena',
-  path: '/recuperar-contrasena',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PrimeraDescargaRoute = PrimeraDescargaRouteImport.update({
-  id: '/primera-descarga',
-  path: '/primera-descarga',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const NuevaTareaRoute = NuevaTareaRouteImport.update({
-  id: '/nueva-tarea',
-  path: '/nueva-tarea',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MiCuentaRoute = MiCuentaRouteImport.update({
-  id: '/mi-cuenta',
-  path: '/mi-cuenta',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LegalRoute = LegalRouteImport.update({
-  id: '/legal',
-  path: '/legal',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const FocoRoute = FocoRouteImport.update({
-  id: '/foco',
-  path: '/foco',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CrearTareaRoute = CrearTareaRouteImport.update({
-  id: '/crear-tarea',
-  path: '/crear-tarea',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CalendarioRoute = CalendarioRouteImport.update({
-  id: '/calendario',
-  path: '/calendario',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AjustesRoute = AjustesRouteImport.update({
-  id: '/ajustes',
-  path: '/ajustes',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ActivarNotificacionesRoute = ActivarNotificacionesRouteImport.update({
@@ -109,69 +49,79 @@ const ActivarNotificacionesRoute = ActivarNotificacionesRouteImport.update({
   path: '/activar-notificaciones',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const AjustesRoute = AjustesRouteImport.update({
+  id: '/ajustes',
+  path: '/ajustes',
   getParentRoute: () => rootRouteImport,
 } as any)
-const LegalIndexRoute = LegalIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => LegalRoute,
+const CalendarioRoute = CalendarioRouteImport.update({
+  id: '/calendario',
+  path: '/calendario',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CrearTareaRoute = CrearTareaRouteImport.update({
+  id: '/crear-tarea',
+  path: '/crear-tarea',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FocoRoute = FocoRouteImport.update({
+  id: '/foco',
+  path: '/foco',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LegalRoute = LegalRouteImport.update({
+  id: '/legal',
+  path: '/legal',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MiCuentaRoute = MiCuentaRouteImport.update({
+  id: '/mi-cuenta',
+  path: '/mi-cuenta',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NuevaTareaRoute = NuevaTareaRouteImport.update({
+  id: '/nueva-tarea',
+  path: '/nueva-tarea',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrimeraDescargaRoute = PrimeraDescargaRouteImport.update({
+  id: '/primera-descarga',
+  path: '/primera-descarga',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RecuperarContrasenaRoute = RecuperarContrasenaRouteImport.update({
+  id: '/recuperar-contrasena',
+  path: '/recuperar-contrasena',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RegistroRoute = RegistroRouteImport.update({
+  id: '/registro',
+  path: '/registro',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TableroRoute = TableroRouteImport.update({
+  id: '/tablero',
+  path: '/tablero',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AjustesIndexRoute = AjustesIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AjustesRoute,
 } as any)
-const LegalTerminosRoute = LegalTerminosRouteImport.update({
-  id: '/terminos',
-  path: '/terminos',
-  getParentRoute: () => LegalRoute,
-} as any)
-const LegalPrivacidadRoute = LegalPrivacidadRouteImport.update({
-  id: '/privacidad',
-  path: '/privacidad',
-  getParentRoute: () => LegalRoute,
-} as any)
-const LegalLicenciasRoute = LegalLicenciasRouteImport.update({
-  id: '/licencias',
-  path: '/licencias',
-  getParentRoute: () => LegalRoute,
-} as any)
-const AjustesEtiquetasRoute = AjustesEtiquetasRouteImport.update({
-  id: '/etiquetas',
-  path: '/etiquetas',
-  getParentRoute: () => AjustesRoute,
-} as any)
-const AjustesSemanaRoute = AjustesSemanaRouteImport.update({
-  id: '/semana',
-  path: '/semana',
-  getParentRoute: () => AjustesRoute,
-} as any)
-const AjustesProductividadRoute = AjustesProductividadRouteImport.update({
-  id: '/productividad',
-  path: '/productividad',
-  getParentRoute: () => AjustesRoute,
-} as any)
-const AjustesOrganizacionRoute = AjustesOrganizacionRouteImport.update({
-  id: '/organizacion',
-  path: '/organizacion',
-  getParentRoute: () => AjustesRoute,
-} as any)
-const AjustesNotificacionesRoute = AjustesNotificacionesRouteImport.update({
-  id: '/notificaciones',
-  path: '/notificaciones',
-  getParentRoute: () => AjustesRoute,
-} as any)
-const AjustesIaRoute = AjustesIaRouteImport.update({
-  id: '/ia',
-  path: '/ia',
-  getParentRoute: () => AjustesRoute,
-} as any)
-const AjustesCalendarioRoute = AjustesCalendarioRouteImport.update({
-  id: '/calendario',
-  path: '/calendario',
+const AjustesAcercaDeRoute = AjustesAcercaDeRouteImport.update({
+  id: '/acerca-de',
+  path: '/acerca-de',
   getParentRoute: () => AjustesRoute,
 } as any)
 const AjustesAparienciaRoute = AjustesAparienciaRouteImport.update({
@@ -179,10 +129,60 @@ const AjustesAparienciaRoute = AjustesAparienciaRouteImport.update({
   path: '/apariencia',
   getParentRoute: () => AjustesRoute,
 } as any)
-const AjustesAcercaDeRoute = AjustesAcercaDeRouteImport.update({
-  id: '/acerca-de',
-  path: '/acerca-de',
+const AjustesCalendarioRoute = AjustesCalendarioRouteImport.update({
+  id: '/calendario',
+  path: '/calendario',
   getParentRoute: () => AjustesRoute,
+} as any)
+const AjustesEtiquetasRoute = AjustesEtiquetasRouteImport.update({
+  id: '/etiquetas',
+  path: '/etiquetas',
+  getParentRoute: () => AjustesRoute,
+} as any)
+const AjustesIaRoute = AjustesIaRouteImport.update({
+  id: '/ia',
+  path: '/ia',
+  getParentRoute: () => AjustesRoute,
+} as any)
+const AjustesNotificacionesRoute = AjustesNotificacionesRouteImport.update({
+  id: '/notificaciones',
+  path: '/notificaciones',
+  getParentRoute: () => AjustesRoute,
+} as any)
+const AjustesOrganizacionRoute = AjustesOrganizacionRouteImport.update({
+  id: '/organizacion',
+  path: '/organizacion',
+  getParentRoute: () => AjustesRoute,
+} as any)
+const AjustesProductividadRoute = AjustesProductividadRouteImport.update({
+  id: '/productividad',
+  path: '/productividad',
+  getParentRoute: () => AjustesRoute,
+} as any)
+const AjustesSemanaRoute = AjustesSemanaRouteImport.update({
+  id: '/semana',
+  path: '/semana',
+  getParentRoute: () => AjustesRoute,
+} as any)
+const LegalIndexRoute = LegalIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => LegalRoute,
+} as any)
+const LegalLicenciasRoute = LegalLicenciasRouteImport.update({
+  id: '/licencias',
+  path: '/licencias',
+  getParentRoute: () => LegalRoute,
+} as any)
+const LegalPrivacidadRoute = LegalPrivacidadRouteImport.update({
+  id: '/privacidad',
+  path: '/privacidad',
+  getParentRoute: () => LegalRoute,
+} as any)
+const LegalTerminosRoute = LegalTerminosRouteImport.update({
+  id: '/terminos',
+  path: '/terminos',
+  getParentRoute: () => LegalRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -204,11 +204,11 @@ export interface FileRoutesByFullPath {
   '/ajustes/acerca-de': typeof AjustesAcercaDeRoute
   '/ajustes/apariencia': typeof AjustesAparienciaRoute
   '/ajustes/calendario': typeof AjustesCalendarioRoute
+  '/ajustes/etiquetas': typeof AjustesEtiquetasRoute
   '/ajustes/ia': typeof AjustesIaRoute
   '/ajustes/notificaciones': typeof AjustesNotificacionesRoute
   '/ajustes/organizacion': typeof AjustesOrganizacionRoute
   '/ajustes/productividad': typeof AjustesProductividadRoute
-  '/ajustes/etiquetas': typeof AjustesEtiquetasRoute
   '/ajustes/semana': typeof AjustesSemanaRoute
   '/legal/licencias': typeof LegalLicenciasRoute
   '/legal/privacidad': typeof LegalPrivacidadRoute
@@ -233,11 +233,11 @@ export interface FileRoutesByTo {
   '/ajustes/acerca-de': typeof AjustesAcercaDeRoute
   '/ajustes/apariencia': typeof AjustesAparienciaRoute
   '/ajustes/calendario': typeof AjustesCalendarioRoute
+  '/ajustes/etiquetas': typeof AjustesEtiquetasRoute
   '/ajustes/ia': typeof AjustesIaRoute
   '/ajustes/notificaciones': typeof AjustesNotificacionesRoute
   '/ajustes/organizacion': typeof AjustesOrganizacionRoute
   '/ajustes/productividad': typeof AjustesProductividadRoute
-  '/ajustes/etiquetas': typeof AjustesEtiquetasRoute
   '/ajustes/semana': typeof AjustesSemanaRoute
   '/legal/licencias': typeof LegalLicenciasRoute
   '/legal/privacidad': typeof LegalPrivacidadRoute
@@ -265,11 +265,11 @@ export interface FileRoutesById {
   '/ajustes/acerca-de': typeof AjustesAcercaDeRoute
   '/ajustes/apariencia': typeof AjustesAparienciaRoute
   '/ajustes/calendario': typeof AjustesCalendarioRoute
+  '/ajustes/etiquetas': typeof AjustesEtiquetasRoute
   '/ajustes/ia': typeof AjustesIaRoute
   '/ajustes/notificaciones': typeof AjustesNotificacionesRoute
   '/ajustes/organizacion': typeof AjustesOrganizacionRoute
   '/ajustes/productividad': typeof AjustesProductividadRoute
-  '/ajustes/etiquetas': typeof AjustesEtiquetasRoute
   '/ajustes/semana': typeof AjustesSemanaRoute
   '/legal/licencias': typeof LegalLicenciasRoute
   '/legal/privacidad': typeof LegalPrivacidadRoute
@@ -298,11 +298,11 @@ export interface FileRouteTypes {
     | '/ajustes/acerca-de'
     | '/ajustes/apariencia'
     | '/ajustes/calendario'
+    | '/ajustes/etiquetas'
     | '/ajustes/ia'
     | '/ajustes/notificaciones'
     | '/ajustes/organizacion'
     | '/ajustes/productividad'
-    | '/ajustes/etiquetas'
     | '/ajustes/semana'
     | '/legal/licencias'
     | '/legal/privacidad'
@@ -327,11 +327,11 @@ export interface FileRouteTypes {
     | '/ajustes/acerca-de'
     | '/ajustes/apariencia'
     | '/ajustes/calendario'
+    | '/ajustes/etiquetas'
     | '/ajustes/ia'
     | '/ajustes/notificaciones'
     | '/ajustes/organizacion'
     | '/ajustes/productividad'
-    | '/ajustes/etiquetas'
     | '/ajustes/semana'
     | '/legal/licencias'
     | '/legal/privacidad'
@@ -358,11 +358,11 @@ export interface FileRouteTypes {
     | '/ajustes/acerca-de'
     | '/ajustes/apariencia'
     | '/ajustes/calendario'
+    | '/ajustes/etiquetas'
     | '/ajustes/ia'
     | '/ajustes/notificaciones'
     | '/ajustes/organizacion'
     | '/ajustes/productividad'
-    | '/ajustes/etiquetas'
     | '/ajustes/semana'
     | '/legal/licencias'
     | '/legal/privacidad'
@@ -391,95 +391,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/tablero': {
-      id: '/tablero'
-      path: '/tablero'
-      fullPath: '/tablero'
-      preLoaderRoute: typeof TableroRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/reset-password': {
-      id: '/reset-password'
-      path: '/reset-password'
-      fullPath: '/reset-password'
-      preLoaderRoute: typeof ResetPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/registro': {
-      id: '/registro'
-      path: '/registro'
-      fullPath: '/registro'
-      preLoaderRoute: typeof RegistroRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/recuperar-contrasena': {
-      id: '/recuperar-contrasena'
-      path: '/recuperar-contrasena'
-      fullPath: '/recuperar-contrasena'
-      preLoaderRoute: typeof RecuperarContrasenaRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/primera-descarga': {
-      id: '/primera-descarga'
-      path: '/primera-descarga'
-      fullPath: '/primera-descarga'
-      preLoaderRoute: typeof PrimeraDescargaRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/nueva-tarea': {
-      id: '/nueva-tarea'
-      path: '/nueva-tarea'
-      fullPath: '/nueva-tarea'
-      preLoaderRoute: typeof NuevaTareaRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/mi-cuenta': {
-      id: '/mi-cuenta'
-      path: '/mi-cuenta'
-      fullPath: '/mi-cuenta'
-      preLoaderRoute: typeof MiCuentaRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/legal': {
-      id: '/legal'
-      path: '/legal'
-      fullPath: '/legal'
-      preLoaderRoute: typeof LegalRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/foco': {
-      id: '/foco'
-      path: '/foco'
-      fullPath: '/foco'
-      preLoaderRoute: typeof FocoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/crear-tarea': {
-      id: '/crear-tarea'
-      path: '/crear-tarea'
-      fullPath: '/crear-tarea'
-      preLoaderRoute: typeof CrearTareaRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/calendario': {
-      id: '/calendario'
-      path: '/calendario'
-      fullPath: '/calendario'
-      preLoaderRoute: typeof CalendarioRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/ajustes': {
-      id: '/ajustes'
-      path: '/ajustes'
-      fullPath: '/ajustes'
-      preLoaderRoute: typeof AjustesRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/activar-notificaciones': {
@@ -489,102 +405,102 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ActivarNotificacionesRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/ajustes': {
+      id: '/ajustes'
+      path: '/ajustes'
+      fullPath: '/ajustes'
+      preLoaderRoute: typeof AjustesRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/legal/': {
-      id: '/legal/'
-      path: '/'
-      fullPath: '/legal/'
-      preLoaderRoute: typeof LegalIndexRouteImport
-      parentRoute: typeof LegalRoute
+    '/calendario': {
+      id: '/calendario'
+      path: '/calendario'
+      fullPath: '/calendario'
+      preLoaderRoute: typeof CalendarioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/crear-tarea': {
+      id: '/crear-tarea'
+      path: '/crear-tarea'
+      fullPath: '/crear-tarea'
+      preLoaderRoute: typeof CrearTareaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/foco': {
+      id: '/foco'
+      path: '/foco'
+      fullPath: '/foco'
+      preLoaderRoute: typeof FocoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/legal': {
+      id: '/legal'
+      path: '/legal'
+      fullPath: '/legal'
+      preLoaderRoute: typeof LegalRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mi-cuenta': {
+      id: '/mi-cuenta'
+      path: '/mi-cuenta'
+      fullPath: '/mi-cuenta'
+      preLoaderRoute: typeof MiCuentaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/nueva-tarea': {
+      id: '/nueva-tarea'
+      path: '/nueva-tarea'
+      fullPath: '/nueva-tarea'
+      preLoaderRoute: typeof NuevaTareaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/primera-descarga': {
+      id: '/primera-descarga'
+      path: '/primera-descarga'
+      fullPath: '/primera-descarga'
+      preLoaderRoute: typeof PrimeraDescargaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/recuperar-contrasena': {
+      id: '/recuperar-contrasena'
+      path: '/recuperar-contrasena'
+      fullPath: '/recuperar-contrasena'
+      preLoaderRoute: typeof RecuperarContrasenaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/registro': {
+      id: '/registro'
+      path: '/registro'
+      fullPath: '/registro'
+      preLoaderRoute: typeof RegistroRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tablero': {
+      id: '/tablero'
+      path: '/tablero'
+      fullPath: '/tablero'
+      preLoaderRoute: typeof TableroRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/ajustes/': {
       id: '/ajustes/'
       path: '/'
       fullPath: '/ajustes/'
       preLoaderRoute: typeof AjustesIndexRouteImport
-      parentRoute: typeof AjustesRoute
-    }
-    '/legal/terminos': {
-      id: '/legal/terminos'
-      path: '/terminos'
-      fullPath: '/legal/terminos'
-      preLoaderRoute: typeof LegalTerminosRouteImport
-      parentRoute: typeof LegalRoute
-    }
-    '/legal/privacidad': {
-      id: '/legal/privacidad'
-      path: '/privacidad'
-      fullPath: '/legal/privacidad'
-      preLoaderRoute: typeof LegalPrivacidadRouteImport
-      parentRoute: typeof LegalRoute
-    }
-    '/legal/licencias': {
-      id: '/legal/licencias'
-      path: '/licencias'
-      fullPath: '/legal/licencias'
-      preLoaderRoute: typeof LegalLicenciasRouteImport
-      parentRoute: typeof LegalRoute
-    }
-    '/ajustes/etiquetas': {
-      id: '/ajustes/etiquetas'
-      path: '/etiquetas'
-      fullPath: '/ajustes/etiquetas'
-      preLoaderRoute: typeof AjustesEtiquetasRouteImport
-      parentRoute: typeof AjustesRoute
-    }
-    '/ajustes/semana': {
-      id: '/ajustes/semana'
-      path: '/semana'
-      fullPath: '/ajustes/semana'
-      preLoaderRoute: typeof AjustesSemanaRouteImport
-      parentRoute: typeof AjustesRoute
-    }
-    '/ajustes/productividad': {
-      id: '/ajustes/productividad'
-      path: '/productividad'
-      fullPath: '/ajustes/productividad'
-      preLoaderRoute: typeof AjustesProductividadRouteImport
-      parentRoute: typeof AjustesRoute
-    }
-    '/ajustes/organizacion': {
-      id: '/ajustes/organizacion'
-      path: '/organizacion'
-      fullPath: '/ajustes/organizacion'
-      preLoaderRoute: typeof AjustesOrganizacionRouteImport
-      parentRoute: typeof AjustesRoute
-    }
-    '/ajustes/notificaciones': {
-      id: '/ajustes/notificaciones'
-      path: '/notificaciones'
-      fullPath: '/ajustes/notificaciones'
-      preLoaderRoute: typeof AjustesNotificacionesRouteImport
-      parentRoute: typeof AjustesRoute
-    }
-    '/ajustes/ia': {
-      id: '/ajustes/ia'
-      path: '/ia'
-      fullPath: '/ajustes/ia'
-      preLoaderRoute: typeof AjustesIaRouteImport
-      parentRoute: typeof AjustesRoute
-    }
-    '/ajustes/calendario': {
-      id: '/ajustes/calendario'
-      path: '/calendario'
-      fullPath: '/ajustes/calendario'
-      preLoaderRoute: typeof AjustesCalendarioRouteImport
-      parentRoute: typeof AjustesRoute
-    }
-    '/ajustes/apariencia': {
-      id: '/ajustes/apariencia'
-      path: '/apariencia'
-      fullPath: '/ajustes/apariencia'
-      preLoaderRoute: typeof AjustesAparienciaRouteImport
       parentRoute: typeof AjustesRoute
     }
     '/ajustes/acerca-de': {
@@ -594,6 +510,90 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AjustesAcercaDeRouteImport
       parentRoute: typeof AjustesRoute
     }
+    '/ajustes/apariencia': {
+      id: '/ajustes/apariencia'
+      path: '/apariencia'
+      fullPath: '/ajustes/apariencia'
+      preLoaderRoute: typeof AjustesAparienciaRouteImport
+      parentRoute: typeof AjustesRoute
+    }
+    '/ajustes/calendario': {
+      id: '/ajustes/calendario'
+      path: '/calendario'
+      fullPath: '/ajustes/calendario'
+      preLoaderRoute: typeof AjustesCalendarioRouteImport
+      parentRoute: typeof AjustesRoute
+    }
+    '/ajustes/etiquetas': {
+      id: '/ajustes/etiquetas'
+      path: '/etiquetas'
+      fullPath: '/ajustes/etiquetas'
+      preLoaderRoute: typeof AjustesEtiquetasRouteImport
+      parentRoute: typeof AjustesRoute
+    }
+    '/ajustes/ia': {
+      id: '/ajustes/ia'
+      path: '/ia'
+      fullPath: '/ajustes/ia'
+      preLoaderRoute: typeof AjustesIaRouteImport
+      parentRoute: typeof AjustesRoute
+    }
+    '/ajustes/notificaciones': {
+      id: '/ajustes/notificaciones'
+      path: '/notificaciones'
+      fullPath: '/ajustes/notificaciones'
+      preLoaderRoute: typeof AjustesNotificacionesRouteImport
+      parentRoute: typeof AjustesRoute
+    }
+    '/ajustes/organizacion': {
+      id: '/ajustes/organizacion'
+      path: '/organizacion'
+      fullPath: '/ajustes/organizacion'
+      preLoaderRoute: typeof AjustesOrganizacionRouteImport
+      parentRoute: typeof AjustesRoute
+    }
+    '/ajustes/productividad': {
+      id: '/ajustes/productividad'
+      path: '/productividad'
+      fullPath: '/ajustes/productividad'
+      preLoaderRoute: typeof AjustesProductividadRouteImport
+      parentRoute: typeof AjustesRoute
+    }
+    '/ajustes/semana': {
+      id: '/ajustes/semana'
+      path: '/semana'
+      fullPath: '/ajustes/semana'
+      preLoaderRoute: typeof AjustesSemanaRouteImport
+      parentRoute: typeof AjustesRoute
+    }
+    '/legal/': {
+      id: '/legal/'
+      path: '/'
+      fullPath: '/legal/'
+      preLoaderRoute: typeof LegalIndexRouteImport
+      parentRoute: typeof LegalRoute
+    }
+    '/legal/licencias': {
+      id: '/legal/licencias'
+      path: '/licencias'
+      fullPath: '/legal/licencias'
+      preLoaderRoute: typeof LegalLicenciasRouteImport
+      parentRoute: typeof LegalRoute
+    }
+    '/legal/privacidad': {
+      id: '/legal/privacidad'
+      path: '/privacidad'
+      fullPath: '/legal/privacidad'
+      preLoaderRoute: typeof LegalPrivacidadRouteImport
+      parentRoute: typeof LegalRoute
+    }
+    '/legal/terminos': {
+      id: '/legal/terminos'
+      path: '/terminos'
+      fullPath: '/legal/terminos'
+      preLoaderRoute: typeof LegalTerminosRouteImport
+      parentRoute: typeof LegalRoute
+    }
   }
 }
 
@@ -601,11 +601,11 @@ interface AjustesRouteChildren {
   AjustesAcercaDeRoute: typeof AjustesAcercaDeRoute
   AjustesAparienciaRoute: typeof AjustesAparienciaRoute
   AjustesCalendarioRoute: typeof AjustesCalendarioRoute
+  AjustesEtiquetasRoute: typeof AjustesEtiquetasRoute
   AjustesIaRoute: typeof AjustesIaRoute
   AjustesNotificacionesRoute: typeof AjustesNotificacionesRoute
   AjustesOrganizacionRoute: typeof AjustesOrganizacionRoute
   AjustesProductividadRoute: typeof AjustesProductividadRoute
-  AjustesEtiquetasRoute: typeof AjustesEtiquetasRoute
   AjustesSemanaRoute: typeof AjustesSemanaRoute
   AjustesIndexRoute: typeof AjustesIndexRoute
 }
@@ -614,11 +614,11 @@ const AjustesRouteChildren: AjustesRouteChildren = {
   AjustesAcercaDeRoute: AjustesAcercaDeRoute,
   AjustesAparienciaRoute: AjustesAparienciaRoute,
   AjustesCalendarioRoute: AjustesCalendarioRoute,
+  AjustesEtiquetasRoute: AjustesEtiquetasRoute,
   AjustesIaRoute: AjustesIaRoute,
   AjustesNotificacionesRoute: AjustesNotificacionesRoute,
   AjustesOrganizacionRoute: AjustesOrganizacionRoute,
   AjustesProductividadRoute: AjustesProductividadRoute,
-  AjustesEtiquetasRoute: AjustesEtiquetasRoute,
   AjustesSemanaRoute: AjustesSemanaRoute,
   AjustesIndexRoute: AjustesIndexRoute,
 }
