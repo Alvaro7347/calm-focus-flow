@@ -1,299 +1,742 @@
 /**
  * ========================================================
- * Archivo: weekPlanningService — Tiempo de la semana y repetición
+ * Archivo: weeklyRitualService — "Preparar mi semana"
  *
- * Dos piezas del Ritual "Preparar mi semana":
+ * Responsabilidad:
+ * Reunir y destilar, en un único objeto (`WeeklyRitualData`),
+ * todo lo que necesita el Ritual Semanal:
+ *   1. Cierre de la semana anterior.
+ *   2. Lo importante (objetivos, metas, proyectos, hábitos, eventos).
+ *   3. Omisiones: proyectos/metas con tareas de prioridad alta
+ *      pendientes y NINGUNA acción programada en la nueva semana.
+ *   4. Carga de la nueva semana (por día, conflictos, sin fecha).
+ *   5. Resumen de cierre.
  *
- * 1) loadTimeDistribution(from, to)
- *    Cómo se distribuyó el tiempo en un rango (la semana que se
- *    cierra), por Área → Dimensión, por Proyecto y por etiqueta.
- *      - Tarea completada en el rango: tiempo real; si no tiene, la
- *        duración estimada; si tampoco, cuenta como "sin tiempo".
- *      - Evento que ocurrió en el rango: su horario (fin − inicio).
- *      - "No la hice" / "No fui" no cuenta.
- *    Incluye lo de proyectos ya completados o archivados: ese tiempo
- *    sí ocurrió (el resto del Ritual sólo mira lo activo).
- *    Base reutilizable para el futuro presupuesto de tiempo.
+ * Reutiliza:
+ * - `fetchAreaTree()` (tableroService) para la estructura activa
+ *   (Áreas → Proyectos → Etapas, Objetivos → Metas, Hábitos), con
+ *   las mismas reglas de archivado en cascada que el Tablero.
+ * - `getCurrentProfile()` para el día de inicio de semana.
+ * - Misma regla de solapamiento semiabierto que `eventConflictService`.
  *
- * 2) repeatInNextWeek(ids)
- *    Copia actividades a la semana siguiente (mismo día y hora + 7),
- *    con su vínculo, Dimensión, duración, prioridad, etiquetas y
- *    recordatorio. Las copias nacen pendientes. Cada copia es
- *    independiente: si una falla (p. ej. choque de horario), las
- *    demás siguen.
+ * Sin cambios en Supabase: sólo lecturas. La decisión
+ * "Esta semana no" se guarda en `localStorage` y expira sola.
  * ========================================================
  */
 import { supabase } from "@/integrations/supabase/client";
-import { createTask, type CreateTaskInput, type TaskRow } from "@/services/taskService";
-import { fetchTaskTagIds, setTaskTags } from "@/services/tagService";
-import { getTaskReminderOffset, setTaskReminder } from "@/services/reminderService";
-import { parseEventConflictError } from "@/services/eventConflictService";
+import { fetchAreaTree, habitWeekStats, type AreaNode } from "@/services/tableroService";
+import { getCurrentProfile } from "@/services/profileService";
 
 // ============================================================
-// 1) Distribución del tiempo
+// Tipos públicos
 // ============================================================
 
-export interface DimensionTime {
-  /** null = "Sin dimensión". */
-  name: string | null;
-  min: number;
+export interface RitualTask {
+  id: string;
+  title: string;
+  status: "pending" | "completed" | "waiting" | "not_done";
+  activityType: "task" | "event";
+  priority: "high" | "medium" | "low";
+  startsAt: string | null;
+  endsAt: string | null;
+  estimatedMin: number | null;
+  completedAt: string | null;
+  areaId: string;
+  areaName: string;
+  subprojectId: string | null;
+  goalId: string | null;
+  habitId: string | null;
+  /** Proyecto resuelto vía Etapa (si la tarea cuelga de uno activo). */
+  projectId: string | null;
+  projectName: string | null;
+  /** Nombre del vínculo principal para mostrar (Proyecto, Meta o Hábito). */
+  linkLabel: string | null;
+  /** Dimensión (propia si es tarea directa; si no, la de su Proyecto/Objetivo/Hábito). */
+  dimensionName: string | null;
 }
 
-export interface AreaTime {
+export interface RitualProject {
   id: string;
   name: string;
-  color: string | null;
-  min: number;
-  dimensions: DimensionTime[];
+  areaId: string;
+  areaName: string;
+  areaSlug: string;
+  slug: string;
+  progressPct: number;
+  vision: string | null;
+  /** Etapas activas (para preseleccionar al agregar una acción). */
+  subprojects: { id: string; name: string }[];
 }
 
-export interface NamedTime {
+export interface RitualGoal {
+  id: string;
   name: string;
-  min: number;
-  /** Para proyectos: el Área a la que pertenecen. */
-  detail?: string;
+  slug: string;
+  objectiveId: string;
+  objectiveName: string;
+  objectiveSlug: string;
+  areaId: string;
+  areaName: string;
+  areaSlug: string;
+  progressPct: number;
+  /** Visión de la Meta o, si no tiene, la de su Objetivo. */
+  vision: string | null;
 }
 
-export interface TimeDistribution {
+export interface RitualObjective {
+  id: string;
+  name: string;
+  areaName: string;
+  progressPct: number;
+  goals: { id: string; name: string; progressPct: number }[];
+}
+
+export interface RitualHabit {
+  id: string;
+  name: string;
+  areaName: string;
+  reason: string | null;
+  compliancePct: number;
+  /** Cumplimiento en la semana que se cierra (días esperados). */
+  weekDone: number;
+  weekExpected: number;
+  /** Las 3 semanas anteriores, de la más reciente a la más antigua. */
+  history: { done: number; expected: number }[];
+}
+
+export type OmissionKind = "project" | "goal";
+
+export interface Omission {
+  kind: OmissionKind;
+  /** Clave estable para "Esta semana no": `project:<id>` o `goal:<id>`. */
+  key: string;
+  id: string;
+  name: string;
+  areaName: string;
+  vision: string | null;
+  highPendingCount: number;
+  /** Destino para "Revisar" en el Tablero. */
+  tablero: {
+    area: string;
+    proyecto?: string;
+    objetivo?: string;
+    meta?: string;
+  };
+  /** Valores por defecto para "Agregar acción". */
+  createDefaults: TaskCreateDefaults;
+}
+
+export interface TaskCreateDefaults {
+  areaId?: string;
+  projectId?: string;
+  subprojectId?: string;
+  objectiveId?: string;
+  goalId?: string;
+  /** Dimensión (sólo tareas directas). */
+  dimensionId?: string;
+  /** YYYY-MM-DD local. */
+  fecha?: string;
+}
+
+export interface DayLoad {
+  /** YYYY-MM-DD local. */
+  date: string;
+  label: string;
+  items: RitualTask[];
   totalMin: number;
-  /** Actividades realizadas que no tienen ningún tiempo registrado. */
-  withoutTime: number;
-  areas: AreaTime[];
-  projects: NamedTime[];
-  tags: NamedTime[];
+  highCount: number;
+  isHeavy: boolean;
+  isEmpty: boolean;
 }
 
-type DistRow = {
+export interface EventConflictPair {
+  a: RitualTask;
+  b: RitualTask;
+}
+
+export interface WeeklyRitualData {
+  /** Semana que se cierra. */
+  prevStart: Date;
+  prevEnd: Date;
+  /** Semana que se prepara. */
+  nextStart: Date;
+  nextEnd: Date;
+  weekKey: string;
+
+  // Paso 1
+  completedPrev: RitualTask[];
+  pendingPrev: RitualTask[];
+  /** Marcadas como "No la hice" / "No fui" en la semana que se cierra. */
+  notDonePrev: RitualTask[];
+  overdueOlder: RitualTask[];
+  projectsMoved: RitualProject[];
+  projectsStill: RitualProject[];
+
+  // Paso 2
+  objectives: RitualObjective[];
+  projects: RitualProject[];
+  habits: RitualHabit[];
+  eventsNext: RitualTask[];
+
+  // Paso 3
+  omissions: Omission[];
+
+  // Paso 4
+  days: DayLoad[];
+  conflicts: EventConflictPair[];
+  undated: RitualTask[];
+
+  // Paso 5
+  projectsWithActions: RitualProject[];
+  goalsWithActions: RitualGoal[];
+  mainTasks: RitualTask[];
+
+  // Repetir en la nueva semana
+  /**
+   * Actividades de la semana que se cierra que pueden copiarse a la
+   * nueva: eventos, y tareas completadas o "No la hice" (los pendientes
+   * se deciden en "Esto sigue pendiente", para no duplicarlos).
+   */
+  repeatCandidates: RitualTask[];
+  /** Claves (título + día + hora) de lo que ya existe en la nueva semana. */
+  nextWeekKeys: string[];
+}
+
+/**
+ * Clave para detectar si una actividad ya existe en la nueva semana:
+ * mismo título, mismo día de la semana y misma hora.
+ */
+export function repeatKey(title: string, startsAt: string | null): string {
+  if (!startsAt) return `${title.trim().toLowerCase()}|-`;
+  const d = new Date(startsAt);
+  return `${title.trim().toLowerCase()}|${d.getDay()}|${d.getHours()}:${d.getMinutes()}`;
+}
+
+// ============================================================
+// Fechas (hora local del dispositivo, igual que el formulario)
+// ============================================================
+
+function startOfDay(d: Date): Date {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+function addDays(d: Date, n: number): Date {
+  const r = new Date(d);
+  r.setDate(r.getDate() + n);
+  return r;
+}
+
+export function toLocalDate(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+/**
+ * Semana a preparar:
+ * - Si hoy es el primer día de la semana → la semana que empieza hoy.
+ * - Si no → la que empieza el próximo "primer día".
+ * La semana a cerrar es la de los 7 días anteriores.
+ */
+export function computeRitualWeeks(now: Date, weekStartsOn: 0 | 1) {
+  const today = startOfDay(now);
+  const diff = (weekStartsOn - today.getDay() + 7) % 7;
+  const nextStart = addDays(today, diff);
+  const nextEnd = addDays(nextStart, 7);
+  const prevStart = addDays(nextStart, -7);
+  const prevEnd = nextStart;
+  return { prevStart, prevEnd, nextStart, nextEnd, weekKey: toLocalDate(nextStart) };
+}
+
+const DAY_NAMES = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+
+export function dayLabel(d: Date): string {
+  return `${DAY_NAMES[d.getDay()]} ${d.getDate()}`;
+}
+
+/** Abierta = pendiente o en espera (no completada ni "No la hice"). */
+function isOpen(t: { status: string }): boolean {
+  return t.status === "pending" || t.status === "waiting";
+}
+
+function inRange(iso: string | null, from: Date, to: Date): boolean {
+  if (!iso) return false;
+  const t = new Date(iso).getTime();
+  return t >= from.getTime() && t < to.getTime();
+}
+
+/** Minutos estimados de un ítem (evento: fin − inicio). */
+export function itemMinutes(t: RitualTask): number {
+  if (t.activityType === "event" && t.startsAt && t.endsAt) {
+    const m = (new Date(t.endsAt).getTime() - new Date(t.startsAt).getTime()) / 60000;
+    return m > 0 ? Math.round(m) : 0;
+  }
+  return t.estimatedMin ?? 0;
+}
+
+// ============================================================
+// "Esta semana no" (localStorage, por semana)
+// ============================================================
+
+const SKIP_KEY = "calmapp.weeklyRitual.skip.v1";
+
+type SkipStore = Record<string, string[]>;
+
+function readSkips(): SkipStore {
+  try {
+    const raw = localStorage.getItem(SKIP_KEY);
+    return raw ? (JSON.parse(raw) as SkipStore) : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeSkips(store: SkipStore): void {
+  try {
+    localStorage.setItem(SKIP_KEY, JSON.stringify(store));
+  } catch {
+    // Almacenamiento no disponible: la decisión dura sólo esta sesión.
+  }
+}
+
+export function getSkippedKeys(weekKey: string): Set<string> {
+  return new Set(readSkips()[weekKey] ?? []);
+}
+
+export function skipForWeek(weekKey: string, key: string): void {
+  const store = readSkips();
+  // Conservamos sólo la semana actual: las decisiones expiran solas.
+  const current = new Set(store[weekKey] ?? []);
+  current.add(key);
+  writeSkips({ [weekKey]: [...current] });
+}
+
+export function unskipForWeek(weekKey: string, key: string): void {
+  const store = readSkips();
+  const current = (store[weekKey] ?? []).filter((k) => k !== key);
+  writeSkips({ [weekKey]: current });
+}
+
+// ============================================================
+// Carga de datos
+// ============================================================
+
+type RawTaskRow = {
   id: string;
-  activity_type: "task" | "event";
-  status: string;
+  title: string;
+  status: RitualTask["status"];
+  activity_type: RitualTask["activityType"];
+  priority: RitualTask["priority"];
   starts_at: string | null;
   ends_at: string | null;
   estimated_duration_min: number | null;
-  actual_duration_min: number | null;
-  dimension_id: string | null;
+  completed_at: string | null;
   area_id: string;
-  areas: { name: string; color: string | null } | null;
-  subprojects: {
-    projects: { id: string; name: string; dimension_id: string | null } | null;
-  } | null;
-  goals: { objectives: { dimension_id: string | null } | null } | null;
-  habits: { dimension_id: string | null } | null;
+  subproject_id: string | null;
+  goal_id: string | null;
+  habit_id: string | null;
+  dimension_id: string | null;
 };
 
-function minutesOf(r: DistRow): number {
-  if (r.activity_type === "event") {
-    if (!r.starts_at || !r.ends_at) return 0;
-    const m = (new Date(r.ends_at).getTime() - new Date(r.starts_at).getTime()) / 60000;
-    return m > 0 ? Math.round(m) : 0;
+/** Umbrales de carga (sobrios y explicables). */
+const HEAVY_MINUTES = 6 * 60;
+const HEAVY_ITEMS = 8;
+
+export async function loadWeeklyRitual(now: Date = new Date()): Promise<WeeklyRitualData> {
+  const profile = await getCurrentProfile().catch(() => null);
+  const weekStartsOn: 0 | 1 = profile?.week_starts_on === 0 ? 0 : 1;
+  const { prevStart, prevEnd, nextStart, nextEnd, weekKey } = computeRitualWeeks(now, weekStartsOn);
+
+  const prevIso = prevStart.toISOString();
+
+  // Paginado: Supabase entrega como máximo 1000 filas por consulta.
+  async function fetchRows(): Promise<RawTaskRow[]> {
+    const PAGE = 1000;
+    const all: RawTaskRow[] = [];
+    for (let from = 0; ; from += PAGE) {
+      const { data, error } = await supabase
+        .from("tasks")
+        .select(
+          "id, title, status, activity_type, priority, starts_at, ends_at, estimated_duration_min, completed_at, area_id, subproject_id, goal_id, habit_id, dimension_id",
+        )
+        .is("archived_at", null)
+        // Pendientes de cualquier fecha + todo lo que toque las dos semanas.
+        .or(`status.neq.completed,completed_at.gte.${prevIso},starts_at.gte.${prevIso}`)
+        .order("id", { ascending: true })
+        .range(from, from + PAGE - 1);
+      if (error) throw error;
+      const page = (data ?? []) as RawTaskRow[];
+      all.push(...page);
+      if (page.length < PAGE) break;
+    }
+    return all;
   }
-  return r.actual_duration_min ?? r.estimated_duration_min ?? 0;
+
+  const [tree, rows] = await Promise.all([fetchAreaTree(), fetchRows()]);
+
+  return buildWeeklyRitual({
+    tree,
+    rows,
+    now,
+    prevStart,
+    prevEnd,
+    nextStart,
+    nextEnd,
+    weekKey,
+  });
 }
 
-export async function loadTimeDistribution(from: Date, to: Date): Promise<TimeDistribution> {
-  const fromIso = from.toISOString();
-  // Un evento cuenta sólo si ya ocurrió.
-  const heldUntilIso = new Date(Math.min(Date.now(), to.getTime())).toISOString();
-  const toIso = to.toISOString();
+// ============================================================
+// Cálculo puro
+// ============================================================
 
-  const select =
-    "id, activity_type, status, starts_at, ends_at, estimated_duration_min, actual_duration_min, dimension_id, area_id, areas(name, color), subprojects(projects(id, name, dimension_id)), goals(objectives(dimension_id)), habits(dimension_id)";
+interface BuildInput {
+  tree: AreaNode[];
+  rows: RawTaskRow[];
+  now: Date;
+  prevStart: Date;
+  prevEnd: Date;
+  nextStart: Date;
+  nextEnd: Date;
+  weekKey: string;
+}
 
-  const PAGE = 1000;
-  const rows: DistRow[] = [];
-  for (let start = 0; ; start += PAGE) {
-    const { data, error } = await supabase
-      .from("tasks")
-      .select(select)
-      .is("archived_at", null)
-      .or(
-        `and(activity_type.eq.task,status.eq.completed,completed_at.gte.${fromIso},completed_at.lt.${toIso}),and(activity_type.eq.event,status.neq.not_done,starts_at.gte.${fromIso},starts_at.lt.${heldUntilIso})`,
-      )
-      .order("id", { ascending: true })
-      .range(start, start + PAGE - 1);
-    if (error) throw error;
-    const page = (data ?? []) as unknown as DistRow[];
-    rows.push(...page);
-    if (page.length < PAGE) break;
-  }
+export function buildWeeklyRitual(input: BuildInput): WeeklyRitualData {
+  const { tree, rows, now, prevStart, prevEnd, nextStart, nextEnd, weekKey } = input;
 
-  const [dimsRes, tagsRes, linksRes] = await Promise.all([
-    supabase.from("dimensions").select("id, name"),
-    supabase.from("tags").select("id, name"),
-    rows.length > 0
-      ? supabase
-          .from("task_tags")
-          .select("task_id, tag_id")
-          .in(
-            "task_id",
-            rows.map((r) => r.id),
-          )
-      : Promise.resolve({ data: [], error: null }),
-  ]);
-  const dimName = new Map<string, string>(
-    (dimsRes.data ?? []).map((d) => [d.id as string, d.name as string]),
-  );
-  const tagName = new Map<string, string>(
-    (tagsRes.data ?? []).map((t) => [t.id as string, t.name as string]),
-  );
-  const tagsByTask = new Map<string, string[]>();
-  for (const l of (linksRes.data ?? []) as { task_id: string; tag_id: string }[]) {
-    tagsByTask.set(l.task_id, [...(tagsByTask.get(l.task_id) ?? []), l.tag_id]);
-  }
+  // ---------- Índices de la estructura activa ----------
+  const areaById = new Map<string, AreaNode>();
+  const projects: RitualProject[] = [];
+  const projectBySubproject = new Map<string, RitualProject>();
+  const goals: RitualGoal[] = [];
+  const goalById = new Map<string, RitualGoal>();
+  const objectives: RitualObjective[] = [];
+  const habits: RitualHabit[] = [];
+  const habitNameById = new Map<string, string>();
+  // Dimensión de cada elemento (las tareas de Proyecto/Meta/Hábito la heredan).
+  const dimensionName = new Map<string, string>();
+  const projectDim = new Map<string, string | null>();
+  const goalDim = new Map<string, string | null>();
+  const habitDim = new Map<string, string | null>();
 
-  const areaMap = new Map<string, AreaTime & { dimMap: Map<string, number> }>();
-  const projMap = new Map<string, NamedTime>();
-  const tagMap = new Map<string, number>();
-  let totalMin = 0;
-  let withoutTime = 0;
-
-  for (const r of rows) {
-    const min = minutesOf(r);
-    if (min === 0) {
-      withoutTime++;
-      continue;
+  for (const area of tree) {
+    areaById.set(area.id, area);
+    for (const d of area.dimensiones ?? []) dimensionName.set(d.id, d.nombre);
+    for (const p of area.proyectos) {
+      projectDim.set(p.id, p.dimensionId ?? null);
+      const rp: RitualProject = {
+        id: p.id,
+        name: p.nombre,
+        slug: p.slug,
+        areaId: area.id,
+        areaName: area.nombre,
+        areaSlug: area.slug,
+        progressPct: p.progresoPct,
+        vision: p.visionTexto?.trim() || null,
+        subprojects: p.subproyectos.map((s) => ({ id: s.id, name: s.nombre })),
+      };
+      projects.push(rp);
+      for (const s of p.subproyectos) projectBySubproject.set(s.id, rp);
     }
-    totalMin += min;
-
-    const project = r.subprojects?.projects ?? null;
-    const dimId =
-      r.dimension_id ??
-      project?.dimension_id ??
-      r.goals?.objectives?.dimension_id ??
-      r.habits?.dimension_id ??
-      null;
-    const dimKey = dimId ? (dimName.get(dimId) ?? "") : "";
-
-    const area =
-      areaMap.get(r.area_id) ??
-      (() => {
-        const a = {
-          id: r.area_id,
-          name: r.areas?.name ?? "Área",
-          color: r.areas?.color ?? null,
-          min: 0,
-          dimensions: [],
-          dimMap: new Map<string, number>(),
+    for (const o of area.objetivos) {
+      objectives.push({
+        id: o.id,
+        name: o.nombre,
+        areaName: area.nombre,
+        progressPct: o.progresoPct,
+        goals: o.metas.map((m) => ({ id: m.id, name: m.nombre, progressPct: m.progresoPct })),
+      });
+      for (const m of o.metas) {
+        goalDim.set(m.id, o.dimensionId ?? null);
+        const rg: RitualGoal = {
+          id: m.id,
+          name: m.nombre,
+          slug: m.slug,
+          objectiveId: o.id,
+          objectiveName: o.nombre,
+          objectiveSlug: o.slug,
+          areaId: area.id,
+          areaName: area.nombre,
+          areaSlug: area.slug,
+          progressPct: m.progresoPct,
+          vision: m.visionTexto?.trim() || o.visionTexto?.trim() || null,
         };
-        areaMap.set(r.area_id, a);
-        return a;
-      })();
-    area.min += min;
-    area.dimMap.set(dimKey, (area.dimMap.get(dimKey) ?? 0) + min);
-
-    if (project) {
-      const p = projMap.get(project.id) ?? { name: project.name, min: 0, detail: area.name };
-      p.min += min;
-      projMap.set(project.id, p);
+        goals.push(rg);
+        goalById.set(m.id, rg);
+      }
     }
-
-    for (const tagId of tagsByTask.get(r.id) ?? []) {
-      tagMap.set(tagId, (tagMap.get(tagId) ?? 0) + min);
+    for (const h of area.habitos) {
+      habits.push({
+        id: h.id,
+        name: h.nombre,
+        areaName: area.nombre,
+        reason: h.razon?.trim() || null,
+        compliancePct: h.cumplimientoPct,
+        ...(() => {
+          const st = habitWeekStats(h, prevStart, input.now);
+          const history = [1, 2, 3].map((k) => {
+            const ws = new Date(
+              prevStart.getFullYear(),
+              prevStart.getMonth(),
+              prevStart.getDate() - 7 * k,
+            );
+            const w = habitWeekStats(h, ws, input.now);
+            return { done: w.cumplidos, expected: w.esperados };
+          });
+          return { weekDone: st.cumplidos, weekExpected: st.esperados, history };
+        })(),
+      });
+      habitNameById.set(h.id, h.nombre);
+      habitDim.set(h.id, h.dimensionId ?? null);
     }
   }
 
-  const byMin = (a: { min: number }, b: { min: number }) => b.min - a.min;
-  const areas: AreaTime[] = [...areaMap.values()]
-    .map(({ dimMap, ...a }) => ({
-      ...a,
-      dimensions: [...dimMap.entries()]
-        .map(([name, min]) => ({ name: name || null, min }))
-        .sort(byMin),
-    }))
-    .sort(byMin);
+  // ---------- Tareas: sólo las que cuelgan de estructura activa ----------
+  const tasks: RitualTask[] = [];
+  for (const r of rows) {
+    const area = areaById.get(r.area_id);
+    if (!area) continue; // Área archivada
+    const project = r.subproject_id ? projectBySubproject.get(r.subproject_id) : undefined;
+    if (r.subproject_id && !project) continue; // Etapa/Proyecto archivado
+    const goal = r.goal_id ? goalById.get(r.goal_id) : undefined;
+    if (r.goal_id && !goal) continue; // Meta/Objetivo archivado
+    const habitName = r.habit_id ? habitNameById.get(r.habit_id) : undefined;
+    if (r.habit_id && !habitName) continue; // Hábito archivado
+
+    tasks.push({
+      id: r.id,
+      title: r.title,
+      status: r.status,
+      activityType: r.activity_type,
+      priority: r.priority ?? "medium",
+      startsAt: r.starts_at,
+      endsAt: r.ends_at,
+      estimatedMin: r.estimated_duration_min,
+      completedAt: r.completed_at,
+      areaId: r.area_id,
+      areaName: area.nombre,
+      subprojectId: r.subproject_id,
+      goalId: r.goal_id,
+      habitId: r.habit_id,
+      projectId: project?.id ?? null,
+      projectName: project?.name ?? null,
+      linkLabel: project?.name ?? goal?.name ?? habitName ?? null,
+      dimensionName: (() => {
+        const dimId =
+          r.dimension_id ??
+          (project ? projectDim.get(project.id) : null) ??
+          (goal ? goalDim.get(goal.id) : null) ??
+          (r.habit_id ? habitDim.get(r.habit_id) : null) ??
+          null;
+        return dimId ? (dimensionName.get(dimId) ?? null) : null;
+      })(),
+    });
+  }
+
+  const byStart = (a: RitualTask, b: RitualTask) =>
+    (a.startsAt ?? "").localeCompare(b.startsAt ?? "");
+  const priorityRank = { high: 0, medium: 1, low: 2 } as const;
+
+  // ---------- Paso 1: cerrar la semana anterior ----------
+  const onlyTasks = tasks.filter((t) => t.activityType === "task");
+  const completedPrev = onlyTasks
+    .filter((t) => t.status === "completed" && inRange(t.completedAt, prevStart, prevEnd))
+    .sort((a, b) => (a.completedAt ?? "").localeCompare(b.completedAt ?? ""));
+  const pendingPrev = onlyTasks
+    .filter((t) => isOpen(t) && inRange(t.startsAt, prevStart, prevEnd))
+    .sort(byStart);
+  const notDonePrev = tasks
+    .filter((t) => t.status === "not_done" && inRange(t.startsAt, prevStart, prevEnd))
+    .sort(byStart);
+  const overdueOlder = onlyTasks
+    .filter(
+      (t) =>
+        isOpen(t) && t.startsAt != null && new Date(t.startsAt).getTime() < prevStart.getTime(),
+    )
+    .sort(byStart);
+
+  // "Movimiento" de un proyecto en la semana que se cierra:
+  //  a) una tarea completada en esa semana, o
+  //  b) un evento que ocurrió en esa semana (p. ej. una clase).
+  //     Los eventos no se marcan como completados: basta con que
+  //     su inicio haya quedado en la semana y ya haya pasado.
+  const heldUntil = new Date(Math.min(now.getTime(), prevEnd.getTime()));
+  const heldEventsPrev = tasks.filter(
+    (t) => t.activityType === "event" && inRange(t.startsAt, prevStart, heldUntil),
+  );
+  const movedProjectIds = new Set(
+    [...completedPrev, ...heldEventsPrev]
+      .map((t) => t.projectId)
+      .filter((id): id is string => !!id),
+  );
+  const projectsMoved = projects.filter((p) => movedProjectIds.has(p.id));
+  const projectsStill = projects.filter((p) => !movedProjectIds.has(p.id));
+
+  // ---------- Nueva semana ----------
+  const nextItems = tasks.filter((t) => inRange(t.startsAt, nextStart, nextEnd));
+  const eventsNext = nextItems.filter((t) => t.activityType === "event").sort(byStart);
+
+  // ---------- Paso 3: omisiones ----------
+  const plannedProjectIds = new Set(
+    nextItems.map((t) => t.projectId).filter((id): id is string => !!id),
+  );
+  const plannedGoalIds = new Set(nextItems.map((t) => t.goalId).filter((id): id is string => !!id));
+
+  // Tareas de prioridad alta pendientes ("en espera" no cuenta).
+  const highPending = onlyTasks.filter((t) => t.status === "pending" && t.priority === "high");
+  const highByProject = new Map<string, number>();
+  const highByGoal = new Map<string, number>();
+  for (const t of highPending) {
+    if (t.projectId) highByProject.set(t.projectId, (highByProject.get(t.projectId) ?? 0) + 1);
+    if (t.goalId) highByGoal.set(t.goalId, (highByGoal.get(t.goalId) ?? 0) + 1);
+  }
+
+  const firstDay = toLocalDate(nextStart);
+  const omissions: Omission[] = [];
+  for (const p of projects) {
+    const n = highByProject.get(p.id) ?? 0;
+    if (n === 0 || plannedProjectIds.has(p.id)) continue;
+    omissions.push({
+      kind: "project",
+      key: `project:${p.id}`,
+      id: p.id,
+      name: p.name,
+      areaName: p.areaName,
+      vision: p.vision,
+      highPendingCount: n,
+      tablero: { area: p.areaSlug, proyecto: p.slug },
+      createDefaults: {
+        areaId: p.areaId,
+        projectId: p.id,
+        subprojectId: p.subprojects.length === 1 ? p.subprojects[0].id : undefined,
+        fecha: firstDay,
+      },
+    });
+  }
+  for (const g of goals) {
+    const n = highByGoal.get(g.id) ?? 0;
+    if (n === 0 || plannedGoalIds.has(g.id)) continue;
+    omissions.push({
+      kind: "goal",
+      key: `goal:${g.id}`,
+      id: g.id,
+      name: g.name,
+      areaName: g.areaName,
+      vision: g.vision,
+      highPendingCount: n,
+      tablero: { area: g.areaSlug, objetivo: g.objectiveSlug, meta: g.slug },
+      createDefaults: {
+        areaId: g.areaId,
+        objectiveId: g.objectiveId,
+        goalId: g.id,
+        fecha: firstDay,
+      },
+    });
+  }
+
+  // ---------- Paso 4: carga ----------
+  const days: DayLoad[] = [];
+  for (let i = 0; i < 7; i++) {
+    const from = addDays(nextStart, i);
+    const to = addDays(nextStart, i + 1);
+    const items = nextItems.filter((t) => isOpen(t) && inRange(t.startsAt, from, to)).sort(byStart);
+    const totalMin = items.reduce((acc, t) => acc + itemMinutes(t), 0);
+    const highCount = items.filter((t) => t.priority === "high").length;
+    days.push({
+      date: toLocalDate(from),
+      label: dayLabel(from),
+      items,
+      totalMin,
+      highCount,
+      isHeavy: totalMin >= HEAVY_MINUTES || items.length >= HEAVY_ITEMS,
+      isEmpty: items.length === 0,
+    });
+  }
+
+  // Conflictos: misma regla semiabierta que eventConflictService.
+  const timedEvents = eventsNext.filter((e) => e.startsAt && e.endsAt);
+  const conflicts: EventConflictPair[] = [];
+  for (let i = 0; i < timedEvents.length; i++) {
+    for (let j = i + 1; j < timedEvents.length; j++) {
+      const a = timedEvents[i];
+      const b = timedEvents[j];
+      if (
+        new Date(a.startsAt!).getTime() < new Date(b.endsAt!).getTime() &&
+        new Date(a.endsAt!).getTime() > new Date(b.startsAt!).getTime()
+      ) {
+        conflicts.push({ a, b });
+      }
+    }
+  }
+
+  const undated = onlyTasks
+    .filter((t) => t.status === "pending" && !t.startsAt)
+    .sort((a, b) => priorityRank[a.priority] - priorityRank[b.priority]);
+
+  // ---------- Paso 5: resumen ----------
+  const projectsWithActions = projects.filter((p) => plannedProjectIds.has(p.id));
+  const goalsWithActions = goals.filter((g) => plannedGoalIds.has(g.id));
+  const mainTasks = nextItems
+    .filter((t) => t.activityType === "task" && isOpen(t) && t.priority === "high")
+    .sort(byStart);
+
+  // ---------- Repetir en la nueva semana ----------
+  const repeatCandidates = tasks
+    .filter(
+      (t) =>
+        inRange(t.startsAt, prevStart, prevEnd) &&
+        (t.activityType === "event" || t.status === "completed" || t.status === "not_done"),
+    )
+    .sort(byStart);
+  const nextWeekKeys = tasks
+    .filter((t) => inRange(t.startsAt, nextStart, nextEnd))
+    .map((t) => repeatKey(t.title, t.startsAt));
 
   return {
-    totalMin,
-    withoutTime,
-    areas,
-    projects: [...projMap.values()].sort(byMin),
-    tags: [...tagMap.entries()]
-      .filter(([id]) => tagName.has(id))
-      .map(([id, min]) => ({ name: tagName.get(id)!, min }))
-      .sort(byMin),
+    prevStart,
+    prevEnd,
+    nextStart,
+    nextEnd,
+    weekKey,
+    repeatCandidates,
+    nextWeekKeys,
+    completedPrev,
+    pendingPrev,
+    notDonePrev,
+    overdueOlder,
+    projectsMoved,
+    projectsStill,
+    objectives,
+    projects,
+    habits,
+    eventsNext,
+    omissions,
+    days,
+    conflicts,
+    undated,
+    projectsWithActions,
+    goalsWithActions,
+    mainTasks,
   };
 }
 
 // ============================================================
-// 2) Repetir en la nueva semana
+// Acciones (siempre vía taskService, nunca directo)
 // ============================================================
 
-export interface RepeatResult {
-  copied: number;
-  failed: { title: string; reason: string }[];
-}
-
-/** Misma hora local, `days` días después (respeta cambios de horario). */
-function shiftDays(iso: string | null, days: number): string | null {
-  if (!iso) return null;
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return null;
-  d.setDate(d.getDate() + days);
-  return d.toISOString();
-}
-
-export async function repeatInNextWeek(ids: string[], days = 7): Promise<RepeatResult> {
-  const result: RepeatResult = { copied: 0, failed: [] };
-  if (ids.length === 0) return result;
-
-  const { data, error } = await supabase.from("tasks").select("*").in("id", ids);
-  if (error) throw error;
-  const rows = ((data ?? []) as TaskRow[]).sort((a, b) =>
-    (a.starts_at ?? "").localeCompare(b.starts_at ?? ""),
-  );
-
-  for (const src of rows) {
-    const input: CreateTaskInput = {
-      area_id: src.area_id,
-      subproject_id: src.subproject_id,
-      goal_id: src.goal_id,
-      habit_id: src.habit_id,
-      ...(src.dimension_id ? { dimension_id: src.dimension_id } : {}),
-      title: src.title,
-      description: src.description,
-      priority: src.priority,
-      status: "pending",
-      source: "manual",
-      activity_type: src.activity_type,
-      starts_at: shiftDays(src.starts_at, days),
-      ends_at: shiftDays(src.ends_at, days),
-      estimated_duration_min: src.estimated_duration_min,
-    };
-
-    let copy: TaskRow;
-    try {
-      copy = await createTask(input);
-    } catch (err) {
-      const conflict = parseEventConflictError(err);
-      const code = (err as { code?: string })?.code;
-      result.failed.push({
-        title: src.title,
-        reason:
-          conflict || code === "CA001" || code === "23P01"
-            ? conflict
-              ? `Choca con "${conflict.title}".`
-              : "Choca con otro evento."
-            : err instanceof Error
-              ? err.message
-              : "No se pudo copiar.",
-      });
-      continue;
-    }
-    result.copied++;
-
-    // Etiquetas y recordatorio: si fallan, la copia igual queda.
-    try {
-      const tagIds = await fetchTaskTagIds(src.id);
-      if (tagIds.length > 0) await setTaskTags(copy.id, tagIds);
-    } catch {
-      // sin etiquetas
-    }
-    try {
-      const offset = await getTaskReminderOffset(src.id, src.starts_at);
-      if (offset != null) await setTaskReminder(copy.id, copy.starts_at, offset);
-    } catch {
-      // sin recordatorio
+/**
+ * Nueva fecha de inicio al pasar una tarea a otro día, conservando
+ * la hora si la tenía (00:00 local = "todo el día").
+ */
+export function moveToDayIso(startsAt: string | null, targetDate: string): string {
+  const [y, m, d] = targetDate.split("-").map(Number);
+  const target = new Date(y, m - 1, d);
+  if (startsAt) {
+    const src = new Date(startsAt);
+    if (!Number.isNaN(src.getTime())) {
+      target.setHours(src.getHours(), src.getMinutes(), 0, 0);
     }
   }
-  return result;
+  return target.toISOString();
 }
