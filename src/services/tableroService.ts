@@ -39,6 +39,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { slugify } from "@/lib/slug";
 import { mapDbPriorityToUi, type DbPriority } from "@/services/mappers/priorityMapper";
 import type { Tarea, ProgressMode, RecurrenceRule } from "@/types/tarea";
+import { fetchRoutineNodes, type RutinaNode } from "@/services/routineService";
 
 export interface SubproyectoNode {
   id: string;
@@ -169,6 +170,11 @@ export interface AreaNode {
    * `dimensionId`. Vacío si el Área no tiene Dimensiones.
    */
   dimensiones: DimensionNode[];
+  /**
+   * Rutinas activas del Área (cada una con su Dimensión en
+   * `dimensionId`). Vacío si no hay o si la migración no está aplicada.
+   */
+  rutinas: RutinaNode[];
   /** Suma de `tareasPendientes` de sus proyectos. */
   totalTareas: number;
 }
@@ -176,7 +182,10 @@ export interface AreaNode {
 export interface DimensionNode {
   id: string;
   nombre: string;
-  /** Tareas DIRECTAS de la Dimensión (sin Proyecto, Meta ni Hábito). */
+  /**
+   * Tareas DIRECTAS de la Dimensión (sin Proyecto, Meta ni Hábito).
+   * Excluye las tareas generadas por sus Rutinas (se ven en la Rutina).
+   */
   tareas: Tarea[];
   tareasPendientes: number;
 }
@@ -504,6 +513,8 @@ function mapGoalTask(row: RawTask, areaName: string, metaId: string): Tarea {
  * usuario actual; aquí no se filtra por `user_id` manualmente.
  */
 export async function fetchAreaTree(): Promise<AreaNode[]> {
+  // Rutinas en paralelo; si su tabla no existe, llega [].
+  const rutinasPromise = fetchRoutineNodes();
   // Con Dimensiones. Si la migración de Dimensiones aún no está
   // aplicada, la consulta falla y se usa la versión anterior: el
   // Tablero sigue funcionando igual que antes.
@@ -590,6 +601,8 @@ export async function fetchAreaTree(): Promise<AreaNode[]> {
   }
 
   const rows = (data ?? []) as unknown as RawArea[];
+  const rutinas = await rutinasPromise;
+  const routineTaskIds = new Set(rutinas.flatMap((r) => r.taskIds));
 
   return rows.map((a) => {
     // El color se define en el Área; Proyectos, Subproyectos y Tareas
@@ -688,7 +701,9 @@ export async function fetchAreaTree(): Promise<AreaNode[]> {
       .filter((d) => d.archived_at === null)
       .sort((x, y) => x.display_order - y.display_order)
       .map((d) => {
-        const rawTareas = (d.tasks ?? []).filter((t) => t.archived_at === null);
+        const rawTareas = (d.tasks ?? []).filter(
+          (t) => t.archived_at === null && !routineTaskIds.has(t.id),
+        );
         return {
           id: d.id,
           nombre: d.name,
@@ -710,6 +725,7 @@ export async function fetchAreaTree(): Promise<AreaNode[]> {
       objetivos,
       habitos,
       dimensiones,
+      rutinas: rutinas.filter((r) => r.areaId === a.id),
       totalTareas: totalTareasProyectos + objetivos.reduce((n, o) => n + o.totalTareas, 0),
     };
   });
