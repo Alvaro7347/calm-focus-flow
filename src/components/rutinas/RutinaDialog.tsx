@@ -39,6 +39,7 @@ import { TagPicker } from "@/components/etiquetas/TagPicker";
 import { invalidateActivityGraph } from "@/lib/queryInvalidation";
 import {
   archiveRoutine,
+  createRestOfThisWeek,
   createRoutine,
   DIAS_SEMANA,
   updateRoutine,
@@ -116,12 +117,36 @@ export function RutinaDialog(props: Props) {
         tag_ids: tagIds,
         description: nota.trim() || null,
       };
-      if (isEdit && rutina) return updateRoutine(rutina.id, fields);
+      if (isEdit && rutina) {
+        await updateRoutine(rutina.id, fields);
+        return null;
+      }
       if (props.mode !== "create") throw new Error("Falta la dimensión.");
-      return createRoutine({ ...fields, area_id: props.areaId, dimension_id: props.dimensionId });
+      const row = await createRoutine({
+        ...fields,
+        area_id: props.areaId,
+        dimension_id: props.dimensionId,
+      });
+      // Lo que queda de esta semana se crea ya; lo demás, en el Ritual.
+      return createRestOfThisWeek(row);
     },
-    onSuccess: async () => {
-      toast.success(isEdit ? "Rutina guardada." : "Rutina creada.");
+    onSuccess: async (semana) => {
+      if (!semana) {
+        toast.success("Rutina guardada.");
+      } else if (semana.created > 0) {
+        toast.success(
+          semana.created === 1
+            ? "Rutina creada. Se agregó 1 día de esta semana."
+            : `Rutina creada. Se agregaron ${semana.created} días de esta semana.`,
+        );
+      } else {
+        toast.success("Rutina creada. Sus días se agregan en el Ritual del domingo.");
+      }
+      if (semana && semana.failed.length > 0) {
+        toast.warning(
+          `No se crearon: ${semana.failed.map((f) => `${f.title} (${f.reason})`).join(" · ")}`,
+        );
+      }
       await invalidateActivityGraph(qc);
       setOpen(false);
     },
@@ -175,7 +200,7 @@ export function RutinaDialog(props: Props) {
                       mes.minutos > 0 ? ` · ${fmtMin(mes.minutos)} dedicadas` : ""
                     }${mes.noHechas > 0 ? ` · ${mes.noHechas} sin hacer` : ""}.`
                   : "Este mes todavía no le ha tocado."
-                : "Una actividad que se repite cada semana. Sus tareas se proponen en el Ritual del domingo."}
+                : "Una actividad que se repite cada semana. Los días que quedan de esta semana se crean al tiro; desde la próxima, se proponen en el Ritual del domingo."}
             </DialogDescription>
           </DialogHeader>
 
