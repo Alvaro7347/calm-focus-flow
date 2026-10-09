@@ -36,6 +36,8 @@ import {
   type OrgNodeType,
 } from "@/components/settings/OrganizacionActions";
 import { CrearNodoDialog } from "@/components/settings/CrearNodoDialog";
+import { RutinaRow } from "@/components/rutinas/RutinaRow";
+import { RutinaDialog } from "@/components/rutinas/RutinaDialog";
 import { DimensionMenu, NewDimensionButton } from "@/components/dimensiones/DimensionActions";
 import type { DimensionNode } from "@/services/tableroService";
 import { getProjectColor } from "@/lib/projectIdentity";
@@ -272,6 +274,7 @@ function ElementGroups({
   const proyectos = area.proyectos.filter((p) => match(p.dimensionId));
   const objetivos = area.objetivos.filter((o) => match(o.dimensionId));
   const habitos = area.habitos.filter((h) => match(h.dimensionId));
+  const rutinas = (area.rutinas ?? []).filter((r) => match(r.dimensionId));
   const dimProp = dimensionId ?? undefined;
   return (
     <>
@@ -300,6 +303,19 @@ function ElementGroups({
       <div style={{ paddingLeft: 16 + depth * 20 }}>
         <CrearNodoDialog type="habit" parentId={area.id} dimensionId={dimProp} />
       </div>
+
+      {/* Las Rutinas siempre pertenecen a una Dimensión. */}
+      {dimensionId ? (
+        <>
+          <SectionLabel depth={depth}>Rutinas</SectionLabel>
+          {rutinas.map((r) => (
+            <RutinaRow key={r.id} rutina={r} compact indent={16 + depth * 20} />
+          ))}
+          <div style={{ paddingLeft: 16 + depth * 20 }}>
+            <RutinaDialog mode="create" areaId={area.id} dimensionId={dimensionId} />
+          </div>
+        </>
+      ) : null}
     </>
   );
 }
@@ -309,7 +325,8 @@ function DimensionRow({ area, dim }: { area: AreaNode; dim: DimensionNode }) {
   const count =
     area.proyectos.filter((p) => p.dimensionId === dim.id).length +
     area.objetivos.filter((o) => o.dimensionId === dim.id).length +
-    area.habitos.filter((h) => h.dimensionId === dim.id).length;
+    area.habitos.filter((h) => h.dimensionId === dim.id).length +
+    (area.rutinas ?? []).filter((r) => r.dimensionId === dim.id).length;
   return (
     <>
       <div
