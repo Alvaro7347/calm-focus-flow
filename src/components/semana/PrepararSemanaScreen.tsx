@@ -48,7 +48,17 @@ import { updateTask } from "@/services/taskService";
 import { invalidateActivityGraph } from "@/lib/queryInvalidation";
 import { getReflectionsBetween } from "@/services/copilotService";
 import {
+  loadTimeDistribution,
+  repeatInNextWeek,
+  type TimeDistribution,
+} from "@/services/weekPlanningService";
+import { getCalendarEvents, type CalendarEvent } from "@/services/calendarService";
+import { MonthView } from "@/components/calendar/MonthView";
+import { Checkbox } from "@/components/ui/checkbox";
+import { getProjectColor } from "@/lib/projectIdentity";
+import {
   dayLabel,
+  repeatKey,
   getSkippedKeys,
   loadWeeklyRitual,
   moveToDayIso,
@@ -61,13 +71,35 @@ import {
   type WeeklyRitualData,
 } from "@/services/weeklyRitualService";
 
-const STEPS = [
-  "Cerrar la semana",
-  "Mirar lo importante",
-  "Detectar omisiones",
-  "Revisar la carga",
-  "Cerrar el ritual",
-] as const;
+type StepKey = "cerrar" | "repetir" | "importante" | "omisiones" | "carga" | "mes" | "cierre";
+
+const STEP_LABEL: Record<StepKey, string> = {
+  cerrar: "Cerrar la semana",
+  repetir: "Repetir en la nueva semana",
+  importante: "Mirar lo importante",
+  omisiones: "Detectar omisiones",
+  carga: "Revisar la carga",
+  mes: "Mirar el mes",
+  cierre: "Cerrar el ritual",
+};
+
+/**
+ * Pasos del ritual. "Mirar el mes" aparece sólo en el primer ritual
+ * de cada mes: cuando la semana que se prepara empieza entre el 1 y
+ * el 7 del mes.
+ */
+function stepsFor(data: WeeklyRitualData | undefined): StepKey[] {
+  const firstOfMonth = !!data && data.nextStart.getDate() <= 7;
+  return [
+    "cerrar",
+    "repetir",
+    "importante",
+    "omisiones",
+    "carga",
+    ...(firstOfMonth ? (["mes"] as StepKey[]) : []),
+    "cierre",
+  ];
+}
 
 // ============================================================
 // Utilidades de formato
@@ -169,6 +201,9 @@ export function PrepararSemanaScreen() {
     clearDate,
   };
 
+  const STEPS = stepsFor(data);
+  const current: StepKey = STEPS[Math.min(step, STEPS.length - 1)];
+
   return (
     <div className="mx-auto w-full max-w-3xl px-4 sm:px-6 py-6 md:py-8 pb-32 md:pb-16">
       {/* Encabezado */}
@@ -203,7 +238,7 @@ export function PrepararSemanaScreen() {
           ))}
         </div>
         <p className="mt-3 text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
-          Paso {step + 1} de {STEPS.length} · {STEPS[step]}
+          Paso {step + 1} de {STEPS.length} · {STEP_LABEL[current]}
         </p>
       </div>
 
@@ -215,11 +250,13 @@ export function PrepararSemanaScreen() {
           <p className="text-sm text-muted-foreground">
             No pudimos reunir la información de tu semana. Inténtalo de nuevo en un momento.
           </p>
-        ) : step === 0 ? (
+        ) : current === "cerrar" ? (
           <StepCerrar data={data} actions={actions} />
-        ) : step === 1 ? (
+        ) : current === "repetir" ? (
+          <StepRepetir data={data} onDone={refresh} />
+        ) : current === "importante" ? (
           <StepImportante data={data} />
-        ) : step === 2 ? (
+        ) : current === "omisiones" ? (
           <StepOmisiones
             data={data}
             skipped={skipped}
@@ -227,8 +264,10 @@ export function PrepararSemanaScreen() {
             onSkip={skip}
             onUnskip={unskip}
           />
-        ) : step === 3 ? (
+        ) : current === "carga" ? (
           <StepCarga data={data} actions={actions} />
+        ) : current === "mes" ? (
+          <StepMes data={data} onOpen={actions.open} />
         ) : (
           <StepCierre data={data} skipped={skipped} />
         )}
@@ -454,6 +493,8 @@ function StepCerrar({ data, actions }: { data: WeeklyRitualData; actions: TaskAc
         {fmtRange(data.prevStart, data.prevEnd)}.
       </p>
 
+      <DistribucionTiempo from={data.prevStart} to={data.prevEnd} />
+
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
         <Stat value={data.completedPrev.length} label="Completadas" />
         <Stat value={data.pendingPrev.length} label="Siguen pendientes" />
@@ -553,6 +594,364 @@ function ReflexionesSemana({ from, to }: { from: Date; to: Date }) {
         </ul>
       </Card>
     </section>
+  );
+}
+
+// ============================================================
+// Cómo se distribuyó tu tiempo (dentro de "Cerrar la semana")
+// ============================================================
+
+function DistribucionTiempo({ from, to }: { from: Date; to: Date }) {
+  const { data, isLoading, isError } = useQuery<TimeDistribution>({
+    queryKey: ["weekly-ritual", "time", from.toISOString()],
+    queryFn: () => loadTimeDistribution(from, to),
+  });
+  const [verTodo, setVerTodo] = useState(false);
+
+  if (isLoading) return <p className="text-sm text-muted-foreground">Sumando tu tiempo…</p>;
+  if (isError || !data) return null;
+
+  if (data.totalMin === 0) {
+    return (
+      <section className="space-y-3">
+        <SectionTitle>Cómo se distribuyó tu tiempo</SectionTitle>
+        <Card>
+          <p className="text-sm text-muted-foreground">
+            Esta semana no hay tiempo registrado. Cuando tus tareas tengan duración y tus eventos
+            horario, aquí verás en qué se fue la semana.
+          </p>
+        </Card>
+      </section>
+    );
+  }
+
+  const max = Math.max(...data.areas.map((a) => a.min), 1);
+  const proyectos = verTodo ? data.projects : data.projects.slice(0, 5);
+
+  return (
+    <section className="space-y-3">
+      <div className="flex items-baseline justify-between gap-3">
+        <SectionTitle>Cómo se distribuyó tu tiempo</SectionTitle>
+        <span className="text-sm font-semibold text-foreground">{fmtMinutes(data.totalMin)}</span>
+      </div>
+
+      <Card>
+        <ul className="space-y-4">
+          {data.areas.map((a) => {
+            const color = getProjectColor(a.color);
+            return (
+              <li key={a.id}>
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className="flex min-w-0 items-center gap-2 text-sm font-semibold text-foreground">
+                    <span className={`h-2 w-2 shrink-0 rounded-full ${color.dot}`} aria-hidden />
+                    <span className="truncate">{a.name}</span>
+                  </span>
+                  <span className="shrink-0 text-sm font-semibold text-foreground">
+                    {fmtMinutes(a.min)}
+                  </span>
+                </div>
+                <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-muted">
+                  <div
+                    className={`h-full rounded-full ${color.dot}`}
+                    style={{ width: `${Math.max(4, Math.round((a.min / max) * 100))}%` }}
+                  />
+                </div>
+                {a.dimensions.some((d) => d.name) ? (
+                  <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
+                    {a.dimensions
+                      .map((d) => `${d.name ?? "Sin dimensión"} ${fmtMinutes(d.min)}`)
+                      .join(" · ")}
+                  </p>
+                ) : null}
+              </li>
+            );
+          })}
+        </ul>
+      </Card>
+
+      {data.projects.length > 0 ? (
+        <Card>
+          <p className="mb-2 text-xs font-medium text-muted-foreground">Por proyecto</p>
+          <ul className="space-y-1.5">
+            {proyectos.map((p) => (
+              <li
+                key={`${p.name}-${p.detail}`}
+                className="flex items-baseline justify-between gap-3"
+              >
+                <span className="min-w-0 truncate text-sm text-foreground">
+                  {p.name}
+                  <span className="text-muted-foreground"> · {p.detail}</span>
+                </span>
+                <span className="shrink-0 text-xs font-semibold text-foreground/80">
+                  {fmtMinutes(p.min)}
+                </span>
+              </li>
+            ))}
+          </ul>
+          {data.projects.length > 5 && !verTodo ? (
+            <button
+              type="button"
+              onClick={() => setVerTodo(true)}
+              className="mt-2 text-xs text-indigo-600 hover:text-indigo-700"
+            >
+              Ver {data.projects.length - 5} más
+            </button>
+          ) : null}
+        </Card>
+      ) : null}
+
+      {data.tags.length > 0 ? (
+        <Card>
+          <p className="mb-2 text-xs font-medium text-muted-foreground">Por etiqueta</p>
+          <div className="flex flex-wrap gap-2">
+            {data.tags.map((t) => (
+              <span
+                key={t.name}
+                className="rounded-full border bg-background px-3 py-1 text-xs text-foreground/80"
+              >
+                {t.name} · {fmtMinutes(t.min)}
+              </span>
+            ))}
+          </div>
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            Una actividad con varias etiquetas suma su tiempo completo en cada una.
+          </p>
+        </Card>
+      ) : null}
+
+      {data.withoutTime > 0 ? (
+        <p className="text-xs text-muted-foreground">
+          {data.withoutTime === 1
+            ? "1 actividad realizada no tiene tiempo registrado y no se suma."
+            : `${data.withoutTime} actividades realizadas no tienen tiempo registrado y no se suman.`}
+        </p>
+      ) : null}
+    </section>
+  );
+}
+
+// ============================================================
+// Repetir en la nueva semana
+// ============================================================
+
+function StepRepetir({ data, onDone }: { data: WeeklyRitualData; onDone: () => Promise<void> }) {
+  const [elegidas, setElegidas] = useState<Set<string>>(() => new Set());
+  const [copiando, setCopiando] = useState(false);
+  const [fallas, setFallas] = useState<{ title: string; reason: string }[]>([]);
+
+  const yaEsta = useMemo(() => new Set(data.nextWeekKeys), [data.nextWeekKeys]);
+  const estaEnNueva = (t: RitualTask) => yaEsta.has(repeatKey(t.title, t.startsAt));
+
+  // Grupos por Área · Dimensión, en orden de aparición.
+  const grupos = useMemo(() => {
+    const map = new Map<string, RitualTask[]>();
+    for (const t of data.repeatCandidates) {
+      const k = `${t.areaName} · ${t.dimensionName ?? "Sin dimensión"}`;
+      map.set(k, [...(map.get(k) ?? []), t]);
+    }
+    return [...map.entries()];
+  }, [data.repeatCandidates]);
+
+  function toggle(id: string) {
+    setElegidas((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleGrupo(items: RitualTask[]) {
+    const disponibles = items.filter((t) => !estaEnNueva(t)).map((t) => t.id);
+    setElegidas((prev) => {
+      const next = new Set(prev);
+      const todas = disponibles.every((id) => next.has(id));
+      for (const id of disponibles) {
+        if (todas) next.delete(id);
+        else next.add(id);
+      }
+      return next;
+    });
+  }
+
+  async function copiar() {
+    setCopiando(true);
+    setFallas([]);
+    try {
+      const res = await repeatInNextWeek([...elegidas]);
+      if (res.copied > 0) {
+        toast.success(
+          res.copied === 1
+            ? "1 actividad quedó en la nueva semana."
+            : `${res.copied} actividades quedaron en la nueva semana.`,
+        );
+      }
+      setFallas(res.failed);
+      setElegidas(new Set());
+      await onDone();
+    } catch {
+      toast.error("No se pudieron copiar las actividades. Inténtalo de nuevo.");
+    } finally {
+      setCopiando(false);
+    }
+  }
+
+  if (data.repeatCandidates.length === 0) {
+    return (
+      <div className="space-y-6">
+        <p className="text-[15px] leading-relaxed text-foreground/80">
+          La semana que termina no tiene actividades para repetir.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <p className="text-[15px] leading-relaxed text-foreground/80">
+        Elige qué actividades de la semana que termina se repiten en la nueva. Se copian al mismo
+        día y hora, con su duración, etiquetas y recordatorio. Lo que no marques, no pasa.
+      </p>
+
+      {grupos.map(([nombre, items]) => {
+        const disponibles = items.filter((t) => !estaEnNueva(t));
+        const todas = disponibles.length > 0 && disponibles.every((t) => elegidas.has(t.id));
+        return (
+          <section key={nombre} className="space-y-2">
+            <div className="flex items-center justify-between gap-3">
+              <SectionTitle>{nombre}</SectionTitle>
+              {disponibles.length > 1 ? (
+                <button
+                  type="button"
+                  onClick={() => toggleGrupo(items)}
+                  className="min-h-[36px] shrink-0 px-1 text-xs font-medium text-indigo-600 hover:text-indigo-700"
+                >
+                  {todas ? "Quitar todas" : "Marcar todas"}
+                </button>
+              ) : null}
+            </div>
+            <Card className="!p-0">
+              <ul className="divide-y">
+                {items.map((t) => {
+                  const ya = estaEnNueva(t);
+                  const id = `rep-${t.id}`;
+                  const dur = itemMinutesLabel(t);
+                  return (
+                    <li key={t.id}>
+                      <label
+                        htmlFor={id}
+                        className={`flex min-h-[52px] items-start gap-3 px-4 py-3 ${
+                          ya ? "opacity-60" : "cursor-pointer"
+                        }`}
+                      >
+                        <Checkbox
+                          id={id}
+                          className="mt-0.5 h-5 w-5"
+                          checked={ya || elegidas.has(t.id)}
+                          disabled={ya || copiando}
+                          onCheckedChange={() => toggle(t.id)}
+                        />
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-sm font-medium text-foreground">
+                            {t.title}
+                          </span>
+                          <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+                            {[fmtWhen(t.startsAt), t.linkLabel].filter(Boolean).join(" · ")}
+                            {t.status === "not_done"
+                              ? t.activityType === "event"
+                                ? " · No fui"
+                                : " · No la hice"
+                              : ""}
+                          </span>
+                        </span>
+                        <span className="shrink-0 pt-0.5 text-xs font-medium text-muted-foreground">
+                          {ya ? "Ya está" : dur}
+                        </span>
+                      </label>
+                    </li>
+                  );
+                })}
+              </ul>
+            </Card>
+          </section>
+        );
+      })}
+
+      {fallas.length > 0 ? (
+        <Card className="border-amber-200 bg-amber-50/60">
+          <p className="text-sm font-medium text-foreground">No se copiaron:</p>
+          <ul className="mt-1 space-y-1">
+            {fallas.map((f, i) => (
+              <li key={i} className="text-xs text-foreground/80">
+                {f.title}: {f.reason}
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : null}
+
+      <div className="sticky bottom-24 md:bottom-4">
+        <Button
+          className="w-full min-h-[48px] shadow-lg"
+          disabled={elegidas.size === 0 || copiando}
+          onClick={() => void copiar()}
+        >
+          {copiando
+            ? "Copiando…"
+            : elegidas.size === 0
+              ? "Marca lo que se repite"
+              : `Copiar ${plural(elegidas.size, "actividad", "actividades")} a la nueva semana`}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function itemMinutesLabel(t: RitualTask): string {
+  if (t.activityType === "event" && t.startsAt && t.endsAt) {
+    const m = (new Date(t.endsAt).getTime() - new Date(t.startsAt).getTime()) / 60000;
+    return m > 0 ? fmtMinutes(Math.round(m)) : "";
+  }
+  return t.estimatedMin ? fmtMinutes(t.estimatedMin) : "";
+}
+
+// ============================================================
+// Mirar el mes (primer ritual de cada mes)
+// ============================================================
+
+function StepMes({ data, onOpen }: { data: WeeklyRitualData; onOpen: (id: string) => void }) {
+  const anchor = data.nextStart;
+  const from = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
+  const to = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0, 23, 59, 59);
+  // Rango de semanas completas, igual que la vista mensual del Calendario.
+  const desde = new Date(from);
+  desde.setDate(desde.getDate() - ((desde.getDay() + 6) % 7));
+  const hasta = new Date(to);
+  hasta.setDate(hasta.getDate() + ((7 - hasta.getDay()) % 7));
+
+  const { data: events = [], isLoading } = useQuery<CalendarEvent[]>({
+    queryKey: ["calendar", "ritual-mes", desde.toISOString()],
+    queryFn: () => getCalendarEvents(desde, hasta),
+  });
+
+  return (
+    <div className="space-y-6">
+      <p className="text-[15px] leading-relaxed text-foreground/80">
+        Es el primer ritual del mes. Antes de cerrar, mira cómo vienen las próximas semanas: los
+        días cargados, los vacíos y si tus hábitos tienen espacio. Toca un día para ver su detalle.
+      </p>
+      {isLoading ? (
+        <p className="text-sm text-muted-foreground">Cargando el mes…</p>
+      ) : (
+        <MonthView
+          anchor={anchor}
+          events={events}
+          onSelectEvent={(e) => {
+            if (e.source === "calmapp") onOpen(e.id);
+          }}
+        />
+      )}
+    </div>
   );
 }
 
