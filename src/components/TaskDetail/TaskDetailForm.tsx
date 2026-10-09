@@ -307,6 +307,11 @@ export function TaskDetailForm({
   );
   const [userTouchedObjective, setUserTouchedObjective] = useState(false);
 
+  // Rutina de la que nació la tarea (sólo informativo; no se elige aquí).
+  const routineId = isDuplicate
+    ? null
+    : ((initialTask?.task as { routine_id?: string | null } | undefined)?.routine_id ?? null);
+
   const [habits, setHabits] = useState<HabitRow[]>([]);
   const [habitId, setHabitId] = useState<string>(initialTask?.habitId ?? "");
 
@@ -755,6 +760,13 @@ export function TaskDetailForm({
         }
       }
 
+      // Tarea de una Rutina: si se vincula a otra cosa o cambia de Área,
+      // deja de ser parte de la Rutina (una tarea tiene un solo vínculo).
+      const routineFields =
+        isEdit && routineId && (vinculo !== "ninguno" || areaId !== initialTask?.areaId)
+          ? { routine_id: null }
+          : {};
+
       let saved: TaskRow;
       if (isEdit) {
         if (!initialTask) throw new Error("Falta la tarea a editar.");
@@ -767,6 +779,7 @@ export function TaskDetailForm({
           area_id: areaId,
           ...linkFields,
           ...dimensionFields,
+          ...routineFields,
           title: title.trim(),
           description: description.trim() || null,
           priority,
@@ -1247,6 +1260,14 @@ export function TaskDetailForm({
 
             {/* Etiquetas: cruzan el árbol (p. ej. Instagram, Contenido). */}
             <TagPicker value={tagIds} onChange={setTagIds} disabled={saving} />
+
+            {routineId ? (
+              <p className="rounded-md bg-violet-50 px-3 py-2 text-xs text-violet-800">
+                {vinculo === "ninguno"
+                  ? "↻ Esta tarea es parte de una Rutina. Para cambiar sus días u hora, edita la Rutina en el Tablero."
+                  : "Al guardar con otro vínculo, esta tarea deja de ser parte de su Rutina."}
+              </p>
+            ) : null}
 
             {/* Tarea directa: puede vivir en una Dimensión del Área. */}
             {vinculo === "ninguno" && (
