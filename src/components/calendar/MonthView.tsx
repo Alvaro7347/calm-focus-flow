@@ -7,17 +7,18 @@
  * Apple y Google Calendar: el mes muestra DENSIDAD y el detalle va
  * en una lista del día elegido). Por eso:
  *
- *  - Arriba, el mes: cada día muestra sus HORAS comprometidas y un
- *    color que se intensifica con la carga; punto naranjo si supera
- *    el límite diario; puntitos por los hábitos esperados ese día
- *    (rellenos = cumplidos).
+ *  - Arriba, el mes: cada día muestra cuántas ACTIVIDADES tiene
+ *    (tareas + eventos) y un color que se intensifica con la carga;
+ *    punto naranjo si llega al límite diario; puntitos por los hábitos
+ *    esperados ese día (rellenos = cumplidos).
  *  - Abajo (o al lado en pantallas grandes), la lista del día
  *    seleccionado, en la misma pantalla. Tocar un día la cambia.
  *
- * Horas comprometidas de un día:
+ * Carga de un día = cantidad de actividades (tareas + eventos),
+ * incluidas las ya completadas. "No la hice" / "No fui" no cuenta.
+ * Las horas comprometidas se muestran como dato en el día elegido:
  *  - Evento: su horario (fin − inicio).
  *  - Tarea: su duración estimada (sin duración = 0, se avisa).
- *  - "No la hice" / "No fui" no cuenta.
  *
  * Los hábitos se leen del árbol del Tablero (misma query ["tablero"]).
  * ========================================================
@@ -42,8 +43,8 @@ import { getProjectColor } from "@/lib/projectIdentity";
 import { isEvento, scheduleText, typeLabel, ariaTypeLabel } from "@/lib/activityDisplay";
 import { TaskDetailSheet } from "@/components/TaskDetail";
 
-/** Sobre este número de horas, el día se marca como sobrecargado. */
-const LIMITE_HORAS_DIA = 8;
+/** Desde este número de actividades, el día se marca "con harta pega". */
+const LIMITE_ACTIVIDADES_DIA = 20;
 
 const DIAS_CORTOS = ["L", "M", "M", "J", "V", "S", "D"];
 
@@ -76,27 +77,24 @@ function sinDuracion(e: CalendarEvent): boolean {
   return !isEvento(e) && !e.noHecha && !e.tarea?.noHecha && !e.tarea?.duracionMin;
 }
 
-function nivelCarga(min: number): 0 | 1 | 2 | 3 | 4 {
-  const h = min / 60;
-  if (h === 0) return 0;
-  if (h < 3) return 1;
-  if (h < 5) return 2;
-  if (h < LIMITE_HORAS_DIA) return 3;
+/** ¿Cuenta como actividad del día? ("No la hice" / "No fui" no). */
+function cuenta(e: CalendarEvent): boolean {
+  return !(e.tarea?.noHecha || e.noHecha);
+}
+
+function nivelCarga(n: number): 0 | 1 | 2 | 3 | 4 {
+  if (n === 0) return 0;
+  if (n < 6) return 1;
+  if (n < 12) return 2;
+  if (n < LIMITE_ACTIVIDADES_DIA) return 3;
   return 4;
 }
 
-const FONDO_NIVEL = ["bg-white", "bg-violet-50", "bg-violet-100", "bg-violet-200", "bg-violet-300"];
-
-/** 90 → "1½h"; 120 → "2h"; 45 → "45m"; 0 → "·". */
-function horasCortas(min: number): string {
-  if (min === 0) return "·";
-  if (min < 60) return `${min}m`;
-  const h = min / 60;
-  const entero = Math.floor(h);
-  const resto = h - entero;
-  if (resto >= 0.25 && resto < 0.75) return `${entero}½h`;
-  return `${resto >= 0.75 ? entero + 1 : entero}h`;
+function actividadesTexto(n: number): string {
+  return n === 1 ? "1 actividad" : `${n} actividades`;
 }
+
+const FONDO_NIVEL = ["bg-white", "bg-violet-50", "bg-violet-100", "bg-violet-200", "bg-violet-300"];
 
 /** 540 → "9 h"; 90 → "1 h 30 min"; 45 → "45 min". */
 function horasLargas(min: number): string {
@@ -158,37 +156,39 @@ export function MonthView({ anchor, events, onSelectEvent }: Props) {
       .filter((e) => isSameDay(e.start, d))
       .sort((a, b) => Number(a.allDay) - Number(b.allDay) || a.start.getTime() - b.start.getTime());
 
-  // Carga por día
+  // Carga por día: cantidad de actividades (y sus minutos, como dato).
   const carga = useMemo(() => {
     const map = new Map<string, number>();
     for (const e of events) {
+      if (!cuenta(e)) continue;
       const k = toLocalDate(e.start);
-      map.set(k, (map.get(k) ?? 0) + minutosDe(e));
+      map.set(k, (map.get(k) ?? 0) + 1);
     }
     return map;
   }, [events]);
 
   // Resumen del mes visible
   const resumen = useMemo(() => {
-    let min = 0;
+    let total = 0;
     let sobrecargados = 0;
     for (const d of dias) {
       if (!isSameMonth(d, anchor)) continue;
-      const m = carga.get(toLocalDate(d)) ?? 0;
-      min += m;
-      if (m >= LIMITE_HORAS_DIA * 60) sobrecargados++;
+      const n = carga.get(toLocalDate(d)) ?? 0;
+      total += n;
+      if (n >= LIMITE_ACTIVIDADES_DIA) sobrecargados++;
     }
-    return { horas: Math.round(min / 60), sobrecargados };
+    return { total, sobrecargados };
   }, [dias, carga, anchor]);
 
   const delDia = eventosDia(seleccionado);
-  const minDelDia = carga.get(toLocalDate(seleccionado)) ?? 0;
+  const nDelDia = carga.get(toLocalDate(seleccionado)) ?? 0;
+  const minDelDia = delDia.reduce((acc, e) => acc + minutosDe(e), 0);
   const sinDuracionDelDia = delDia.filter(sinDuracion).length;
   const habitosDelDia = habitos.filter((h) => habitoEsperado(h, seleccionado));
 
   // Sugerencia calma: día más liviano de la misma semana, si el seleccionado está sobrecargado.
   const sugerencia = useMemo(() => {
-    if (minDelDia < LIMITE_HORAS_DIA * 60) return null;
+    if (nDelDia < LIMITE_ACTIVIDADES_DIA) return null;
     const lunes = startOfWeek(seleccionado, { weekStartsOn: 1 });
     let mejor: { d: Date; m: number } | null = null;
     for (let i = 0; i < 7; i++) {
@@ -199,16 +199,16 @@ export function MonthView({ anchor, events, onSelectEvent }: Props) {
     }
     return mejor;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [seleccionado, minDelDia, carga]);
+  }, [seleccionado, nDelDia, carga]);
 
   return (
     <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_360px] md:items-start">
       {/* ---------------- Mapa del mes ---------------- */}
       <section aria-label="Mapa de carga del mes" className="space-y-3">
         <p className="text-xs text-slate-500">
-          {resumen.horas} h comprometidas
+          {actividadesTexto(resumen.total)} en el mes
           {resumen.sobrecargados > 0
-            ? ` · ${resumen.sobrecargados} ${resumen.sobrecargados === 1 ? "día sobrecargado" : "días sobrecargados"}`
+            ? ` · ${resumen.sobrecargados} ${resumen.sobrecargados === 1 ? "día con harta pega" : "días con harta pega"}`
             : ""}
         </p>
 
@@ -226,14 +226,13 @@ export function MonthView({ anchor, events, onSelectEvent }: Props) {
               const enMes = isSameMonth(d, anchor);
               const esHoy = isSameDay(d, hoy);
               const esSel = isSameDay(d, seleccionado);
-              const min = carga.get(toLocalDate(d)) ?? 0;
-              const nivel = nivelCarga(min);
+              const n = carga.get(toLocalDate(d)) ?? 0;
+              const nivel = nivelCarga(n);
               const sobre = nivel === 4;
               const hecho = new Set<string>();
               const esperados = habitos.filter((h) => habitoEsperado(h, d));
               for (const h of esperados)
                 if (h.diasCumplidos.includes(toLocalDate(d))) hecho.add(h.id);
-              const etiquetaHoras = horasCortas(min);
               return (
                 <button
                   key={d.toISOString()}
@@ -241,8 +240,8 @@ export function MonthView({ anchor, events, onSelectEvent }: Props) {
                   onClick={() => setSeleccionado(d)}
                   aria-pressed={esSel}
                   aria-label={`${format(d, "EEEE d 'de' MMMM", { locale: es })}: ${
-                    min === 0 ? "sin horas comprometidas" : horasLargas(min)
-                  }${sobre ? ", sobrecargado" : ""}`}
+                    n === 0 ? "sin actividades" : actividadesTexto(n)
+                  }${sobre ? ", con harta pega" : ""}`}
                   className={`relative flex min-h-[60px] flex-col items-center justify-between rounded-xl px-0.5 py-1.5 transition-shadow ${
                     FONDO_NIVEL[nivel]
                   } ${esSel ? "ring-2 ring-slate-900" : esHoy ? "ring-[1.5px] ring-violet-500" : ""} ${
@@ -263,9 +262,9 @@ export function MonthView({ anchor, events, onSelectEvent }: Props) {
                     />
                   )}
                   <span
-                    className={`text-[11px] font-bold ${min === 0 ? "text-slate-400" : "text-slate-900"}`}
+                    className={`text-[11px] font-bold ${n === 0 ? "text-slate-400" : "text-slate-900"}`}
                   >
-                    {etiquetaHoras}
+                    {n === 0 ? "·" : n}
                   </span>
                   <span className="flex min-h-[4px] flex-wrap justify-center gap-0.5" aria-hidden>
                     {esperados.slice(0, 4).map((h) => (
@@ -292,7 +291,8 @@ export function MonthView({ anchor, events, onSelectEvent }: Props) {
             </div>
             <div className="flex items-center gap-3">
               <span className="flex items-center gap-1">
-                <span className="h-1.5 w-1.5 rounded-full bg-orange-600" />+{LIMITE_HORAS_DIA} h
+                <span className="h-1.5 w-1.5 rounded-full bg-orange-600" />
+                {LIMITE_ACTIVIDADES_DIA}+ act.
               </span>
               {habitos.length > 0 && (
                 <span className="flex items-center gap-1">
@@ -312,7 +312,9 @@ export function MonthView({ anchor, events, onSelectEvent }: Props) {
             {format(seleccionado, "EEEE d", { locale: es })}
           </h2>
           <span className="text-sm font-semibold text-slate-700">
-            {minDelDia > 0 ? `${horasLargas(minDelDia)} comprometidas` : "Sin horas comprometidas"}
+            {nDelDia > 0
+              ? `${actividadesTexto(nDelDia)}${minDelDia > 0 ? ` · ${horasLargas(minDelDia)}` : ""}`
+              : "Sin actividades"}
           </span>
         </div>
 
@@ -320,9 +322,9 @@ export function MonthView({ anchor, events, onSelectEvent }: Props) {
           <div className="flex items-start gap-2 rounded-xl bg-orange-50 px-3 py-2.5 text-[13px] leading-snug text-orange-900">
             <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-orange-600" aria-hidden />
             <span>
-              Este día supera tus {LIMITE_HORAS_DIA} h habituales. ¿Mueves algo al{" "}
-              {format(sugerencia.d, "EEEE d", { locale: es })}, que tiene{" "}
-              {sugerencia.m > 0 ? horasLargas(sugerencia.m) : "el día libre"}?
+              Día con harta pega: {nDelDia} actividades (tu límite es {LIMITE_ACTIVIDADES_DIA}).
+              ¿Mueves algo al {format(sugerencia.d, "EEEE d", { locale: es })}, que tiene{" "}
+              {sugerencia.m > 0 ? actividadesTexto(sugerencia.m) : "el día libre"}?
             </span>
           </div>
         )}
