@@ -20,7 +20,7 @@
  * Tono: sereno. Nunca "atrasado", "fallaste" ni "deberías".
  * ========================================================
  */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -56,6 +56,13 @@ import { getCalendarEvents, type CalendarEvent } from "@/services/calendarServic
 import { MonthView } from "@/components/calendar/MonthView";
 import { Checkbox } from "@/components/ui/checkbox";
 import { getProjectColor } from "@/lib/projectIdentity";
+import {
+  createRoutineOccurrences,
+  existingOccurrenceKeys,
+  fetchRoutineNodes,
+  occurrencesForWeek,
+  type RoutineOccurrence,
+} from "@/services/routineService";
 import {
   dayLabel,
   repeatKey,
@@ -742,15 +749,53 @@ function StepRepetir({ data, onDone }: { data: WeeklyRitualData; onDone: () => P
   const yaEsta = useMemo(() => new Set(data.nextWeekKeys), [data.nextWeekKeys]);
   const estaEnNueva = (t: RitualTask) => yaEsta.has(repeatKey(t.title, t.startsAt));
 
+  // ---- Rutinas: sus días de la nueva semana, ya marcados ----
+  const { data: rutinas = [] } = useQuery({
+    queryKey: ["weekly-ritual", "routines"],
+    queryFn: fetchRoutineNodes,
+  });
+  const { data: existentes } = useQuery({
+    queryKey: ["weekly-ritual", "routine-keys", data.nextStart.toISOString()],
+    queryFn: () => existingOccurrenceKeys(data.nextStart, data.nextEnd),
+  });
+  const ocurrencias = useMemo(
+    () => rutinas.flatMap((r) => occurrencesForWeek(r, data.nextStart)),
+    [rutinas, data.nextStart],
+  );
+  const [rutElegidas, setRutElegidas] = useState<Set<string>>(() => new Set());
+  const [rutIniciadas, setRutIniciadas] = useState(false);
+  useEffect(() => {
+    if (rutIniciadas || !existentes) return;
+    setRutElegidas(new Set(ocurrencias.filter((o) => !existentes.has(o.key)).map((o) => o.key)));
+    setRutIniciadas(true);
+  }, [existentes, ocurrencias, rutIniciadas]);
+  const rutinaYaEsta = (o: RoutineOccurrence) => !!existentes?.has(o.key);
+  const routineTaskIds = useMemo(() => new Set(rutinas.flatMap((r) => r.taskIds)), [rutinas]);
+
+  function toggleRut(key: string) {
+    setRutElegidas((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
+
+  // Las tareas de Rutinas no se repiten como copia: se generan desde la Rutina.
+  const candidatos = useMemo(
+    () => data.repeatCandidates.filter((t) => !routineTaskIds.has(t.id)),
+    [data.repeatCandidates, routineTaskIds],
+  );
+
   // Grupos por Área · Dimensión, en orden de aparición.
   const grupos = useMemo(() => {
     const map = new Map<string, RitualTask[]>();
-    for (const t of data.repeatCandidates) {
+    for (const t of candidatos) {
       const k = `${t.areaName} · ${t.dimensionName ?? "Sin dimensión"}`;
       map.set(k, [...(map.get(k) ?? []), t]);
     }
     return [...map.entries()];
-  }, [data.repeatCandidates]);
+  }, [candidatos]);
 
   function toggle(id: string) {
     setElegidas((prev) => {
@@ -774,20 +819,29 @@ function StepRepetir({ data, onDone }: { data: WeeklyRitualData; onDone: () => P
     });
   }
 
+  const totalElegidas = elegidas.size + rutElegidas.size;
+
   async function copiar() {
     setCopiando(true);
     setFallas([]);
     try {
-      const res = await repeatInNextWeek([...elegidas]);
-      if (res.copied > 0) {
+      const rut = await createRoutineOccurrences(
+        rutinas,
+        ocurrencias.filter((o) => rutElegidas.has(o.key)),
+      );
+      const res =
+        elegidas.size > 0 ? await repeatInNextWeek([...elegidas]) : { copied: 0, failed: [] };
+      const total = rut.created + res.copied;
+      if (total > 0) {
         toast.success(
-          res.copied === 1
+          total === 1
             ? "1 actividad quedó en la nueva semana."
-            : `${res.copied} actividades quedaron en la nueva semana.`,
+            : `${total} actividades quedaron en la nueva semana.`,
         );
       }
-      setFallas(res.failed);
+      setFallas([...rut.failed, ...res.failed]);
       setElegidas(new Set());
+      setRutElegidas(new Set());
       await onDone();
     } catch {
       toast.error("No se pudieron copiar las actividades. Inténtalo de nuevo.");
@@ -796,7 +850,7 @@ function StepRepetir({ data, onDone }: { data: WeeklyRitualData; onDone: () => P
     }
   }
 
-  if (data.repeatCandidates.length === 0) {
+  if (candidatos.length === 0 && ocurrencias.length === 0) {
     return (
       <div className="space-y-6">
         <p className="text-[15px] leading-relaxed text-foreground/80">
@@ -806,12 +860,64 @@ function StepRepetir({ data, onDone }: { data: WeeklyRitualData; onDone: () => P
     );
   }
 
+  // Rutinas agrupadas por nombre (una fila por día).
+  const rutinasConDias = rutinas
+    .map((r) => ({ r, items: ocurrencias.filter((o) => o.routineId === r.id) }))
+    .filter((x) => x.items.length > 0);
+
   return (
     <div className="space-y-6">
       <p className="text-[15px] leading-relaxed text-foreground/80">
-        Elige qué actividades de la semana que termina se repiten en la nueva. Se copian al mismo
-        día y hora, con su duración, etiquetas y recordatorio. Lo que no marques, no pasa.
+        Elige qué se repite en la nueva semana. Tus Rutinas vienen marcadas; lo demás se copia al
+        mismo día y hora, con su duración, etiquetas y recordatorio. Lo que no marques, no pasa.
       </p>
+
+      {rutinasConDias.length > 0 ? (
+        <section className="space-y-2">
+          <SectionTitle>Rutinas</SectionTitle>
+          <Card className="!p-0">
+            <ul className="divide-y">
+              {rutinasConDias.flatMap(({ r, items }) =>
+                items.map((o) => {
+                  const ya = rutinaYaEsta(o);
+                  const id = `rut-${o.key}`;
+                  const d = new Date(o.startsAt);
+                  return (
+                    <li key={o.key}>
+                      <label
+                        htmlFor={id}
+                        className={`flex min-h-[52px] items-start gap-3 px-4 py-3 ${
+                          ya ? "opacity-60" : "cursor-pointer"
+                        }`}
+                      >
+                        <Checkbox
+                          id={id}
+                          className="mt-0.5 h-5 w-5"
+                          checked={ya || rutElegidas.has(o.key)}
+                          disabled={ya || copiando}
+                          onCheckedChange={() => toggleRut(o.key)}
+                        />
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-sm font-medium text-foreground">
+                            ↻ {r.nombre}
+                          </span>
+                          <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+                            {dayLabel(d)}
+                            {r.hora ? ` · ${r.hora}` : ""}
+                          </span>
+                        </span>
+                        <span className="shrink-0 pt-0.5 text-xs font-medium text-muted-foreground">
+                          {ya ? "Ya está" : o.duracionMin ? fmtMinutes(o.duracionMin) : ""}
+                        </span>
+                      </label>
+                    </li>
+                  );
+                }),
+              )}
+            </ul>
+          </Card>
+        </section>
+      ) : null}
 
       {grupos.map(([nombre, items]) => {
         const disponibles = items.filter((t) => !estaEnNueva(t));
@@ -893,14 +999,14 @@ function StepRepetir({ data, onDone }: { data: WeeklyRitualData; onDone: () => P
       <div className="sticky bottom-24 md:bottom-4">
         <Button
           className="w-full min-h-[48px] shadow-lg"
-          disabled={elegidas.size === 0 || copiando}
+          disabled={totalElegidas === 0 || copiando}
           onClick={() => void copiar()}
         >
           {copiando
             ? "Copiando…"
-            : elegidas.size === 0
+            : totalElegidas === 0
               ? "Marca lo que se repite"
-              : `Copiar ${plural(elegidas.size, "actividad", "actividades")} a la nueva semana`}
+              : `Agregar ${plural(totalElegidas, "actividad", "actividades")} a la nueva semana`}
         </Button>
       </div>
     </div>
