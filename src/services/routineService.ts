@@ -331,6 +331,28 @@ export async function createRoutineOccurrences(
   return result;
 }
 
+/**
+ * Al crear una Rutina: genera sus días desde hoy hasta el domingo de
+ * esta semana (si hoy tiene hora y ya pasó, hoy no se incluye). Desde
+ * la semana siguiente, las tareas se proponen en el Ritual del domingo.
+ */
+export async function createRestOfThisWeek(
+  row: RoutineRow,
+  now: Date = new Date(),
+): Promise<CreateOccurrencesResult> {
+  const node = mapRoutine({ ...row, tasks: [] });
+  const hoy = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const lunes = new Date(hoy);
+  lunes.setDate(hoy.getDate() - ((hoy.getDay() + 6) % 7));
+  const pendientes = occurrencesForWeek(node, lunes).filter((o) => {
+    if (o.fecha < localDate(hoy)) return false;
+    // Hoy con hora ya pasada: no se crea.
+    if (o.fecha === localDate(hoy) && node.hora) return new Date(o.startsAt) > now;
+    return true;
+  });
+  return createRoutineOccurrences([node], pendientes);
+}
+
 export const DIAS_SEMANA: { label: string; dia: number }[] = [
   { label: "L", dia: 1 },
   { label: "M", dia: 2 },
