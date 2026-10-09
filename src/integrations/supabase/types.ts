@@ -897,6 +897,69 @@ export type Database = {
         }
         Relationships: []
       }
+      routines: {
+        Row: {
+          archived_at: string | null
+          area_id: string
+          created_at: string
+          description: string | null
+          dimension_id: string
+          duration_min: number | null
+          id: string
+          name: string
+          priority: Database["public"]["Enums"]["task_priority"]
+          start_time: string | null
+          tag_ids: string[]
+          updated_at: string
+          weekdays: number[]
+        }
+        Insert: {
+          archived_at?: string | null
+          area_id: string
+          created_at?: string
+          description?: string | null
+          dimension_id: string
+          duration_min?: number | null
+          id?: string
+          name: string
+          priority?: Database["public"]["Enums"]["task_priority"]
+          start_time?: string | null
+          tag_ids?: string[]
+          updated_at?: string
+          weekdays?: number[]
+        }
+        Update: {
+          archived_at?: string | null
+          area_id?: string
+          created_at?: string
+          description?: string | null
+          dimension_id?: string
+          duration_min?: number | null
+          id?: string
+          name?: string
+          priority?: Database["public"]["Enums"]["task_priority"]
+          start_time?: string | null
+          tag_ids?: string[]
+          updated_at?: string
+          weekdays?: number[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "routines_area_id_fkey"
+            columns: ["area_id"]
+            isOneToOne: false
+            referencedRelation: "areas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "routines_dimension_id_fkey"
+            columns: ["dimension_id"]
+            isOneToOne: false
+            referencedRelation: "dimensions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subprojects: {
         Row: {
           archived_at: string | null
@@ -1054,6 +1117,7 @@ export type Database = {
           habit_id: string | null
           id: string
           priority: Database["public"]["Enums"]["task_priority"]
+          routine_id: string | null
           source: Database["public"]["Enums"]["task_source"]
           starts_at: string | null
           status: Database["public"]["Enums"]["task_status"]
@@ -1079,6 +1143,7 @@ export type Database = {
           habit_id?: string | null
           id?: string
           priority?: Database["public"]["Enums"]["task_priority"]
+          routine_id?: string | null
           source?: Database["public"]["Enums"]["task_source"]
           starts_at?: string | null
           status?: Database["public"]["Enums"]["task_status"]
@@ -1104,6 +1169,7 @@ export type Database = {
           habit_id?: string | null
           id?: string
           priority?: Database["public"]["Enums"]["task_priority"]
+          routine_id?: string | null
           source?: Database["public"]["Enums"]["task_source"]
           starts_at?: string | null
           status?: Database["public"]["Enums"]["task_status"]
@@ -1146,6 +1212,13 @@ export type Database = {
             columns: ["habit_id"]
             isOneToOne: false
             referencedRelation: "habits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_routine_id_fkey"
+            columns: ["routine_id"]
+            isOneToOne: false
+            referencedRelation: "routines"
             referencedColumns: ["id"]
           },
           {
