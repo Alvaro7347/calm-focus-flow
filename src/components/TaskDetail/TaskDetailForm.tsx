@@ -154,6 +154,14 @@ function splitIsoToLocalDateTime(iso: string | null): { fecha: string; hora: str
   };
 }
 
+/** 90 → "1 h 30 min"; 120 → "2 h". */
+function formatMinutos(min: number): string {
+  const h = Math.floor(min / 60);
+  const m = Math.round(min % 60);
+  if (h === 0) return `${m} min`;
+  return m === 0 ? `${h} h` : `${h} h ${m} min`;
+}
+
 export function TaskDetailForm({
   mode,
   initialTask,
@@ -190,6 +198,13 @@ export function TaskDetailForm({
   const [fecha, setFecha] = useState(initialSplit.fecha || defaults?.fecha || "");
   const [hora, setHora] = useState(initialSplit.hora);
   const [horaFin, setHoraFin] = useState(initialEndSplit.hora);
+  // Tiempo real (min): se pregunta al marcar la tarea como completada.
+  // Vacío = se usará el estimado al medir.
+  const [tiempoReal, setTiempoReal] = useState<string>(
+    initialTask?.task.actual_duration_min != null && !isDuplicate
+      ? String(initialTask.task.actual_duration_min)
+      : "",
+  );
   const [duracion, setDuracion] = useState<string>(
     initialTask?.task.estimated_duration_min != null
       ? String(initialTask.task.estimated_duration_min)
@@ -696,6 +711,12 @@ export function TaskDetailForm({
       const endsAt = buildEndsAt();
       // Los eventos derivan su duración de ends_at; no persistimos estimación.
       const duracionNum = isEvento ? null : duracion ? Number(duracion) : null;
+      // Tiempo real: sólo en tareas completadas. En cualquier otro estado
+      // se limpia (si la reabres, el dato anterior ya no aplica).
+      const tiempoRealNum =
+        !isEvento && status === "completed" && tiempoReal.trim() !== ""
+          ? Math.max(0, Math.round(Number(tiempoReal)))
+          : null;
       const dbActivityType = ACTIVITY_TYPE_DB[activityType];
 
       // Vínculo mutuamente excluyente: Proyecto→Etapa, Objetivo→Meta,
@@ -754,6 +775,7 @@ export function TaskDetailForm({
           ends_at: endsAt,
           activity_type: dbActivityType,
           estimated_duration_min: duracionNum,
+          actual_duration_min: Number.isFinite(tiempoRealNum) ? tiempoRealNum : null,
           completed_at: nextCompletedAt,
         });
         toast.success(isEvento ? "Evento actualizado." : "Tarea actualizada.");
@@ -771,6 +793,7 @@ export function TaskDetailForm({
           ends_at: endsAt,
           activity_type: dbActivityType,
           estimated_duration_min: duracionNum,
+          actual_duration_min: Number.isFinite(tiempoRealNum) ? tiempoRealNum : null,
         };
         saved = await createTask(input);
         if (isDuplicate) {
@@ -1240,7 +1263,17 @@ export function TaskDetailForm({
           <section className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label>Estado</Label>
-              <Select value={status} onValueChange={(v) => setStatus(v as TaskStatus)}>
+              <Select
+                value={status}
+                onValueChange={(v) => {
+                  const next = v as TaskStatus;
+                  // Al completar, se propone el estimado como tiempo real.
+                  if (next === "completed" && !tiempoReal.trim() && duracion.trim()) {
+                    setTiempoReal(duracion);
+                  }
+                  setStatus(next);
+                }}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -1268,6 +1301,29 @@ export function TaskDetailForm({
               </Select>
             </div>
           </section>
+
+          {/* Tiempo real: sólo al marcar una tarea como completada */}
+          {status === "completed" && !isEvento && (
+            <section className="rounded-xl border bg-card p-4 space-y-2">
+              <Label htmlFor="td-tiempo-real">¿Cuánto te tomó? (min)</Label>
+              <Input
+                id="td-tiempo-real"
+                type="number"
+                inputMode="numeric"
+                min={0}
+                value={tiempoReal}
+                onChange={(e) => setTiempoReal(e.target.value)}
+                placeholder={duracion ? `Estimado: ${duracion}` : "Ej: 45"}
+                className="w-full"
+              />
+              <p className="text-xs text-muted-foreground">
+                {tiempoReal.trim() && Number(tiempoReal) >= 60
+                  ? `Equivale a ${formatMinutos(Number(tiempoReal))}. `
+                  : ""}
+                Opcional. Si lo dejas vacío, se usará la duración estimada.
+              </p>
+            </section>
+          )}
 
           {/* 4. Programación */}
           <section className="rounded-xl border bg-card p-4 space-y-4">
