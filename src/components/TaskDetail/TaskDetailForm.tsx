@@ -33,7 +33,7 @@
  * ========================================================
  */
 import { useEffect, useMemo, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Archive, Bell, Copy, Plus } from "lucide-react";
 import { toast } from "sonner";
 
@@ -100,6 +100,8 @@ import type { TaskCreateDefaults } from "@/services/weeklyRitualService";
 import { VisionActivaBanner } from "@/components/vision/VisionActivaBanner";
 import { DimensionSelect } from "@/components/dimensiones/DimensionSelect";
 import { TagPicker } from "@/components/etiquetas/TagPicker";
+import { RutinaDialog } from "@/components/rutinas/RutinaDialog";
+import { describeRoutine, fetchRoutineNodes } from "@/services/routineService";
 import { fetchTaskTagIds, setTaskTags } from "@/services/tagService";
 import type { AreaRow, ProjectRow, SubprojectRow } from "@/types/tarea";
 import type { ObjectiveRow, GoalRow } from "@/types/objetivo";
@@ -277,13 +279,19 @@ export function TaskDetailForm({
 
   /**
    * Vínculo alternativo de la tarea: como mucho UNO de Proyecto→Etapa,
-   * Objetivo→Meta o Hábito (o "ninguno" = tarea directa de Área). A
-   * diferencia de Proyecto/Objetivo, el Hábito no tiene nivel
-   * intermedio: se vincula directo (`tasks.habit_id`).
+   * Objetivo→Meta, Hábito o Rutina (o "ninguno" = tarea directa de
+   * Área). Hábito y Rutina no tienen nivel intermedio: se vinculan
+   * directo (`tasks.habit_id` / `tasks.routine_id`).
    */
-  type VinculoTipo = "ninguno" | "proyecto" | "objetivo" | "habito";
+  type VinculoTipo = "ninguno" | "proyecto" | "objetivo" | "habito" | "rutina";
+  // Rutina de la tarea (al duplicar, la copia no queda en la Rutina).
+  const initialRoutineId = isDuplicate
+    ? null
+    : ((initialTask?.task as { routine_id?: string | null } | undefined)?.routine_id ?? null);
   const initialVinculo: VinculoTipo =
-    initialTask?.subprojectId || defaults?.projectId
+    initialRoutineId
+      ? "rutina"
+      : initialTask?.subprojectId || defaults?.projectId
       ? "proyecto"
       : initialTask?.goalId || defaults?.goalId
         ? "objetivo"
@@ -307,13 +315,20 @@ export function TaskDetailForm({
   );
   const [userTouchedObjective, setUserTouchedObjective] = useState(false);
 
-  // Rutina de la que nació la tarea (sólo informativo; no se elige aquí).
-  const routineId = isDuplicate
-    ? null
-    : ((initialTask?.task as { routine_id?: string | null } | undefined)?.routine_id ?? null);
+  // Rutina elegida en "Vincular a → Rutina".
+  const [routineId, setRoutineId] = useState<string>(initialRoutineId ?? "");
+  const [nuevaRutinaOpen, setNuevaRutinaOpen] = useState(false);
+  const { data: todasLasRutinas = [] } = useQuery({
+    queryKey: ["tablero", "routines"],
+    queryFn: fetchRoutineNodes,
+    staleTime: 60_000,
+  });
 
   const [habits, setHabits] = useState<HabitRow[]>([]);
   const [habitId, setHabitId] = useState<string>(initialTask?.habitId ?? "");
+
+  const rutinasDelArea = todasLasRutinas.filter((r) => r.areaId === areaId);
+  const rutinaSel = rutinasDelArea.find((r) => r.id === routineId) ?? null;
 
   function handleVinculoChange(v: VinculoTipo) {
     setVinculo(v);
@@ -326,6 +341,7 @@ export function TaskDetailForm({
       setGoalId("");
     }
     if (v !== "habito") setHabitId("");
+    if (v !== "rutina") setRoutineId("");
   }
 
   // Cuando cambia el área o el proyecto por acción del usuario, reseteamos
@@ -483,6 +499,7 @@ export function TaskDetailForm({
       setObjectiveId("");
       setGoalId("");
       setHabitId("");
+      setRoutineId("");
       setDimensionId(null);
     }
     setUserTouchedArea(true);
@@ -667,6 +684,8 @@ export function TaskDetailForm({
       if (!goalId) next.goal = "Selecciona una meta.";
     } else if (vinculo === "habito") {
       if (!habitId) next.habit = "Selecciona un hábito.";
+    } else if (vinculo === "rutina") {
+      if (!routineId) next.routine = "Selecciona una rutina.";
     }
     if (!title.trim()) next.title = "Escribe un título.";
     if (isEvento) {
@@ -727,25 +746,38 @@ export function TaskDetailForm({
       // Vínculo mutuamente excluyente: Proyecto→Etapa, Objetivo→Meta,
       // Hábito, o ninguno (tarea directa de Área). Ver constraint
       // `tasks_single_link_chk` en la base de datos.
+      // Rutina: se envía sólo si hay que guardarla o soltarla.
+      const routineLink =
+        vinculo === "rutina"
+          ? { routine_id: routineId }
+          : initialRoutineId && isEdit
+            ? { routine_id: null }
+            : {};
       const linkFields =
         vinculo === "proyecto"
-          ? { subproject_id: subprojectId, goal_id: null, habit_id: null }
+          ? { subproject_id: subprojectId, goal_id: null, habit_id: null, ...routineLink }
           : vinculo === "objetivo"
-            ? { subproject_id: null, goal_id: goalId, habit_id: null }
+            ? { subproject_id: null, goal_id: goalId, habit_id: null, ...routineLink }
             : vinculo === "habito"
-              ? { subproject_id: null, goal_id: null, habit_id: habitId }
-              : { subproject_id: null, goal_id: null, habit_id: null };
+              ? { subproject_id: null, goal_id: null, habit_id: habitId, ...routineLink }
+              : { subproject_id: null, goal_id: null, habit_id: null, ...routineLink };
+      // Una tarea de Rutina toma la Dimensión de su Rutina.
+      const rutinaElegida = todasLasRutinas.find((r) => r.id === routineId);
       // Sólo las tareas directas guardan Dimensión (constraint en la base).
       // Se envía el campo sólo si hay algo que guardar o limpiar, para no
       // depender de la migración de Dimensiones en tareas que no la usan.
       const hadDimension = !!(initialTask?.task as { dimension_id?: string | null } | undefined)
         ?.dimension_id;
       const dimensionFields =
-        vinculo === "ninguno" && dimensionId
-          ? { dimension_id: dimensionId }
-          : hadDimension && isEdit
-            ? { dimension_id: null }
-            : {};
+        vinculo === "rutina"
+          ? rutinaElegida
+            ? { dimension_id: rutinaElegida.dimensionId }
+            : {} // Rutina archivada: la tarea conserva su Dimensión.
+          : vinculo === "ninguno" && dimensionId
+            ? { dimension_id: dimensionId }
+            : hadDimension && isEdit
+              ? { dimension_id: null }
+              : {};
 
       // Pre-chequeo de conflicto para dar un mensaje concreto al usuario.
       // La garantía real vive en el trigger de Supabase (SQLSTATE CA001),
@@ -760,13 +792,6 @@ export function TaskDetailForm({
         }
       }
 
-      // Tarea de una Rutina: si se vincula a otra cosa o cambia de Área,
-      // deja de ser parte de la Rutina (una tarea tiene un solo vínculo).
-      const routineFields =
-        isEdit && routineId && (vinculo !== "ninguno" || areaId !== initialTask?.areaId)
-          ? { routine_id: null }
-          : {};
-
       let saved: TaskRow;
       if (isEdit) {
         if (!initialTask) throw new Error("Falta la tarea a editar.");
@@ -779,7 +804,6 @@ export function TaskDetailForm({
           area_id: areaId,
           ...linkFields,
           ...dimensionFields,
-          ...routineFields,
           title: title.trim(),
           description: description.trim() || null,
           priority,
@@ -1070,6 +1094,7 @@ export function TaskDetailForm({
                   <SelectItem value="proyecto">Proyecto</SelectItem>
                   <SelectItem value="objetivo">Objetivo</SelectItem>
                   <SelectItem value="habito">Hábito</SelectItem>
+                  <SelectItem value="rutina">Rutina (algo que se repite)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -1261,13 +1286,66 @@ export function TaskDetailForm({
             {/* Etiquetas: cruzan el árbol (p. ej. Instagram, Contenido). */}
             <TagPicker value={tagIds} onChange={setTagIds} disabled={saving} />
 
-            {routineId ? (
-              <p className="rounded-md bg-violet-50 px-3 py-2 text-xs text-violet-800">
-                {vinculo === "ninguno"
-                  ? "↻ Esta tarea es parte de una Rutina. Para cambiar sus días u hora, edita la Rutina en el Tablero."
-                  : "Al guardar con otro vínculo, esta tarea deja de ser parte de su Rutina."}
-              </p>
-            ) : null}
+            {/* Rutina: elegir una existente o crearla aquí mismo. */}
+            {vinculo === "rutina" && (
+              <div className="space-y-2">
+                <Label>Rutina *</Label>
+                <div className="flex gap-2">
+                  <div className="min-w-0 flex-1">
+                    <Select value={routineId} onValueChange={setRoutineId} disabled={!areaId}>
+                      <SelectTrigger>
+                        <SelectValue
+                          placeholder={
+                            !areaId
+                              ? "Primero elige un área"
+                              : rutinasDelArea.length === 0
+                                ? "Aún no hay rutinas: créala con +"
+                                : "Selecciona una rutina"
+                          }
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {rutinasDelArea.map((r) => (
+                          <SelectItem key={r.id} value={r.id}>
+                            {r.nombre}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setNuevaRutinaOpen(true)}
+                    disabled={!areaId}
+                    aria-label="Nueva rutina"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+                {errors.routine && <p className="text-xs text-destructive">{errors.routine}</p>}
+                <p className="text-xs text-muted-foreground">
+                  {rutinaSel
+                    ? `↻ ${describeRoutine(rutinaSel)}. Esta tarea cuenta en su medición; para cambiar sus días u hora, edita la Rutina.`
+                    : "La tarea queda como una vez de esa Rutina y cuenta en su medición."}
+                </p>
+                {areaId ? (
+                  <RutinaDialog
+                    mode="create"
+                    areaId={areaId}
+                    open={nuevaRutinaOpen}
+                    onOpenChange={setNuevaRutinaOpen}
+                    generarSemana={false}
+                    onCreated={(row) => {
+                      setRoutineId(row.id);
+                      if (!title.trim()) setTitle(row.name);
+                      void queryClient.invalidateQueries({ queryKey: ["tablero", "routines"] });
+                    }}
+                  />
+                ) : null}
+              </div>
+            )}
 
             {/* Tarea directa: puede vivir en una Dimensión del Área. */}
             {vinculo === "ninguno" && (
