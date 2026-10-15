@@ -903,11 +903,17 @@ export type Database = {
           area_id: string
           created_at: string
           description: string | null
-          dimension_id: string
+          dimension_id: string | null
           duration_min: number | null
+          frequency: string
+          goal_id: string | null
           id: string
+          interval_count: number
+          month_day: number | null
           name: string
+          objective_id: string | null
           priority: Database["public"]["Enums"]["task_priority"]
+          start_date: string
           start_time: string | null
           tag_ids: string[]
           updated_at: string
@@ -918,11 +924,17 @@ export type Database = {
           area_id: string
           created_at?: string
           description?: string | null
-          dimension_id: string
+          dimension_id?: string | null
           duration_min?: number | null
+          frequency?: string
+          goal_id?: string | null
           id?: string
+          interval_count?: number
+          month_day?: number | null
           name: string
+          objective_id?: string | null
           priority?: Database["public"]["Enums"]["task_priority"]
+          start_date?: string
           start_time?: string | null
           tag_ids?: string[]
           updated_at?: string
@@ -933,11 +945,17 @@ export type Database = {
           area_id?: string
           created_at?: string
           description?: string | null
-          dimension_id?: string
+          dimension_id?: string | null
           duration_min?: number | null
+          frequency?: string
+          goal_id?: string | null
           id?: string
+          interval_count?: number
+          month_day?: number | null
           name?: string
+          objective_id?: string | null
           priority?: Database["public"]["Enums"]["task_priority"]
+          start_date?: string
           start_time?: string | null
           tag_ids?: string[]
           updated_at?: string
@@ -956,6 +974,20 @@ export type Database = {
             columns: ["dimension_id"]
             isOneToOne: false
             referencedRelation: "dimensions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "routines_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "goals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "routines_objective_id_fkey"
+            columns: ["objective_id"]
+            isOneToOne: false
+            referencedRelation: "objectives"
             referencedColumns: ["id"]
           },
         ]
