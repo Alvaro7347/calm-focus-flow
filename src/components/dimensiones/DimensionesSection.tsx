@@ -92,7 +92,8 @@ function DimensionCard({
   const proyectos = area.proyectos.filter((p) => p.dimensionId === dim.id);
   const objetivos = area.objetivos.filter((o) => o.dimensionId === dim.id);
   const habitos = area.habitos.filter((h) => h.dimensionId === dim.id);
-  const rutinas = (area.rutinas ?? []).filter((r) => r.dimensionId === dim.id);
+  // Las Rutinas que empujan un Objetivo se ven dentro de ese Objetivo.
+  const rutinas = (area.rutinas ?? []).filter((r) => r.dimensionId === dim.id && !r.objectiveId);
   const tareas = [...dim.tareas].sort(
     (a, b) => Number(!!a.completada || !!a.noHecha) - Number(!!b.completada || !!b.noHecha),
   );
