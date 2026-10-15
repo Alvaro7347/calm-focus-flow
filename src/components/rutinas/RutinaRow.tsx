@@ -12,21 +12,31 @@
 import { useState } from "react";
 import { Repeat } from "lucide-react";
 import { mondayOf } from "@/services/tableroService";
-import { describeRoutine, routineWeek, type RutinaNode } from "@/services/routineService";
+import {
+  describeRoutine,
+  fechaCorta,
+  routineWeek,
+  type RutinaNode,
+} from "@/services/routineService";
 import { RutinaDialog } from "./RutinaDialog";
 
 export function RutinaRow({
   rutina,
   compact = false,
   indent = 0,
+  contexto,
 }: {
   rutina: RutinaNode;
   compact?: boolean;
+  /** Texto extra bajo el nombre, p. ej. "→ Visitas orgánicas". */
+  contexto?: string;
   /** Sangría en px (para Ajustes → Organización). */
   indent?: number;
 }) {
   const [open, setOpen] = useState(false);
   const semana = routineWeek(rutina, mondayOf());
+  // Las semanales de todas las semanas se leen con puntos; las demás, con su próxima fecha.
+  const conPuntos = rutina.frecuencia === "weekly" && rutina.intervalo === 1;
 
   return (
     <>
@@ -42,14 +52,18 @@ export function RutinaRow({
         <span className="min-w-0 flex-1">
           <span className="block truncate text-sm font-medium text-slate-800">{rutina.nombre}</span>
           <span className="mt-0.5 block truncate text-xs text-slate-500">
+            {contexto ? `${contexto} · ` : ""}
             {describeRoutine(rutina)}
-            {!compact && semana.esperadas > 0
+            {!compact && conPuntos && semana.esperadas > 0
               ? ` · Esta semana: ${semana.hechas} de ${semana.esperadas}`
+              : ""}
+            {(!conPuntos || compact) && rutina.proxima
+              ? ` · Próxima: ${fechaCorta(rutina.proxima)}`
               : ""}
           </span>
         </span>
 
-        {!compact ? (
+        {!compact && conPuntos ? (
           <span
             className="flex shrink-0 items-end gap-1"
             aria-label={`Esta semana: ${semana.hechas} de ${semana.esperadas}`}
