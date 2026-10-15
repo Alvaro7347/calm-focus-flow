@@ -2,21 +2,26 @@
  * ========================================================
  * Archivo: routineService — Rutinas
  *
- * Una Rutina es una actividad operativa que se repite cada semana
- * dentro de una Dimensión (p. ej. "Pagar sueldos", "Historias de
- * Instagram"). No termina (no es Proyecto) ni se cultiva (no es
- * Hábito): es trabajo que hay que hacer.
+ * Una Rutina es una actividad operativa que se repite (p. ej. "Pagar
+ * sueldos", "Pagar IVA", "Historias de Instagram"). No termina (no es
+ * Proyecto) ni se cultiva (no es Hábito): es trabajo que hay que hacer.
  *
  * Reglas del dominio:
- * - Pertenece a una Dimensión (obligatoria); el Área se toma de ella.
- * - Frecuencia semanal: días de la semana (0 = domingo … 6 = sábado).
+ * - Cuelga de una Dimensión (operación) o de un Objetivo, y
+ *   opcionalmente de una de sus Metas (palanca: "empuja" esa Meta).
+ *   Debe tener al menos Dimensión u Objetivo.
+ * - Frecuencia:
+ *     semanal  → días de la semana (0 = domingo … 6 = sábado), cada N semanas.
+ *     mensual  → un día del mes (1..31, o -1 = último día), cada N meses.
+ *   "Cada N" se cuenta desde `start_date`. Si el día no existe en el
+ *   mes (p. ej. 31 en noviembre), cae el último día.
  * - Si tiene hora y duración, cada ocurrencia se crea como EVENTO;
  *   si no, como TAREA de ese día (con la duración como estimada).
  * - Las tareas de la semana se crean en el Ritual del domingo
  *   ("Repetir en la nueva semana"): la app las propone ya marcadas y
  *   el usuario confirma. Nada se crea solo.
- * - Cada tarea generada es una tarea DIRECTA de la Dimensión
- *   (`dimension_id`) con `routine_id`. Si no se hizo, se marca
+ * - Cada tarea generada lleva `routine_id` (y la Dimensión de la
+ *   Rutina, si tiene). Si no se hizo, se marca
  *   "No la hice": baja el cumplimiento, pero no se acumula.
  * - Se archiva con `archived_at`; nunca se elimina.
  * ========================================================
@@ -32,15 +37,33 @@ export type RoutineInsert = Database["public"]["Tables"]["routines"]["Insert"];
 export type RoutineUpdate = Database["public"]["Tables"]["routines"]["Update"];
 type Priority = Database["public"]["Enums"]["task_priority"];
 
-/** Rutina lista para la interfaz, con su medición del mes en curso. */
-export interface RutinaNode {
+export type Frecuencia = "weekly" | "monthly";
+
+/** Regla de repetición de una Rutina. */
+export interface RutinaRegla {
+  frecuencia: Frecuencia;
+  /** Cada cuántas semanas / meses (1 = todas). */
+  intervalo: number;
+  /** Semanal: 0 = domingo … 6 = sábado. */
+  diasSemana: number[];
+  /** Mensual: 1..31, o -1 = último día del mes. */
+  diaMes: number | null;
+  /** Desde cuándo corre (YYYY-MM-DD). Ancla del "cada N". */
+  inicio: string;
+}
+
+/** Rutina lista para la interfaz, con su medición del período en curso. */
+export interface RutinaNode extends RutinaRegla {
   id: string;
   nombre: string;
   descripcion: string | null;
   areaId: string;
-  dimensionId: string;
-  /** 0 = domingo … 6 = sábado. */
-  diasSemana: number[];
+  /** Dimensión (casa para contar su tiempo); null si sólo cuelga de un Objetivo. */
+  dimensionId: string | null;
+  /** Objetivo que empuja (opcional). */
+  objectiveId: string | null;
+  /** Meta del Objetivo que empuja (opcional). */
+  goalId: string | null;
   /** "HH:mm" o null (sin hora: se crea como tarea del día). */
   hora: string | null;
   duracionMin: number | null;
@@ -51,10 +74,14 @@ export interface RutinaNode {
   /** Día (YYYY-MM-DD local) y estado de cada tarea con fecha. */
   ocurrencias: { fecha: string; status: string }[];
   mes: RutinaMes;
+  /** Próxima fecha en que le toca, desde hoy (YYYY-MM-DD) o null. */
+  proxima: string | null;
 }
 
 export interface RutinaMes {
-  /** Ocurrencias esperadas desde el día 1 hasta hoy. */
+  /** "Este mes" o, para las de cada N meses, "Últimos N meses". */
+  periodo: string;
+  /** Ocurrencias esperadas en el período, hasta hoy. */
   esperadas: number;
   hechas: number;
   noHechas: number;
@@ -100,15 +127,29 @@ export function horaDe(startTime: string | null): string | null {
   return startTime ? startTime.slice(0, 5) : null;
 }
 
+/** Regla desde la fila (tolera filas anteriores a Rutinas v2). */
+function reglaDe(r: Partial<RoutineRow> & { created_at: string }): RutinaRegla {
+  return {
+    frecuencia: r.frequency === "monthly" ? "monthly" : "weekly",
+    intervalo: Math.max(1, r.interval_count ?? 1),
+    diasSemana: [...(r.weekdays ?? [])].sort((a, b) => a - b),
+    diaMes: r.month_day ?? null,
+    inicio: r.start_date ?? localDate(new Date(r.created_at)),
+  };
+}
+
 function mapRoutine(r: RawRoutine): RutinaNode {
   const tasks = (r.tasks ?? []).filter((t) => !t.archived_at);
+  const regla = reglaDe(r);
   return {
     id: r.id,
     nombre: r.name,
     descripcion: r.description,
     areaId: r.area_id,
-    dimensionId: r.dimension_id,
-    diasSemana: [...(r.weekdays ?? [])].sort((a, b) => a - b),
+    dimensionId: r.dimension_id ?? null,
+    objectiveId: r.objective_id ?? null,
+    goalId: r.goal_id ?? null,
+    ...regla,
     hora: horaDe(r.start_time),
     duracionMin: r.duration_min,
     prioridad: r.priority,
@@ -117,7 +158,8 @@ function mapRoutine(r: RawRoutine): RutinaNode {
     ocurrencias: tasks
       .filter((t) => !!t.starts_at)
       .map((t) => ({ fecha: localDate(new Date(t.starts_at!)), status: t.status })),
-    mes: monthStats(r.weekdays ?? [], tasks, new Date(r.created_at)),
+    mes: periodStats(regla, tasks),
+    proxima: nextOccurrence(regla),
   };
 }
 
@@ -130,20 +172,13 @@ function minutesOf(t: RawRoutineTask): number {
   return t.actual_duration_min ?? t.estimated_duration_min ?? 0;
 }
 
-function monthStats(
-  weekdays: number[],
-  tasks: RawRoutineTask[],
-  creada: Date,
-  now = new Date(),
-): RutinaMes {
-  const inicio = new Date(now.getFullYear(), now.getMonth(), 1);
+function periodStats(regla: RutinaRegla, tasks: RawRoutineTask[], now = new Date()): RutinaMes {
+  const meses = regla.frecuencia === "monthly" ? regla.intervalo : 1;
+  const inicio = new Date(now.getFullYear(), now.getMonth() - (meses - 1), 1);
   const finHoy = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
-  // Las ocurrencias esperadas se cuentan desde el día en que se creó la Rutina.
-  const diaCreada = new Date(creada.getFullYear(), creada.getMonth(), creada.getDate());
-  const desde = diaCreada > inicio ? diaCreada : inicio;
   let esperadas = 0;
-  for (let d = new Date(desde); d <= finHoy; d.setDate(d.getDate() + 1)) {
-    if (weekdays.includes(d.getDay())) esperadas++;
+  for (let d = new Date(inicio); d <= finHoy; d.setDate(d.getDate() + 1)) {
+    if (occursOn(regla, d)) esperadas++;
   }
   let hechas = 0;
   let noHechas = 0;
@@ -159,7 +194,85 @@ function monthStats(
       noHechas++;
     }
   }
-  return { esperadas, hechas, noHechas, minutos };
+  return {
+    periodo: meses === 1 ? "Este mes" : `Últimos ${meses} meses`,
+    esperadas,
+    hechas,
+    noHechas,
+    minutos,
+  };
+}
+
+// ------------------------------------------------------------
+// Calendario de la regla
+// ------------------------------------------------------------
+
+function parseLocal(fecha: string): Date {
+  const [y, m, d] = fecha.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function lunesDe(d: Date): Date {
+  const x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  x.setDate(x.getDate() - ((x.getDay() + 6) % 7));
+  return x;
+}
+
+/** ¿Coincide el día con el patrón, sin mirar el "cada N"? */
+function coincideDia(regla: RutinaRegla, dia: Date): boolean {
+  if (regla.frecuencia === "weekly") return regla.diasSemana.includes(dia.getDay());
+  if (regla.diaMes == null) return false;
+  const ultimo = new Date(dia.getFullYear(), dia.getMonth() + 1, 0).getDate();
+  const objetivo = regla.diaMes === -1 ? ultimo : Math.min(regla.diaMes, ultimo);
+  return dia.getDate() === objetivo;
+}
+
+/**
+ * Primera fecha >= inicio que calza con el patrón: ancla del "cada N".
+ * Así "cada 2 semanas, lunes" creada un miércoles parte el lunes
+ * siguiente, y "día 1 cada 2 meses" creada el 14 parte el día 1 que viene.
+ */
+const anclas = new Map<string, Date | null>();
+function anclaDe(regla: RutinaRegla): Date | null {
+  const key = `${regla.frecuencia}|${regla.diasSemana.join(",")}|${regla.diaMes}|${regla.inicio}`;
+  if (anclas.has(key)) return anclas.get(key)!;
+  const d = parseLocal(regla.inicio);
+  let found: Date | null = null;
+  for (let i = 0; i < 400; i++) {
+    if (coincideDia(regla, d)) {
+      found = new Date(d);
+      break;
+    }
+    d.setDate(d.getDate() + 1);
+  }
+  anclas.set(key, found);
+  return found;
+}
+
+/** ¿Le toca a la Rutina el día `d` (fecha local)? */
+export function occursOn(regla: RutinaRegla, d: Date): boolean {
+  const dia = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  if (dia < parseLocal(regla.inicio)) return false;
+  if (!coincideDia(regla, dia)) return false;
+  if (regla.intervalo === 1) return true;
+  const ancla = anclaDe(regla);
+  if (!ancla) return false;
+  if (regla.frecuencia === "weekly") {
+    const semanas = Math.round((lunesDe(dia).getTime() - lunesDe(ancla).getTime()) / (7 * 864e5));
+    return semanas % regla.intervalo === 0;
+  }
+  const meses = (dia.getFullYear() - ancla.getFullYear()) * 12 + dia.getMonth() - ancla.getMonth();
+  return meses % regla.intervalo === 0;
+}
+
+/** Próxima fecha (desde `desde`, inclusive) en que le toca; null si no hay en ~2 años. */
+export function nextOccurrence(regla: RutinaRegla, desde: Date = new Date()): string | null {
+  const d = new Date(desde.getFullYear(), desde.getMonth(), desde.getDate());
+  for (let i = 0; i < 800; i++) {
+    if (occursOn(regla, d)) return localDate(d);
+    d.setDate(d.getDate() + 1);
+  }
+  return null;
 }
 
 // ------------------------------------------------------------
@@ -188,10 +301,12 @@ export async function archiveRoutine(id: string): Promise<void> {
 }
 
 function friendlyError(error: { code?: string; message: string }): Error {
-  if (error.code === "23505")
-    return new Error("Ya hay una rutina con ese nombre en esta dimensión.");
+  if (error.code === "23505") return new Error("Ya hay una rutina con ese nombre ahí.");
   if (error.message.includes("routines_weekdays_valid"))
     return new Error("Elige al menos un día de la semana.");
+  if (error.message.includes("routines_month_day_valid")) return new Error("Elige el día del mes.");
+  if (error.message.includes("routines_has_parent"))
+    return new Error("Elige una dimensión o un objetivo para la rutina.");
   return new Error(error.message);
 }
 
@@ -225,7 +340,7 @@ export function occurrencesForWeek(r: RutinaNode, weekStart: Date): RoutineOccur
   const out: RoutineOccurrence[] = [];
   for (let i = 0; i < 7; i++) {
     const day = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + i);
-    if (!r.diasSemana.includes(day.getDay())) continue;
+    if (!occursOn(r, day)) continue;
     const start = new Date(day);
     if (r.hora) {
       const [h, m] = r.hora.split(":").map(Number);
@@ -287,7 +402,7 @@ export async function createRoutineOccurrences(
     if (!r) continue;
     const input: CreateTaskInput = {
       area_id: r.areaId,
-      dimension_id: r.dimensionId,
+      ...(r.dimensionId ? { dimension_id: r.dimensionId } : {}),
       routine_id: r.id,
       title: r.nombre,
       description: r.descripcion,
@@ -361,24 +476,49 @@ export const DIAS_SEMANA: { label: string; dia: number }[] = [
 
 const NOMBRES_DIA = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
 
-/** "Lunes y jueves · 09:00 · 30 min" */
-export function describeRoutine(
-  r: Pick<RutinaNode, "diasSemana" | "hora" | "duracionMin">,
-): string {
+function capitalizar(t: string): string {
+  return t.charAt(0).toUpperCase() + t.slice(1);
+}
+
+/** Solo la regla: "Lunes y jueves", "Cada 2 semanas: lunes", "Día 20 de cada mes"… */
+export function describeRegla(r: RutinaRegla): string {
+  if (r.frecuencia === "monthly") {
+    const dia = r.diaMes === -1 ? "Último día" : `Día ${r.diaMes ?? "?"}`;
+    return r.intervalo === 1 ? `${dia} de cada mes` : `${dia}, cada ${r.intervalo} meses`;
+  }
   const orden = [1, 2, 3, 4, 5, 6, 0].filter((d) => r.diasSemana.includes(d));
   const dias =
     orden.length === 7
-      ? "Todos los días"
+      ? "todos los días"
       : orden.length === 5 && orden.every((d) => d >= 1 && d <= 5)
-        ? "De lunes a viernes"
+        ? "de lunes a viernes"
         : orden
             .map((d) => NOMBRES_DIA[d])
             .join(", ")
             .replace(/, ([^,]*)$/, " y $1");
-  const partes = [dias.charAt(0).toUpperCase() + dias.slice(1)];
+  return r.intervalo === 1 ? capitalizar(dias) : `Cada ${r.intervalo} semanas: ${dias}`;
+}
+
+/** "Lunes y jueves · 09:00 · 30 min" */
+export function describeRoutine(r: RutinaRegla & Pick<RutinaNode, "hora" | "duracionMin">): string {
+  const partes = [describeRegla(r)];
   if (r.hora) partes.push(r.hora);
   if (r.duracionMin) partes.push(`${r.duracionMin} min`);
   return partes.join(" · ");
+}
+
+/** "hoy", "mañana", "vie 20 nov". */
+export function fechaCorta(fecha: string, now = new Date()): string {
+  const d = parseLocal(fecha);
+  const hoy = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const dias = Math.round((d.getTime() - hoy.getTime()) / 864e5);
+  if (dias === 0) return "hoy";
+  if (dias === 1) return "mañana";
+  const dow = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"][d.getDay()];
+  const mes = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"][
+    d.getMonth()
+  ];
+  return `${dow} ${d.getDate()} ${mes}`;
 }
 
 export interface RutinaSemanaDia {
@@ -415,7 +555,7 @@ export function routineWeek(
     dias.push({
       fecha,
       inicial: "DLMMJVS"[d.getDay()],
-      esperado: r.diasSemana.includes(d.getDay()),
+      esperado: occursOn(r, d),
       estado:
         st === "completed"
           ? "hecha"
