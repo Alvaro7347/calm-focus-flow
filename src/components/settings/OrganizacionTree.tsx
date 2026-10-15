@@ -38,6 +38,7 @@ import {
 import { CrearNodoDialog } from "@/components/settings/CrearNodoDialog";
 import { RutinaRow } from "@/components/rutinas/RutinaRow";
 import { RutinaDialog } from "@/components/rutinas/RutinaDialog";
+import type { RutinaNode } from "@/services/routineService";
 import { DimensionMenu, NewDimensionButton } from "@/components/dimensiones/DimensionActions";
 import type { DimensionNode } from "@/services/tableroService";
 import { getProjectColor } from "@/lib/projectIdentity";
@@ -183,8 +184,18 @@ function HabitRow({ habit, depth }: { habit: HabitoNode; depth: number }) {
   );
 }
 
-function ObjectiveRow({ objective, depth }: { objective: ObjetivoNode; depth: number }) {
+function ObjectiveRow({
+  objective,
+  depth,
+  rutinas,
+}: {
+  objective: ObjetivoNode;
+  depth: number;
+  /** Rutinas que empujan este Objetivo (o alguna de sus Metas). */
+  rutinas: RutinaNode[];
+}) {
   const [open, setOpen] = useState(false);
+  const metaNombre = (id: string | null) => objective.metas.find((m) => m.id === id)?.nombre;
   return (
     <>
       <NodeRow
@@ -207,6 +218,25 @@ function ObjectiveRow({ objective, depth }: { objective: ObjetivoNode; depth: nu
           ))}
           <div style={{ paddingLeft: 16 + (depth + 1) * 20 }}>
             <CrearNodoDialog type="goal" parentId={objective.id} />
+          </div>
+
+          <SectionLabel depth={depth + 1}>Rutinas que lo empujan</SectionLabel>
+          {rutinas.map((r) => (
+            <RutinaRow
+              key={r.id}
+              rutina={r}
+              compact
+              indent={16 + (depth + 1) * 20}
+              contexto={metaNombre(r.goalId) ? `→ ${metaNombre(r.goalId)}` : undefined}
+            />
+          ))}
+          <div style={{ paddingLeft: 16 + (depth + 1) * 20 }}>
+            <RutinaDialog
+              mode="create"
+              areaId={objective.areaId}
+              objectiveId={objective.id}
+              dimensionId={objective.dimensionId}
+            />
           </div>
         </div>
       ) : null}
@@ -274,7 +304,8 @@ function ElementGroups({
   const proyectos = area.proyectos.filter((p) => match(p.dimensionId));
   const objetivos = area.objetivos.filter((o) => match(o.dimensionId));
   const habitos = area.habitos.filter((h) => match(h.dimensionId));
-  const rutinas = (area.rutinas ?? []).filter((r) => match(r.dimensionId));
+  // Las Rutinas que empujan un Objetivo se ven dentro de ese Objetivo.
+  const rutinas = (area.rutinas ?? []).filter((r) => match(r.dimensionId) && !r.objectiveId);
   const dimProp = dimensionId ?? undefined;
   return (
     <>
@@ -290,7 +321,12 @@ function ElementGroups({
 
       <SectionLabel depth={depth}>Objetivos</SectionLabel>
       {objetivos.map((o) => (
-        <ObjectiveRow key={o.id} objective={o} depth={depth} />
+        <ObjectiveRow
+          key={o.id}
+          objective={o}
+          depth={depth}
+          rutinas={(area.rutinas ?? []).filter((r) => r.objectiveId === o.id)}
+        />
       ))}
       <div style={{ paddingLeft: 16 + depth * 20 }}>
         <CrearNodoDialog type="objective" parentId={area.id} dimensionId={dimProp} />
@@ -304,7 +340,8 @@ function ElementGroups({
         <CrearNodoDialog type="habit" parentId={area.id} dimensionId={dimProp} />
       </div>
 
-      {/* Las Rutinas siempre pertenecen a una Dimensión. */}
+      {/* Rutinas de operación: cuelgan de una Dimensión (las que empujan
+          un Objetivo se ven dentro de él). */}
       {dimensionId ? (
         <>
           <SectionLabel depth={depth}>Rutinas</SectionLabel>
@@ -326,7 +363,7 @@ function DimensionRow({ area, dim }: { area: AreaNode; dim: DimensionNode }) {
     area.proyectos.filter((p) => p.dimensionId === dim.id).length +
     area.objetivos.filter((o) => o.dimensionId === dim.id).length +
     area.habitos.filter((h) => h.dimensionId === dim.id).length +
-    (area.rutinas ?? []).filter((r) => r.dimensionId === dim.id).length;
+    (area.rutinas ?? []).filter((r) => r.dimensionId === dim.id && !r.objectiveId).length;
   return (
     <>
       <div
