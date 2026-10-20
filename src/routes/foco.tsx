@@ -130,9 +130,9 @@ function FocoPage() {
   const sinMov = data?.sinMovimiento ?? [];
 
   return (
-    <div className="px-6 md:px-10 py-8 pb-32 md:pb-8">
+    <div className="px-6 md:px-10 py-8 pb-32 md:pb-8 xl:px-8 xl:pt-6 xl:pb-4">
       {/* Encabezado */}
-      <div className="flex items-start justify-between gap-4 mb-8">
+      <div className="flex items-start justify-between gap-4 mb-8 xl:mb-5">
         <div>
           <div className="flex items-center gap-3">
             <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-indigo-50 text-indigo-600">
@@ -168,7 +168,15 @@ function FocoPage() {
           No pudimos cargar tus tareas. {error instanceof Error ? error.message : ""}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
+        // En computador (xl) es un tablero: las columnas caben a lo ancho y
+        // cada una hace scroll por dentro. "Esperando" y "Sin movimiento"
+        // comparten la última columna (suelen ser cortas). En celular y
+        // tablet se apilan como antes.
+        <div
+          className={`grid grid-cols-1 gap-5 md:grid-cols-2 xl:h-[calc(100dvh-15rem)] xl:min-h-[480px] xl:gap-4 ${
+            atrasados.length > 0 ? "xl:grid-cols-4" : "xl:grid-cols-3"
+          }`}
+        >
           <FocoColumna
             numero={1}
             titulo="Hoy"
@@ -194,23 +202,28 @@ function FocoPage() {
             descripcion="Tareas programadas para el resto de la semana."
             icono={<Calendar className="h-5 w-5" />}
             tareas={semana}
+            agruparPorDia
           />
-          <FocoColumna
-            numero={atrasados.length > 0 ? 4 : 3}
-            titulo="Esperando"
-            subtitulo="Tareas en espera o bloqueadas"
-            descripcion="Tareas detenidas a la espera de una respuesta o acción externa."
-            icono={<Hourglass className="h-5 w-5" />}
-            tareas={esperando}
-          />
-          <FocoColumna
-            numero={atrasados.length > 0 ? 5 : 4}
-            titulo="Sin movimiento"
-            subtitulo="Tareas sin actividad reciente"
-            descripcion="Tareas que llevan varios días sin ningún avance."
-            icono={<TrendingUp className="h-5 w-5" />}
-            tareas={sinMov}
-          />
+          <div className="flex min-w-0 flex-col gap-6 md:col-span-2 xl:col-span-1 xl:-mr-2 xl:min-h-0 xl:overflow-y-auto xl:overscroll-contain xl:pr-2 xl:pb-4">
+            <FocoColumna
+              numero={atrasados.length > 0 ? 4 : 3}
+              titulo="Esperando"
+              subtitulo="Tareas en espera o bloqueadas"
+              descripcion="Tareas detenidas a la espera de una respuesta o acción externa."
+              icono={<Hourglass className="h-5 w-5" />}
+              tareas={esperando}
+              scroll={false}
+            />
+            <FocoColumna
+              numero={atrasados.length > 0 ? 5 : 4}
+              titulo="Sin movimiento"
+              subtitulo="Tareas sin actividad reciente"
+              descripcion="Tareas que llevan varios días sin ningún avance."
+              icono={<TrendingUp className="h-5 w-5" />}
+              tareas={sinMov}
+              scroll={false}
+            />
+          </div>
         </div>
       )}
 
