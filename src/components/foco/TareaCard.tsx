@@ -6,6 +6,11 @@
  * clic abre el TaskDetailSheet (modo edit) sobre la misma
  * pantalla, sin navegar ni cambiar la URL. Al cerrarse, el
  * usuario permanece en FOCO exactamente donde estaba.
+ *
+ * Compacta para que en computador quepan las columnas: la hora o
+ * fecha va en una franja angosta a la izquierda (sin cortarse), el
+ * título se muestra en máximo 2 líneas (completo al pasar el mouse)
+ * y la ruta Área / Proyecto en una línea.
  * ========================================================
  */
 import { useState } from "react";
@@ -15,6 +20,8 @@ import { getProjectColor } from "@/lib/projectIdentity";
 
 interface Props {
   tarea: Tarea;
+  /** En "Esta semana" agrupada por día, el día ya está en el encabezado. */
+  ocultarDia?: boolean;
 }
 
 function formatShortDate(iso?: string): string {
@@ -24,28 +31,46 @@ function formatShortDate(iso?: string): string {
   return d.toLocaleDateString("es-ES", { day: "numeric", month: "short" });
 }
 
+function Titulo({ texto }: { texto: string }) {
+  return (
+    <div className="line-clamp-2 text-sm font-semibold leading-snug text-slate-900" title={texto}>
+      {texto}
+    </div>
+  );
+}
+
 function Breadcrumb({ tarea }: Props) {
   const parts = [tarea.area, tarea.proyecto, tarea.subproyecto].filter(Boolean);
   const color = getProjectColor(tarea.proyectoColor);
   return (
-    <div className="text-xs text-slate-500 mt-1 flex items-center gap-1.5">
+    <div className="mt-0.5 flex min-w-0 items-center gap-1.5 text-xs text-slate-500">
       {tarea.proyecto ? (
-        <span
-          aria-hidden
-          className={`h-1.5 w-1.5 rounded-full shrink-0 ${color.dot}`}
-        />
+        <span aria-hidden className={`h-1.5 w-1.5 rounded-full shrink-0 ${color.dot}`} />
       ) : null}
       <span className="truncate">{parts.join(" / ")}</span>
     </div>
   );
 }
 
-export function TareaCard({ tarea }: Props) {
+/** Franja izquierda con hora o fecha: angosta y sin saltos de línea. */
+function Lateral({ texto, alerta = false }: { texto?: string; alerta?: boolean }) {
+  return (
+    <div
+      className={`w-12 shrink-0 whitespace-nowrap pt-0.5 text-xs tabular-nums ${
+        alerta ? "font-medium text-rose-500" : "text-slate-500"
+      }`}
+    >
+      {texto}
+    </div>
+  );
+}
+
+export function TareaCard({ tarea, ocultarDia = false }: Props) {
   const [open, setOpen] = useState(false);
   const areaSwatch = getProjectColor(tarea.proyectoColor);
   // Barra lateral con el color heredado del Área: hace visible en FOCO
   // a qué Área pertenece cada tarea sin añadir carga visual.
-  const base = `w-full text-left rounded-xl border border-slate-200 border-l-4 ${areaSwatch.border} bg-white p-4 transition-shadow hover:shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300`;
+  const base = `w-full text-left rounded-xl border border-slate-200 border-l-4 ${areaSwatch.border} bg-white px-3 py-2.5 transition-shadow hover:shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300`;
 
   const inner = (() => {
     if (tarea.categoriaFoco === "hoy" || tarea.categoriaFoco === "atrasados") {
@@ -54,24 +79,25 @@ export function TareaCard({ tarea }: Props) {
           ? formatShortDate(tarea.fechaProgramada)
           : tarea.horaInicio;
       return (
-        <div className="flex gap-4">
-          <div className="text-sm text-slate-500 w-12 shrink-0 pt-0.5">{leftLabel}</div>
+        <div className="flex gap-2.5">
+          {leftLabel ? (
+            <Lateral texto={leftLabel} alerta={tarea.categoriaFoco === "atrasados"} />
+          ) : null}
           <div className="min-w-0 flex-1">
-            <div className="text-sm font-semibold text-slate-900 leading-snug">{tarea.titulo}</div>
+            <Titulo texto={tarea.titulo} />
             <Breadcrumb tarea={tarea} />
-            {tarea.categoriaFoco === "atrasados" && (
-              <div className="text-xs text-rose-500 mt-1">Atrasada</div>
-            )}
           </div>
         </div>
       );
     }
     if (tarea.categoriaFoco === "esta_semana") {
+      // Agrupada por día: a la izquierda va la hora (si tiene); si no, el día.
+      const lateral = ocultarDia ? tarea.horaInicio : tarea.diaEtiqueta;
       return (
-        <div className="flex gap-4">
-          <div className="text-sm text-slate-500 w-12 shrink-0 pt-0.5">{tarea.diaEtiqueta}</div>
+        <div className="flex gap-2.5">
+          {lateral ? <Lateral texto={lateral} /> : null}
           <div className="min-w-0 flex-1">
-            <div className="text-sm font-semibold text-slate-900 leading-snug">{tarea.titulo}</div>
+            <Titulo texto={tarea.titulo} />
             <Breadcrumb tarea={tarea} />
           </div>
         </div>
@@ -80,7 +106,7 @@ export function TareaCard({ tarea }: Props) {
     if (tarea.categoriaFoco === "esperando") {
       return (
         <>
-          <div className="text-sm font-semibold text-slate-900 leading-snug">{tarea.titulo}</div>
+          <Titulo texto={tarea.titulo} />
           <Breadcrumb tarea={tarea} />
         </>
       );
@@ -88,18 +114,14 @@ export function TareaCard({ tarea }: Props) {
     return (
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
-          <div className="text-sm font-semibold text-slate-900 leading-snug">{tarea.titulo}</div>
-          <div className="text-xs text-slate-500 mt-1 flex items-center gap-1.5">
-            <span
-              aria-hidden
-              className={`h-1.5 w-1.5 rounded-full shrink-0 ${areaSwatch.dot}`}
-            />
+          <Titulo texto={tarea.titulo} />
+          <div className="mt-0.5 flex items-center gap-1.5 text-xs text-slate-500">
+            <span aria-hidden className={`h-1.5 w-1.5 rounded-full shrink-0 ${areaSwatch.dot}`} />
             <span className="truncate">{tarea.area}</span>
           </div>
         </div>
-        <div className="text-right text-xs text-slate-400 leading-tight shrink-0">
-          <div>Sin actividad</div>
-          <div>hace {tarea.diasSinActividad} días</div>
+        <div className="shrink-0 whitespace-nowrap text-right text-xs leading-tight text-slate-400">
+          hace {tarea.diasSinActividad} d
         </div>
       </div>
     );
