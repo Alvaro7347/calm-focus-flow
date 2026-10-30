@@ -55,6 +55,7 @@ import {
 import { getCalendarEvents, type CalendarEvent } from "@/services/calendarService";
 import { MonthView } from "@/components/calendar/MonthView";
 import { Checkbox } from "@/components/ui/checkbox";
+import { clp, weekMoney } from "@/services/financeService";
 import { getProjectColor } from "@/lib/projectIdentity";
 import {
   createRoutineOccurrences,
@@ -502,6 +503,8 @@ function StepCerrar({ data, actions }: { data: WeeklyRitualData; actions: TaskAc
 
       <DistribucionTiempo from={data.prevStart} to={data.prevEnd} />
 
+      <PlataSemana from={data.prevStart} to={data.prevEnd} />
+
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
         <Stat value={data.completedPrev.length} label="Completadas" />
         <Stat value={data.pendingPrev.length} label="Siguen pendientes" />
@@ -733,6 +736,34 @@ function DistribucionTiempo({ from, to }: { from: Date; to: Date }) {
             : `${data.withoutTime} actividades realizadas no tienen tiempo registrado y no se suman.`}
         </p>
       ) : null}
+    </section>
+  );
+}
+
+// ============================================================
+// Plata del hogar en la semana (sólo si usa Finanzas)
+// ============================================================
+
+function PlataSemana({ from, to }: { from: Date; to: Date }) {
+  // `to` es exclusivo (lunes siguiente): la semana termina el domingo.
+  const hasta = new Date(to.getFullYear(), to.getMonth(), to.getDate() - 1);
+  const { data } = useQuery({
+    queryKey: ["finanzas", "ritual", from.toISOString()],
+    queryFn: () => weekMoney(from, hasta).catch(() => null),
+  });
+  if (!data) return null;
+  return (
+    <section className="space-y-3">
+      <SectionTitle>La plata del hogar</SectionTitle>
+      <Card>
+        <p className="text-sm text-foreground/80">
+          Esta semana entró <strong className="text-emerald-700">{clp(data.entro)}</strong> y salió{" "}
+          <strong className="text-rose-700">{clp(data.salio)}</strong>.{" "}
+          <Link to="/finanzas" className="font-medium text-indigo-600 hover:text-indigo-700">
+            Ver Finanzas
+          </Link>
+        </p>
+      </Card>
     </section>
   );
 }
