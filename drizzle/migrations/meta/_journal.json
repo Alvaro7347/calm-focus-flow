@@ -50,6 +50,13 @@
       "when": 1793321292432,
       "tag": "0006_finanzas_hogar_compatible",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793328150963,
+      "tag": "0007_finance_plan",
+      "breakpoints": true
     }
   ]
 }
