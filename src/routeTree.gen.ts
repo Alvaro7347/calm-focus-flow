@@ -14,6 +14,7 @@ import { Route as ActivarNotificacionesRouteImport } from './routes/activar-noti
 import { Route as AjustesRouteImport } from './routes/ajustes'
 import { Route as CalendarioRouteImport } from './routes/calendario'
 import { Route as CrearTareaRouteImport } from './routes/crear-tarea'
+import { Route as FinanzasRouteImport } from './routes/finanzas'
 import { Route as FocoRouteImport } from './routes/foco'
 import { Route as LegalRouteImport } from './routes/legal'
 import { Route as LoginRouteImport } from './routes/login'
@@ -62,6 +63,11 @@ const CalendarioRoute = CalendarioRouteImport.update({
 const CrearTareaRoute = CrearTareaRouteImport.update({
   id: '/crear-tarea',
   path: '/crear-tarea',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FinanzasRoute = FinanzasRouteImport.update({
+  id: '/finanzas',
+  path: '/finanzas',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FocoRoute = FocoRouteImport.update({
@@ -191,6 +197,7 @@ export interface FileRoutesByFullPath {
   '/ajustes': typeof AjustesRouteWithChildren
   '/calendario': typeof CalendarioRoute
   '/crear-tarea': typeof CrearTareaRoute
+  '/finanzas': typeof FinanzasRoute
   '/foco': typeof FocoRoute
   '/legal': typeof LegalRouteWithChildren
   '/login': typeof LoginRoute
@@ -221,6 +228,7 @@ export interface FileRoutesByTo {
   '/activar-notificaciones': typeof ActivarNotificacionesRoute
   '/calendario': typeof CalendarioRoute
   '/crear-tarea': typeof CrearTareaRoute
+  '/finanzas': typeof FinanzasRoute
   '/foco': typeof FocoRoute
   '/login': typeof LoginRoute
   '/mi-cuenta': typeof MiCuentaRoute
@@ -252,6 +260,7 @@ export interface FileRoutesById {
   '/ajustes': typeof AjustesRouteWithChildren
   '/calendario': typeof CalendarioRoute
   '/crear-tarea': typeof CrearTareaRoute
+  '/finanzas': typeof FinanzasRoute
   '/foco': typeof FocoRoute
   '/legal': typeof LegalRouteWithChildren
   '/login': typeof LoginRoute
@@ -285,6 +294,7 @@ export interface FileRouteTypes {
     | '/ajustes'
     | '/calendario'
     | '/crear-tarea'
+    | '/finanzas'
     | '/foco'
     | '/legal'
     | '/login'
@@ -315,6 +325,7 @@ export interface FileRouteTypes {
     | '/activar-notificaciones'
     | '/calendario'
     | '/crear-tarea'
+    | '/finanzas'
     | '/foco'
     | '/login'
     | '/mi-cuenta'
@@ -345,6 +356,7 @@ export interface FileRouteTypes {
     | '/ajustes'
     | '/calendario'
     | '/crear-tarea'
+    | '/finanzas'
     | '/foco'
     | '/legal'
     | '/login'
@@ -377,6 +389,7 @@ export interface RootRouteChildren {
   AjustesRoute: typeof AjustesRouteWithChildren
   CalendarioRoute: typeof CalendarioRoute
   CrearTareaRoute: typeof CrearTareaRoute
+  FinanzasRoute: typeof FinanzasRoute
   FocoRoute: typeof FocoRoute
   LegalRoute: typeof LegalRouteWithChildren
   LoginRoute: typeof LoginRoute
@@ -424,6 +437,13 @@ declare module '@tanstack/react-router' {
       path: '/crear-tarea'
       fullPath: '/crear-tarea'
       preLoaderRoute: typeof CrearTareaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/finanzas': {
+      id: '/finanzas'
+      path: '/finanzas'
+      fullPath: '/finanzas'
+      preLoaderRoute: typeof FinanzasRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/foco': {
@@ -648,6 +668,7 @@ const rootRouteChildren: RootRouteChildren = {
   AjustesRoute: AjustesRouteWithChildren,
   CalendarioRoute: CalendarioRoute,
   CrearTareaRoute: CrearTareaRoute,
+  FinanzasRoute: FinanzasRoute,
   FocoRoute: FocoRoute,
   LegalRoute: LegalRouteWithChildren,
   LoginRoute: LoginRoute,
