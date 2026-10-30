@@ -472,6 +472,57 @@ export type Database = {
           },
         ]
       }
+      finance_plan: {
+        Row: {
+          amount: number
+          category_id: string | null
+          created_at: string
+          id: string
+          income_source_id: string | null
+          kind: string
+          month: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          category_id?: string | null
+          created_at?: string
+          id?: string
+          income_source_id?: string | null
+          kind: string
+          month: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          amount?: number
+          category_id?: string | null
+          created_at?: string
+          id?: string
+          income_source_id?: string | null
+          kind?: string
+          month?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_plan_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "finance_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_plan_income_source_id_fkey"
+            columns: ["income_source_id"]
+            isOneToOne: false
+            referencedRelation: "income_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       finance_settings: {
         Row: {
           created_at: string
