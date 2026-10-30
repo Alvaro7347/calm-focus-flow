@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Target, Calendar, LayoutGrid, ClipboardList, Wallet } from "lucide-react";
+import { Target, Calendar, LayoutGrid, Wallet } from "lucide-react";
 import type { ReactNode } from "react";
 
 const items: { to: string; label: string; icon: typeof Target; matchRoot?: boolean }[] = [
@@ -7,7 +7,6 @@ const items: { to: string; label: string; icon: typeof Target; matchRoot?: boole
   { to: "/calendario", label: "Calendario", icon: Calendar },
   { to: "/tablero", label: "Tablero", icon: LayoutGrid },
   { to: "/finanzas", label: "Finanzas", icon: Wallet },
-  { to: "/crear-tarea", label: "Crear tarea", icon: ClipboardList },
 ];
 
 export function MobileTabBar() {
