@@ -43,6 +43,13 @@
       "when": 1792026429487,
       "tag": "0005_rutinas_v2",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793321292432,
+      "tag": "0006_finanzas_hogar_compatible",
+      "breakpoints": true
     }
   ]
 }

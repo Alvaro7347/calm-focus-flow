@@ -372,6 +372,130 @@ export type Database = {
         }
         Relationships: []
       }
+      finance_categories: {
+        Row: {
+          archived_at: string | null
+          color: string | null
+          created_at: string
+          display_order: number
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          archived_at?: string | null
+          color?: string | null
+          created_at?: string
+          display_order?: number
+          id?: string
+          name: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          archived_at?: string | null
+          color?: string | null
+          created_at?: string
+          display_order?: number
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      finance_movements: {
+        Row: {
+          amount: number
+          category_id: string | null
+          created_at: string
+          id: string
+          income_source_id: string | null
+          kind: string
+          note: string | null
+          occurred_on: string
+          payment_method: string | null
+          recurring_charge_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          category_id?: string | null
+          created_at?: string
+          id?: string
+          income_source_id?: string | null
+          kind: string
+          note?: string | null
+          occurred_on?: string
+          payment_method?: string | null
+          recurring_charge_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          amount?: number
+          category_id?: string | null
+          created_at?: string
+          id?: string
+          income_source_id?: string | null
+          kind?: string
+          note?: string | null
+          occurred_on?: string
+          payment_method?: string | null
+          recurring_charge_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_movements_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "finance_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_movements_income_source_id_fkey"
+            columns: ["income_source_id"]
+            isOneToOne: false
+            referencedRelation: "income_sources"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_movements_recurring_charge_id_fkey"
+            columns: ["recurring_charge_id"]
+            isOneToOne: false
+            referencedRelation: "recurring_charges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finance_settings: {
+        Row: {
+          created_at: string
+          currency: string
+          onboarded_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          onboarded_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          onboarded_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       goals: {
         Row: {
           archived_at: string | null
@@ -546,6 +670,36 @@ export type Database = {
           question_key?: string
           route?: string | null
           survey_key?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      income_sources: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          expected_amount: number | null
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          expected_amount?: number | null
+          id?: string
+          name: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          expected_amount?: number | null
+          id?: string
+          name?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
@@ -896,6 +1050,56 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      recurring_charges: {
+        Row: {
+          amount: number
+          archived_at: string | null
+          category_id: string | null
+          created_at: string
+          day_of_month: number
+          id: string
+          name: string
+          payment_method: string
+          start_date: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          archived_at?: string | null
+          category_id?: string | null
+          created_at?: string
+          day_of_month: number
+          id?: string
+          name: string
+          payment_method?: string
+          start_date?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          amount?: number
+          archived_at?: string | null
+          category_id?: string | null
+          created_at?: string
+          day_of_month?: number
+          id?: string
+          name?: string
+          payment_method?: string
+          start_date?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recurring_charges_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "finance_categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       routines: {
         Row: {
