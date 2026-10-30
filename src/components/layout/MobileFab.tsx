@@ -1,7 +1,10 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 import { Plus } from "lucide-react";
 
 export function MobileFab() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  // En Finanzas el "+" es para registrar gastos (lo pone esa pantalla).
+  if (pathname === "/finanzas") return null;
   return (
     <Link
       to="/crear-tarea"
