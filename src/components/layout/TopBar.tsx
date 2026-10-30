@@ -1,5 +1,5 @@
-import { Link, useRouterState } from "@tanstack/react-router";
-import { Plus, Calendar, LayoutGrid, Target, MoreHorizontal } from "lucide-react";
+ import { Link, useRouterState } from "@tanstack/react-router";
+import { Plus, Calendar, LayoutGrid, Target, MoreHorizontal, Wallet } from "lucide-react";
 import type { ReactNode } from "react";
 
 export function TopBar() {
@@ -11,6 +11,7 @@ export function TopBar() {
       <NavBtn to="/calendario" active={pathname === "/calendario"} icon={<Calendar className="h-4 w-4" />} label="Calendario" />
       <NavBtn to="/tablero" active={pathname === "/tablero"} icon={<LayoutGrid className="h-4 w-4" />} label="Tablero" />
       <NavBtn to="/foco" active={pathname === "/foco" || pathname === "/"} icon={<Target className="h-4 w-4" />} label="FOCO" />
+      <NavBtn to="/finanzas" active={pathname === "/finanzas"} icon={<Wallet className="h-4 w-4" />} label="Finanzas" />
 
       <div className="ml-auto flex items-center gap-2">
         <Link
