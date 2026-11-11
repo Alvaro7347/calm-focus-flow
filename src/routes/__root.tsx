@@ -14,6 +14,7 @@ import { useEffect, useState, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { repairPushSubscriptionSilently } from "@/services/pushService";
 import { Sidebar } from "../components/layout/Sidebar";
 import { TopBar } from "../components/layout/TopBar";
 import { MobileHeader } from "../components/layout/MobileHeader";
@@ -254,6 +255,23 @@ function RootComponent() {
     navigator.serviceWorker.addEventListener("message", onMessage);
     return () => navigator.serviceWorker.removeEventListener("message", onMessage);
   }, [navigate]);
+
+  // Notificaciones push: al abrir la app (y al volver a primer plano) con
+  // sesión iniciada, revisa en silencio que este dispositivo siga suscrito.
+  // iOS invalida suscripciones sin avisar; sin esto el usuario deja de
+  // recibir el resumen matutino sin enterarse. Nunca pide permiso.
+  useEffect(() => {
+    if (authStatus !== "authenticated") return;
+    const run = () => {
+      void repairPushSubscriptionSilently();
+    };
+    run();
+    const onVisible = () => {
+      if (document.visibilityState === "visible") run();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [authStatus]);
 
   // Enforcement de rutas: si no hay sesión y la ruta no es pública → /login.
   // Si hay sesión y está en una pantalla de auth → /foco.
