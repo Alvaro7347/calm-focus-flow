@@ -70,7 +70,13 @@ function arrayBufferToBase64Url(buf: ArrayBuffer | null): string {
 
 export interface ActivationResult {
   ok: boolean;
-  reason?: "permission_denied" | "unsupported" | "ios_needs_install" | "no_user" | "sw_failed" | "subscribe_failed";
+  reason?:
+    | "permission_denied"
+    | "unsupported"
+    | "ios_needs_install"
+    | "no_user"
+    | "sw_failed"
+    | "subscribe_failed";
   subscriptionId?: string;
 }
 
@@ -110,30 +116,71 @@ export async function activatePushOnThisDevice(): Promise<ActivationResult> {
   const reg = await ensureServiceWorker();
   if (!reg) return { ok: false, reason: "sw_failed" };
 
-  // 3. Clave pública VAPID (server).
-  const vapidPub = await getVapidPublicKey();
+  // 3-6. Suscripción push (clave VAPID desde el server), guardado en
+  // Supabase y sincronización de TZ.
+  const result = await subscribeAndPersist(reg, sess.user.id);
+  if (!result) return { ok: false, reason: "subscribe_failed" };
 
-  // 4. Suscripción push.
-  let subscription = await reg.pushManager.getSubscription();
-  if (!subscription) {
-    try {
-      subscription = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(vapidPub).buffer as ArrayBuffer,
-      });
-    } catch (err) {
-      console.error("[push] subscribe failed", err);
-      return { ok: false, reason: "subscribe_failed" };
-    }
+  // El usuario volvió a activar: deja de estar en "opt-out".
+  setOptOut(false);
+
+  return { ok: true, subscriptionId: result.id };
+}
+
+// ------------------------------------------------------------
+// Helpers compartidos (activación manual y reparación silenciosa)
+// ------------------------------------------------------------
+
+const OPT_OUT_KEY = "calmapp.push_opt_out";
+
+/** Marca local: el usuario desactivó a propósito este dispositivo. */
+function setOptOut(value: boolean): void {
+  try {
+    if (value) localStorage.setItem(OPT_OUT_KEY, "1");
+    else localStorage.removeItem(OPT_OUT_KEY);
+  } catch {
+    // ignore (modo privado, almacenamiento bloqueado)
   }
+}
 
+function isOptedOut(): boolean {
+  try {
+    return localStorage.getItem(OPT_OUT_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+/** Crea una PushSubscription nueva (requiere permiso ya concedido). */
+async function createPushSubscription(
+  reg: ServiceWorkerRegistration,
+): Promise<PushSubscription | null> {
+  try {
+    const vapidPub = await getVapidPublicKey();
+    return await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(vapidPub).buffer as ArrayBuffer,
+    });
+  } catch (err) {
+    console.error("[push] subscribe failed", err);
+    return null;
+  }
+}
+
+/**
+ * Upsert por endpoint (único) en `push_subscriptions` y marca la fila como
+ * activa. RLS aplica: solo el propio usuario. Devuelve el id o null.
+ */
+async function persistSubscription(
+  subscription: PushSubscription,
+  userId: string,
+): Promise<string | null> {
   const p256dh = arrayBufferToBase64Url(subscription.getKey("p256dh"));
   const authKey = arrayBufferToBase64Url(subscription.getKey("auth"));
   const endpoint = subscription.endpoint;
   const deviceId = getOrCreateDeviceId();
   const tz = detectTimezone();
 
-  // 5. Upsert por endpoint (único). RLS aplica: solo el propio usuario.
   const { data: existing } = await supabase
     .from("push_subscriptions")
     .select("id")
@@ -143,10 +190,10 @@ export async function activatePushOnThisDevice(): Promise<ActivationResult> {
   let subscriptionId: string;
   if (existing) {
     subscriptionId = existing.id;
-    await supabase
+    const { error } = await supabase
       .from("push_subscriptions")
       .update({
-        user_id: sess.user.id,
+        user_id: userId,
         p256dh,
         auth_key: authKey,
         device_id: deviceId,
@@ -158,11 +205,15 @@ export async function activatePushOnThisDevice(): Promise<ActivationResult> {
         deactivated_at: null,
       })
       .eq("id", existing.id);
+    if (error) {
+      console.error("[push] update failed", error);
+      return null;
+    }
   } else {
     const { data: inserted, error } = await supabase
       .from("push_subscriptions")
       .insert({
-        user_id: sess.user.id,
+        user_id: userId,
         endpoint,
         p256dh,
         auth_key: authKey,
@@ -175,22 +226,118 @@ export async function activatePushOnThisDevice(): Promise<ActivationResult> {
       .single();
     if (error || !inserted) {
       console.error("[push] insert failed", error);
-      return { ok: false, reason: "subscribe_failed" };
+      return null;
     }
     subscriptionId = inserted.id;
   }
 
-  // 6. Sincronizar TZ del perfil (silencioso).
+  // Sincronizar TZ del perfil (silencioso).
   await syncTimezoneWithProfile().catch(() => {});
-
-  return { ok: true, subscriptionId };
+  return subscriptionId;
 }
 
+/**
+ * Reutiliza la suscripción local si sigue viva; si falta, o si el servidor
+ * la marcó como expirada (Apple/Google respondió 404/410), crea una nueva.
+ * Luego la guarda en Supabase.
+ */
+async function subscribeAndPersist(
+  reg: ServiceWorkerRegistration,
+  userId: string,
+): Promise<{ id: string; outcome: "healthy" | "registered" | "renewed" } | null> {
+  let subscription = await reg.pushManager.getSubscription();
+  let outcome: "healthy" | "registered" | "renewed" = "registered";
+
+  if (subscription) {
+    const { data: row } = await supabase
+      .from("push_subscriptions")
+      .select("id, is_active")
+      .eq("endpoint", subscription.endpoint)
+      .maybeSingle();
+    if (row?.is_active) {
+      outcome = "healthy";
+    } else if (row) {
+      // Endpoint muerto: descartarlo para obtener uno nuevo.
+      try {
+        await subscription.unsubscribe();
+      } catch {
+        // ignore
+      }
+      subscription = null;
+    }
+  }
+
+  if (!subscription) {
+    subscription = await createPushSubscription(reg);
+    if (!subscription) return null;
+    outcome = "renewed";
+  }
+
+  const id = await persistSubscription(subscription, userId);
+  return id ? { id, outcome } : null;
+}
+
+export type PushRepairResult =
+  | "skipped" // sin permiso, sin soporte, preview, opt-out o sin sesión
+  | "healthy" // la suscripción seguía activa
+  | "registered" // la fila faltaba o estaba inactiva: se volvió a guardar
+  | "renewed" // la suscripción había expirado: se creó una nueva
+  | "failed";
+
+let repairInFlight: Promise<PushRepairResult> | null = null;
+let lastRepairAt = 0;
+/** Como mucho una revisión por hora (la app puede volver a primer plano a menudo). */
+const REPAIR_MIN_INTERVAL_MS = 60 * 60 * 1000;
+
+/**
+ * Reparación silenciosa de la suscripción push del dispositivo.
+ *
+ * Se llama al abrir la app con sesión iniciada. iOS (y a veces Android)
+ * invalida suscripciones sin avisar —tras actualizar el sistema, reinstalar
+ * el ícono o limpiar datos—; el servidor recibe 410 y la desactiva, y el
+ * usuario deja de recibir avisos sin enterarse. Esta función:
+ *  - No pide permiso nunca: solo actúa si el permiso YA está concedido.
+ *  - Respeta la desactivación manual (marca local de opt-out).
+ *  - Si la suscripción local falta, o el servidor la marcó como expirada,
+ *    crea una nueva y la registra. Si sigue sana, actualiza last_seen_at.
+ */
+export function repairPushSubscriptionSilently(): Promise<PushRepairResult> {
+  if (repairInFlight) return repairInFlight;
+  if (Date.now() - lastRepairAt < REPAIR_MIN_INTERVAL_MS) return Promise.resolve("skipped");
+  lastRepairAt = Date.now();
+  repairInFlight = doRepair()
+    .catch((err) => {
+      console.warn("[push] repair failed", err);
+      return "failed" as const;
+    })
+    .finally(() => {
+      repairInFlight = null;
+    });
+  return repairInFlight;
+}
+
+async function doRepair(): Promise<PushRepairResult> {
+  if (isPreviewHost() || inIframe()) return "skipped";
+  if (getPushCapabilities().environment !== "granted") return "skipped";
+  if (isOptedOut()) return "skipped";
+
+  const { data: sess } = await supabase.auth.getUser();
+  if (!sess.user) return "skipped";
+
+  const reg = await ensureServiceWorker();
+  if (!reg) return "skipped";
+
+  const result = await subscribeAndPersist(reg, sess.user.id);
+  return result ? result.outcome : "failed";
+}
 /** Desactiva la suscripción del dispositivo actual (no borra el registro). */
 export async function deactivateThisDevice(): Promise<void> {
-  const reg = typeof navigator !== "undefined" && "serviceWorker" in navigator
-    ? await navigator.serviceWorker.getRegistration(SW_PATH)
-    : null;
+  // Recordar la decisión para que la reparación silenciosa no reactive.
+  setOptOut(true);
+  const reg =
+    typeof navigator !== "undefined" && "serviceWorker" in navigator
+      ? await navigator.serviceWorker.getRegistration(SW_PATH)
+      : null;
   if (reg) {
     const sub = await reg.pushManager.getSubscription();
     if (sub) {
